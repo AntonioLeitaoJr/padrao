@@ -99,6 +99,7 @@ CREATE TABLE IF NOT EXISTS `fichas_indicacao` (
     `avaliador_id` INT NOT NULL,
     `tipo_avaliacao` ENUM('OBRIGATORIA_CHEFE', 'VOLUNTARIA') NOT NULL DEFAULT 'OBRIGATORIA_CHEFE',
     `is_nob` TINYINT(1) NOT NULL DEFAULT 0,
+    `status` ENUM('preenchido', 'concluido') NOT NULL DEFAULT 'concluido',
     `servico_escala` VARCHAR(255) NULL,
     `eficiencia_eficacia` TINYINT NULL CHECK (`eficiencia_eficacia` IS NULL OR (`eficiencia_eficacia` BETWEEN 0 AND 5)),
     `conhecimento_especialidade` TINYINT NULL CHECK (`conhecimento_especialidade` IS NULL OR (`conhecimento_especialidade` BETWEEN 0 AND 5)),

@@ -27,8 +27,10 @@ class FichaIndicacao {
 
         $isMilitar = in_array($candidato['categoria'], ['graduado', 'praca'], true);
         $isNob = (!empty($dados['is_nob']) && (int)$dados['is_nob'] === 1) ? 1 : 0;
+        $status = in_array($dados['status'] ?? '', ['preenchido', 'concluido'], true) ? $dados['status'] : 'concluido';
 
         if ($isNob === 1) {
+            $status = 'concluido';
             $servicoEscala = null;
             $criterios = [
                 'eficiencia_eficacia'        => null,
@@ -88,7 +90,7 @@ class FichaIndicacao {
 
         // Assinatura e Hash de integridade dos dados
         $agora = date('Y-m-d H:i:s');
-        $stringIntegridade = "{$pleitoId}|{$candidatoId}|{$avaliadorUsuarioId}|{$isNob}|" . implode('|', array_map(fn($v) => (string)($v ?? 'NULL'), $criterios)) . "|{$justificativa}|{$agora}";
+        $stringIntegridade = "{$pleitoId}|{$candidatoId}|{$avaliadorUsuarioId}|{$isNob}|{$status}|" . implode('|', array_map(fn($v) => (string)($v ?? 'NULL'), $criterios)) . "|{$justificativa}|{$agora}";
         $hashIntegridade = hash('sha256', $stringIntegridade);
 
         $pdo = Database::getConnection();
@@ -96,18 +98,19 @@ class FichaIndicacao {
         $stmt = $pdo->prepare('
             INSERT INTO `fichas_indicacao` (
                 `pleito_id`, `candidato_id`, `avaliador_id`, `tipo_avaliacao`,
-                `is_nob`, `servico_escala`, `eficiencia_eficacia`, `conhecimento_especialidade`,
+                `is_nob`, `status`, `servico_escala`, `eficiencia_eficacia`, `conhecimento_especialidade`,
                 `iniciativa_adaptabilidade`, `conduta_pontuacao`, `conduta_fichas`,
                 `apresentacao_pessoal`, `relacionamento_trabalho`, `lideranca`,
                 `justificativa`, `media_calculada`, `hash_integridade`, `created_at`
             ) VALUES (
                 :pleito, :candidato, :avaliador, :tipo,
-                :is_nob, :escala, :efic, :conhec,
+                :is_nob, :status, :escala, :efic, :conhec,
                 :inic, :conduta, :fichas,
                 :apres, :relac, :lider,
                 :justif, :media, :hash, :created
             ) ON DUPLICATE KEY UPDATE
                 `is_nob`                    = VALUES(`is_nob`),
+                `status`                    = VALUES(`status`),
                 `servico_escala`            = VALUES(`servico_escala`),
                 `eficiencia_eficacia`        = VALUES(`eficiencia_eficacia`),
                 `conhecimento_especialidade` = VALUES(`conhecimento_especialidade`),
@@ -129,6 +132,7 @@ class FichaIndicacao {
             ':avaliador' => $avaliadorUsuarioId,
             ':tipo'      => $tipoAval,
             ':is_nob'    => $isNob,
+            ':status'    => $status,
             ':escala'    => $servicoEscala,
             ':efic'      => $criterios['eficiencia_eficacia'],
             ':conhec'    => $criterios['conhecimento_especialidade'],
@@ -148,16 +152,20 @@ class FichaIndicacao {
             'pleito_id'    => $pleitoId,
             'candidato_id' => $candidatoId,
             'tipo'         => $tipoAval,
+            'status'       => $status,
             'media'        => round($media, 2)
         ], $avaliadorUsuarioId);
 
         $msgSucesso = ($isNob === 1) 
             ? 'Ficha registrada com sucesso como Não Observado (NOB).' 
-            : 'Ficha de indicação registrada com sucesso.';
+            : ($status === 'preenchido'
+                ? 'Ficha salva com sucesso! O status foi atualizado para PREENCHIDO (você ainda pode editá-la antes de enviar).'
+                : 'Ficha concluída e enviada com sucesso! O status é CONCLUÍDO e a edição foi bloqueada.');
 
         return [
             'sucesso'  => true,
             'is_nob'   => ($isNob === 1),
+            'status'   => $status,
             'media'    => round($media, 2),
             'mensagem' => $msgSucesso
         ];

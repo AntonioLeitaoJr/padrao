@@ -52,7 +52,7 @@ class Pleito {
             LEFT JOIN fichas_indicacao f ON f.candidato_id = e.id AND f.pleito_id = :p AND f.tipo_avaliacao = 'OBRIGATORIA_CHEFE'
             WHERE e.ativo = 1 
               AND e.categoria IN ('graduado', 'praca')
-              AND f.id IS NULL
+              AND (f.id IS NULL OR f.status != 'concluido')
             ORDER BY c.nome_guerra, e.nome
         ";
 

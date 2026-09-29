@@ -116,14 +116,8 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                                                 <h6 class="fw-bold text-primary mb-1">
                                                     <?= sanitize_output($cand['posto']) ?> <?= sanitize_output($cand['nome_guerra']) ?>
                                                 </h6>
-                                                <div class="small text-muted text-truncate mb-1" title="<?= sanitize_output($cand['nome']) ?>">
-                                                    <?= sanitize_output($cand['nome']) ?>
-                                                </div>
                                                 <div class="small text-secondary mb-1">
-                                                    <?= sanitize_output($cand['setor']) ?> (<?= sanitize_output($cand['divisao_sigla']) ?>)
-                                                </div>
-                                                <div class="badge bg-light text-dark border">
-                                                    SARAM: <?= sanitize_output($cand['saram'] ?: 'Civil') ?>
+                                                    <?= sanitize_output($cand['setor']) ?><?= !empty($cand['divisao_sigla']) ? ' (' . sanitize_output($cand['divisao_sigla']) . ')' : '' ?>
                                                 </div>
                                             </div>
                                         </div>

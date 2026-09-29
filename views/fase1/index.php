@@ -23,6 +23,14 @@ require_once ROOT_PATH . '/views/layouts/header.php';
             <?php endif; ?>
         </button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold" id="voluntarios-tab" data-bs-toggle="tab" data-bs-target="#tabVoluntarios" type="button">
+            <i class="bi bi-star me-1"></i> Avaliações Voluntárias
+            <?php if (!empty($candidatosVoluntarios)): ?>
+                <span class="badge bg-secondary ms-1"><?= count($candidatosVoluntarios) ?></span>
+            <?php endif; ?>
+        </button>
+    </li>
     <?php if (AuthManager::hasRole([PERFIL_ED_FISICA, PERFIL_ADMIN])): ?>
         <li class="nav-item" role="presentation">
             <button class="nav-link fw-bold text-success" id="tacf-tab" data-bs-toggle="tab" data-bs-target="#tabTacf" type="button">
@@ -116,48 +124,133 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                                                 <?php if (!empty($sub['is_nob'])): ?>
                                                     <span class="badge bg-secondary fs-6"><i class="bi bi-eye-slash me-1"></i>NOB</span>
                                                 <?php else: ?>
-                                                    <span class="badge bg-success fs-6"><?= number_format((float)$sub['media_calculada'], 2, ',', '.') ?></span>
+                                                    <span class="badge bg-primary fs-6"><?= number_format((float)$sub['media_calculada'], 2, ',', '.') ?></span>
                                                 <?php endif; ?>
                                             <?php else: ?>
-                                                <span class="badge bg-warning text-dark">Não Avaliado</span>
+                                                <span class="text-muted small">--</span>
                                             <?php endif; ?>
                                         </td>
                                         <td>
-                                            <?php if ($sub['ficha_id']): ?>
-                                                <?php if (!empty($sub['is_nob'])): ?>
-                                                    <span class="text-secondary small fw-semibold"><i class="bi bi-check-all"></i> Não Observado</span>
-                                                <?php else: ?>
-                                                    <span class="text-success small fw-semibold"><i class="bi bi-check-all"></i> Concluído</span>
-                                                <?php endif; ?>
+                                            <?php if (!$sub['ficha_id']): ?>
+                                                <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pendente</span>
+                                            <?php elseif (($sub['ficha_status'] ?? '') === 'preenchido'): ?>
+                                                <span class="badge bg-info text-dark"><i class="bi bi-file-earmark-text me-1"></i>Preenchido</span>
                                             <?php else: ?>
-                                                <span class="text-danger small fw-semibold"><i class="bi bi-exclamation-circle"></i> Obrigatória</span>
+                                                <?php if (!empty($sub['is_nob'])): ?>
+                                                    <span class="badge bg-secondary"><i class="bi bi-eye-slash me-1"></i>NOB (Concluído)</span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-success"><i class="bi bi-check-all me-1"></i>Concluído</span>
+                                                <?php endif; ?>
                                             <?php endif; ?>
                                         </td>
                                         <td class="text-end text-nowrap">
-                                            <button type="button" class="btn btn-sm <?= $sub['ficha_id'] ? 'btn-outline-primary' : 'btn-primary fw-bold' ?>"
-                                                    onclick="abrirModalAvaliacao(<?= $sub['id'] ?>)">
-                                                <i class="bi bi-pencil-square me-1"></i> <?= $sub['ficha_id'] ? 'Editar Ficha' : 'Preencher Ficha' ?>
-                                            </button>
-                                            <?php if (!$sub['ficha_id'] && (int)$sub['sou_o_delegado'] === 0): ?>
-                                                <button type="button" class="btn btn-sm btn-outline-warning ms-1"
-                                                        data-bs-toggle="modal" data-bs-target="#modalDelegarOficial"
-                                                        data-candidato-id="<?= $sub['id'] ?>"
-                                                        data-candidato-nome="<?= sanitize_output($sub['posto'] . ' ' . $sub['nome_guerra']) ?>"
-                                                        data-candidato-sub="<?= sanitize_output($sub['nome']) ?>"
-                                                        data-delegado-id="<?= $sub['oficial_delegado_id'] ?? '' ?>"
-                                                        data-delegacao-motivo="<?= sanitize_output($sub['delegacao_motivo'] ?? '') ?>"
-                                                        title="Indicar outro oficial avaliador por motivo de missão/afastamento">
-                                                    <i class="bi bi-person-fill-exclamation me-1"></i> <?= $sub['delegacao_id'] ? 'Alterar' : 'Em Missão?' ?>
+                                            <?php if (!$sub['ficha_id']): ?>
+                                                <button type="button" class="btn btn-sm btn-primary fw-bold"
+                                                        onclick="abrirModalAvaliacao(<?= $sub['id'] ?>, false)">
+                                                    <i class="bi bi-pencil-square me-1"></i> Preencher Ficha
                                                 </button>
-                                                <?php if ($sub['delegacao_id']): ?>
-                                                    <form method="POST" action="/index.php?r=fase1/remover_delegacao" class="d-inline" onsubmit="return confirm('Remover delegação de <?= addslashes(sanitize_output($sub['nome_guerra'])) ?> e reassumir a avaliação?');">
-                                                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-                                                        <input type="hidden" name="candidato_id" value="<?= $sub['id'] ?>">
-                                                        <button type="submit" class="btn btn-sm btn-outline-danger ms-1" title="Cancelar delegação">
-                                                            <i class="bi bi-x-circle"></i>
-                                                        </button>
-                                                    </form>
+                                            <?php elseif (($sub['ficha_status'] ?? '') === 'preenchido'): ?>
+                                                <button type="button" class="btn btn-sm btn-outline-primary fw-bold"
+                                                        onclick="abrirModalAvaliacao(<?= $sub['id'] ?>, false)">
+                                                    <i class="bi bi-pencil-square me-1"></i> Editar Ficha
+                                                </button>
+                                            <?php else: ?>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                        onclick="abrirModalAvaliacao(<?= $sub['id'] ?>, true)">
+                                                    <i class="bi bi-eye me-1"></i> Ver Ficha
+                                                </button>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. ABA DE AVALIAÇÕES VOLUNTÁRIAS (OUTROS CANDIDATOS NÃO SUBORDINADOS) -->
+    <div class="tab-pane fade" id="tabVoluntarios" role="tabpanel">
+        <div class="card card-comara shadow-sm">
+            <div class="card-comara-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-star me-2 text-warning"></i>Avaliações Voluntárias de Integrantes da COMARA</span>
+                <span class="small text-muted">Apenas candidatos que não sejam seus subordinados diretos</span>
+            </div>
+            <div class="card-body p-0">
+                <?php if (empty($candidatosVoluntarios)): ?>
+                    <div class="p-4 text-center text-muted">
+                        <i class="bi bi-info-circle fs-3 d-block mb-2 text-secondary"></i>
+                        Nenhum outro candidato disponível para indicação voluntária neste momento.
+                    </div>
+                <?php else: ?>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 70px;">Foto</th>
+                                    <th>Candidato</th>
+                                    <th>Posto / Especialidade</th>
+                                    <th>Setor</th>
+                                    <th>Categoria</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($candidatosVoluntarios as $vol): ?>
+                                    <?php 
+                                    $fv = $fichasVoluntarias[$vol['id']] ?? null;
+                                    $fvId = $fv['id'] ?? null;
+                                    $fvStatus = $fv['status'] ?? null;
+                                    $fvNob = !empty($fv['is_nob']);
+                                    ?>
+                                    <tr>
+                                        <td>
+                                            <img src="/index.php?r=foto&saram=<?= $vol['saram'] ?>&id=<?= $vol['id'] ?>" class="cand-photo-sm" alt="Foto">
+                                        </td>
+                                        <td>
+                                            <strong><?= sanitize_output($vol['nome_guerra']) ?></strong><br>
+                                            <small class="text-muted"><?= sanitize_output($vol['nome']) ?></small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border"><?= sanitize_output($vol['posto']) ?></span>
+                                            <small class="text-muted"><?= sanitize_output($vol['especialidade']) ?></small>
+                                        </td>
+                                        <td><?= sanitize_output($vol['setor']) ?> (<?= sanitize_output($vol['divisao_sigla']) ?>)</td>
+                                        <td>
+                                            <span class="badge bg-secondary"><?= CATEGORIAS_PADRAO[$vol['categoria']]['sigla'] ?? $vol['categoria'] ?></span>
+                                        </td>
+                                        <td>
+                                            <?php if ($fvId): ?>
+                                                <?php if ($fvNob): ?>
+                                                    <span class="badge bg-secondary"><i class="bi bi-eye-slash me-1"></i>NOB (Concluído)</span>
+                                                <?php elseif ($fvStatus === 'preenchido'): ?>
+                                                    <span class="badge bg-info text-dark"><i class="bi bi-file-earmark-text me-1"></i>Preenchido</span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-success"><i class="bi bi-check-all me-1"></i>Concluído</span>
                                                 <?php endif; ?>
+                                            <?php else: ?>
+                                                <span class="badge bg-light text-muted border">Não Avaliado</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="text-end text-nowrap">
+                                            <?php if (!$fvId): ?>
+                                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                                        onclick="abrirModalAvaliacao(<?= $vol['id'] ?>, false)">
+                                                    <i class="bi bi-pencil-square me-1"></i> Indicar Voluntariamente
+                                                </button>
+                                            <?php elseif ($fvStatus === 'preenchido'): ?>
+                                                <button type="button" class="btn btn-sm btn-outline-primary fw-bold"
+                                                        onclick="abrirModalAvaliacao(<?= $vol['id'] ?>, false)">
+                                                    <i class="bi bi-pencil-square me-1"></i> Editar Ficha
+                                                </button>
+                                            <?php else: ?>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                        onclick="abrirModalAvaliacao(<?= $vol['id'] ?>, true)">
+                                                    <i class="bi bi-eye me-1"></i> Ver Ficha
+                                                </button>
                                             <?php endif; ?>
                                         </td>
                                     </tr>
@@ -438,8 +531,9 @@ require_once ROOT_PATH . '/views/layouts/header.php';
             <form id="formAvaliacaoModal" method="POST" action="/index.php?r=fase1/avaliar">
                 <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                 <input type="hidden" name="candidato_id" id="modal_candidato_id" value="">
+                <input type="hidden" name="status" id="modal_status" value="concluido">
 
-                <div class="modal-body p-4 bg-light">
+                <div class="modal-body p-4 bg-light" style="max-height: calc(100vh - 210px); overflow-y: auto;">
                     <!-- Loading Spinner -->
                     <div id="modal_loading" class="text-center py-5">
                         <div class="spinner-border text-primary" role="status">
@@ -450,6 +544,14 @@ require_once ROOT_PATH . '/views/layouts/header.php';
 
                     <!-- Conteúdo da Avaliação -->
                     <div id="modal_conteudo" style="display: none;">
+
+                        <!-- BANNER INFORMATIVO PARA FICHA CONCLUÍDA (SOMENTE LEITURA) -->
+                        <div id="modal_banner_concluido" class="alert alert-secondary py-2 px-3 small d-flex align-items-center mb-3" style="display: none;">
+                            <i class="bi bi-lock-fill me-2 fs-5 text-secondary"></i>
+                            <div>
+                                <strong>Ficha Concluída e Enviada:</strong> Esta ficha já foi finalizada pelo avaliador. A edição das notas está bloqueada.
+                            </div>
+                        </div>
                         
                         <!-- PARTE 1. DADOS DO AVALIADO (Apenas Foto, Posto/Nome de Guerra e Setor de Trabalho) -->
                         <div class="card border mb-3 shadow-sm">
@@ -480,7 +582,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                                 <option value="1" class="text-danger">Não Observado (NOB) — Militar recém-chegado, afastado ou sem observação direta</option>
                             </select>
                             <div class="form-text text-muted small mt-1">
-                                <i class="bi bi-info-circle me-1"></i> Ao selecionar <strong>Não Observado (NOB)</strong>, todos os campos de notas são bloqueados e a ficha é salva imediatamente.
+                                <i class="bi bi-info-circle me-1"></i> Ao selecionar <strong>Não Observado (NOB)</strong>, todos os campos de notas são bloqueados e a ficha é salva e concluída imediatamente.
                             </div>
                         </div>
 
@@ -598,11 +700,22 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                     </div> <!-- /modal_conteudo -->
                 </div>
 
-                <div class="modal-footer bg-light p-3 d-flex justify-content-between">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" id="btnSalvarModal" class="btn btn-primary fw-bold px-4">
-                        <i class="bi bi-check-circle-fill me-2"></i> Salvar e Assinar Ficha
-                    </button>
+                <div class="modal-footer bg-light p-3">
+                    <div id="modal_rodape_edicao" class="w-100 d-flex justify-content-between align-items-center">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <div>
+                            <button type="button" class="btn btn-info text-white fw-bold me-2" onclick="submeterFicha('preenchido')">
+                                <i class="bi bi-save me-1"></i> Salvar Ficha
+                            </button>
+                            <button type="button" class="btn btn-success fw-bold px-4" onclick="submeterFicha('concluido')">
+                                <i class="bi bi-send-check-fill me-1"></i> Salvar e Enviar Ficha
+                            </button>
+                        </div>
+                    </div>
+                    <div id="modal_rodape_visualizacao" class="w-100 d-flex justify-content-between align-items-center" style="display: none;">
+                        <span class="text-muted small"><i class="bi bi-lock-fill me-1 text-secondary"></i> Ficha finalizada e enviada (Somente Leitura)</span>
+                        <button type="button" class="btn btn-secondary px-4 fw-bold" data-bs-dismiss="modal">Fechar</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -612,7 +725,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
 <script>
 let modalAvaliarInstancia = null;
 
-function abrirModalAvaliacao(candidatoId) {
+function abrirModalAvaliacao(candidatoId, apenasVisualizacao = false) {
     const modalEl = document.getElementById('modalAvaliarSubordinado');
     if (!modalAvaliarInstancia) {
         modalAvaliarInstancia = new bootstrap.Modal(modalEl);
@@ -624,6 +737,7 @@ function abrirModalAvaliacao(candidatoId) {
 
     form.reset();
     document.getElementById('modal_candidato_id').value = candidatoId;
+    document.getElementById('modal_status').value = 'concluido';
     modalLoading.style.display = 'block';
     modalConteudo.style.display = 'none';
 
@@ -640,6 +754,7 @@ function abrirModalAvaliacao(candidatoId) {
 
             const c = res.candidato;
             const f = res.ficha;
+            const isConcluido = apenasVisualizacao || (f && f.status === 'concluido') || !res.pode_editar;
 
             document.getElementById('modal_foto').src = c.foto_url;
             document.getElementById('modal_posto_nome_guerra').innerText = c.posto + ' ' + c.nome_guerra;
@@ -650,7 +765,7 @@ function abrirModalAvaliacao(candidatoId) {
             const inputsEscala = blocoEscala.querySelectorAll('input[type="radio"]');
             if (c.is_militar) {
                 blocoEscala.style.display = 'block';
-                inputsEscala.forEach(inp => inp.required = true);
+                inputsEscala.forEach(inp => inp.required = !isConcluido);
             } else {
                 blocoEscala.style.display = 'none';
                 inputsEscala.forEach(inp => {
@@ -700,8 +815,24 @@ function abrirModalAvaliacao(candidatoId) {
                 document.getElementById('modal_conduta_fichas').value = '';
             }
 
-            // Ajusta bloqueio conforme o estado do NOB
-            bloquearCamposAvaliacao(selectNob.value === "1");
+            // Alterna layout visual para Modo Visualização (bloqueado) vs Edição
+            const bannerConcluido = document.getElementById('modal_banner_concluido');
+            const rodapeEdicao = document.getElementById('modal_rodape_edicao');
+            const rodapeVisualizacao = document.getElementById('modal_rodape_visualizacao');
+
+            if (isConcluido) {
+                bannerConcluido.style.display = 'flex';
+                rodapeEdicao.style.display = 'none';
+                rodapeVisualizacao.style.display = 'flex';
+                selectNob.disabled = true;
+                bloquearCamposAvaliacao(true, true);
+            } else {
+                bannerConcluido.style.display = 'none';
+                rodapeEdicao.style.display = 'flex';
+                rodapeVisualizacao.style.display = 'none';
+                selectNob.disabled = false;
+                bloquearCamposAvaliacao(selectNob.value === "1", false);
+            }
 
             modalLoading.style.display = 'none';
             modalConteudo.style.display = 'block';
@@ -713,7 +844,7 @@ function abrirModalAvaliacao(candidatoId) {
         });
 }
 
-function bloquearCamposAvaliacao(bloquear) {
+function bloquearCamposAvaliacao(bloquear, modoVisualizacao = false) {
     const container = document.getElementById('container_campos_avaliacao');
     const inputs = container.querySelectorAll('input, textarea');
     inputs.forEach(inp => {
@@ -724,7 +855,7 @@ function bloquearCamposAvaliacao(bloquear) {
     });
 
     if (bloquear) {
-        container.style.opacity = '0.4';
+        container.style.opacity = modoVisualizacao ? '0.85' : '0.4';
         container.style.pointerEvents = 'none';
     } else {
         container.style.opacity = '1';
@@ -739,9 +870,20 @@ function bloquearCamposAvaliacao(bloquear) {
     }
 }
 
+function submeterFicha(status) {
+    document.getElementById('modal_status').value = status;
+    if (status === 'concluido') {
+        if (!confirm("Confirma o envio definitivo da ficha de avaliação?\n\nApós o envio, a ficha será marcada como CONCLUÍDA e sua edição será BLOQUEADA.")) {
+            return;
+        }
+    }
+    document.getElementById('formAvaliacaoModal').submit();
+}
+
 function tratarSelecaoNob(valor) {
     if (valor === "1") {
-        if (confirm("Confirma o registro deste integrante como NÃO OBSERVADO (NOB)?\n\nTodos os campos de notas serão bloqueados e a ficha será salva agora.")) {
+        if (confirm("Confirma o registro deste integrante como NÃO OBSERVADO (NOB)?\n\nTodos os campos de notas serão bloqueados e a ficha será salva e concluída agora.")) {
+            document.getElementById('modal_status').value = 'concluido';
             bloquearCamposAvaliacao(true);
             document.getElementById('formAvaliacaoModal').submit();
         } else {

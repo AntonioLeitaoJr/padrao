@@ -29,6 +29,19 @@ try {
     echo "[AVISO/ERRO is_nob] " . $e->getMessage() . "\n";
 }
 
+// 2.1 Adicionar coluna status em fichas_indicacao se não existir
+try {
+    $colunasStatus = $pdo->query("SHOW COLUMNS FROM fichas_indicacao LIKE 'status'")->fetchAll();
+    if (empty($colunasStatus)) {
+        $pdo->exec("ALTER TABLE fichas_indicacao ADD COLUMN status ENUM('preenchido', 'concluido') NOT NULL DEFAULT 'concluido' AFTER is_nob");
+        echo "[OK] Coluna 'status' adicionada em 'fichas_indicacao'.\n";
+    } else {
+        echo "[INFO] Coluna 'status' já existe em 'fichas_indicacao'.\n";
+    }
+} catch (Throwable $e) {
+    echo "[AVISO/ERRO status] " . $e->getMessage() . "\n";
+}
+
 // 3. Tornar justificativa NULLable
 try {
     $pdo->exec("ALTER TABLE fichas_indicacao MODIFY COLUMN justificativa TEXT NULL");

@@ -33,6 +33,26 @@ class Fase1Controller {
             $subordinados = Efetivo::getSubordinadosDiretos((int)$user['efetivo_id'], (int)$pleito['id']);
         }
 
+        // Candidatos disponíveis para avaliação voluntária (excluindo os subordinados diretos para não aparecerem repetidos)
+        $subordinadosIds = array_column($subordinados, 'id');
+        $todosCandidatos = Efetivo::listarCandidatosFase1((int)$pleito['id']);
+        $candidatosVoluntarios = array_values(array_filter($todosCandidatos, function($c) use ($subordinadosIds, $user) {
+            if ((int)$c['id'] === (int)($user['efetivo_id'] ?? 0)) return false;
+            if (in_array((int)$c['id'], $subordinadosIds, true)) return false;
+            return true;
+        }));
+
+        // Fichas voluntárias já preenchidas por este oficial
+        $fichasVoluntarias = [];
+        if (!empty($user['id'])) {
+            $pdo = Database::getConnection();
+            $stmtFv = $pdo->prepare("SELECT candidato_id, id, is_nob, status, media_calculada, updated_at FROM fichas_indicacao WHERE pleito_id = :p AND avaliador_id = :u AND tipo_avaliacao = 'VOLUNTARIA'");
+            $stmtFv->execute([':p' => $pleito['id'], ':u' => $user['id']]);
+            foreach ($stmtFv->fetchAll() as $row) {
+                $fichasVoluntarias[$row['candidato_id']] = $row;
+            }
+        }
+
         // Se for Educação Física, prepara lista de militares para TACF
         $militaresTacf = [];
         if (AuthManager::hasRole([PERFIL_ED_FISICA, PERFIL_ADMIN])) {
@@ -83,15 +103,12 @@ class Fase1Controller {
 
         $isSubordinado = ($candidato['chefe_direto_id'] && (int)$candidato['chefe_direto_id'] === (int)($user['efetivo_id'] ?? 0));
         $isDelegado = Efetivo::isOficialDelegado((int)$pleito['id'], $candidatoId, (int)($user['efetivo_id'] ?? 0));
-
-        if (!$isSubordinado && !$isDelegado && !AuthManager::hasRole(PERFIL_ADMIN)) {
-            header('Content-Type: application/json');
-            echo json_encode(['sucesso' => false, 'mensagem' => 'Você só tem autorização para avaliar os seus próprios subordinados diretos.']);
-            exit;
-        }
+        $tipoAval = ($isSubordinado || $isDelegado) ? 'OBRIGATORIA_CHEFE' : 'VOLUNTARIA';
 
         $ficha = FichaIndicacao::getFicha((int)$pleito['id'], $candidatoId, (int)$user['id']);
         $isMilitar = in_array($candidato['categoria'], ['graduado', 'praca'], true);
+        $fichaStatus = $ficha['status'] ?? 'preenchido';
+        $podeEditar = !($ficha && $fichaStatus === 'concluido' && !AuthManager::hasRole(PERFIL_ADMIN));
 
         header('Content-Type: application/json');
         echo json_encode([
@@ -105,8 +122,11 @@ class Fase1Controller {
                 'is_militar'  => $isMilitar,
                 'foto_url'    => '/index.php?r=foto&saram=' . urlencode((string)$candidato['saram']) . '&id=' . $candidato['id']
             ],
+            'tipo_avaliacao' => $tipoAval,
+            'pode_editar'    => $podeEditar,
             'ficha' => $ficha ? [
                 'is_nob'                     => (int)($ficha['is_nob'] ?? 0),
+                'status'                     => $ficha['status'] ?? 'concluido',
                 'servico_escala'             => (int)($ficha['servico_escala'] ?? 5),
                 'eficiencia_eficacia'        => (int)($ficha['eficiencia_eficacia'] ?? 5),
                 'conhecimento_especialidade' => (int)($ficha['conhecimento_especialidade'] ?? 5),
@@ -147,14 +167,15 @@ class Fase1Controller {
 
         $isSubordinado = ($candidato['chefe_direto_id'] && (int)$candidato['chefe_direto_id'] === (int)($user['efetivo_id'] ?? 0));
         $isDelegado = Efetivo::isOficialDelegado((int)$pleito['id'], $candidatoId, (int)($user['efetivo_id'] ?? 0));
+        $tipoAval = ($isSubordinado || $isDelegado) ? 'OBRIGATORIA_CHEFE' : 'VOLUNTARIA';
 
-        if (!$isSubordinado && !$isDelegado && !AuthManager::hasRole(PERFIL_ADMIN)) {
-            flash_message('erro', 'Acesso negado: Na primeira rodada, você só pode avaliar militares/servidores que sejam seus subordinados diretos.', 'danger');
+        // Bloqueia edição se a ficha já foi concluída e enviada
+        $fichaExistente = FichaIndicacao::getFicha((int)$pleito['id'], $candidatoId, (int)$user['id']);
+        if ($fichaExistente && ($fichaExistente['status'] ?? '') === 'concluido' && !AuthManager::hasRole(PERFIL_ADMIN)) {
+            flash_message('erro', 'Esta ficha de avaliação já foi concluída e enviada, não sendo permitidas novas alterações.', 'warning');
             header('Location: /index.php?r=fase1');
             exit;
         }
-
-        $tipoAval = 'OBRIGATORIA_CHEFE';
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
@@ -173,18 +194,16 @@ class Fase1Controller {
                 $substitutoMsg = $isDelegado ? ' (Avaliação concluída em substituição ao chefe em missão)' : '';
                 $detalhe = ($resultado['is_nob'] ?? false) 
                     ? "registrada como Não Observado (NOB){$substitutoMsg}."
-                    : "registrada com sucesso!{$substitutoMsg} (Média: {$resultado['media']})";
+                    : ((($resultado['status'] ?? '') === 'preenchido')
+                        ? "salva com sucesso! (Status: Preenchido - você pode editá-la antes de enviar)"
+                        : "concluída e enviada com sucesso!{$substitutoMsg} (Média: {$resultado['media']})");
 
                 flash_message('sucesso', "Ficha de {$candidato['posto']} {$candidato['nome_guerra']} {$detalhe}", 'success');
             } else {
                 flash_message('erro', $resultado['mensagem'], 'danger');
             }
-
-            header('Location: /index.php?r=fase1');
-            exit;
         }
 
-        // Caso acesse via GET, redireciona para a listagem da Fase 1 (que agora usa Popup)
         header('Location: /index.php?r=fase1');
         exit;
     }

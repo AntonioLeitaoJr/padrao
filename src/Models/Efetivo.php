@@ -33,7 +33,7 @@ class Efetivo {
         $pdo = Database::getConnection();
         $sql = "
             SELECT e.*, 
-                   f.id as ficha_id, f.is_nob, f.media_calculada, f.updated_at as avaliado_em,
+                   f.id as ficha_id, f.is_nob, f.status as ficha_status, f.media_calculada, f.updated_at as avaliado_em,
                    t.nota_tacf,
                    del.id as delegacao_id, del.oficial_delegado_id, del.motivo as delegacao_motivo,
                    del_of.posto as delegado_posto, del_of.nome_guerra as delegado_guerra,
@@ -206,7 +206,7 @@ class Efetivo {
             WHERE i.pleito_id = :p 
               AND i.categoria = :cat
               AND i.status_validacao_superior = 'VALIDADO'
-            ORDER BY e.posto, e.nome_guerra
+            ORDER BY e.nome_guerra ASC, e.posto ASC, e.nome ASC
         ";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([':p' => $pleitoId, ':cat' => $categoria]);
