@@ -108,7 +108,7 @@ class Fase1Controller {
         $ficha = FichaIndicacao::getFicha((int)$pleito['id'], $candidatoId, (int)$user['id']);
         $isMilitar = in_array($candidato['categoria'], ['graduado', 'praca'], true);
         $fichaStatus = $ficha['status'] ?? 'preenchido';
-        $podeEditar = !($ficha && $fichaStatus === 'concluido' && !AuthManager::hasRole(PERFIL_ADMIN));
+        $podeEditar = true; // Na Fase 1 o avaliador pode atualizar as fichas dos seus subordinados
 
         header('Content-Type: application/json');
         echo json_encode([
@@ -168,14 +168,6 @@ class Fase1Controller {
         $isSubordinado = ($candidato['chefe_direto_id'] && (int)$candidato['chefe_direto_id'] === (int)($user['efetivo_id'] ?? 0));
         $isDelegado = Efetivo::isOficialDelegado((int)$pleito['id'], $candidatoId, (int)($user['efetivo_id'] ?? 0));
         $tipoAval = ($isSubordinado || $isDelegado) ? 'OBRIGATORIA_CHEFE' : 'VOLUNTARIA';
-
-        // Bloqueia edição se a ficha já foi concluída e enviada
-        $fichaExistente = FichaIndicacao::getFicha((int)$pleito['id'], $candidatoId, (int)$user['id']);
-        if ($fichaExistente && ($fichaExistente['status'] ?? '') === 'concluido' && !AuthManager::hasRole(PERFIL_ADMIN)) {
-            flash_message('erro', 'Esta ficha de avaliação já foi concluída e enviada, não sendo permitidas novas alterações.', 'warning');
-            header('Location: /index.php?r=fase1');
-            exit;
-        }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {

@@ -170,10 +170,74 @@ class Efetivo {
     }
 
     /**
+     * Retorna o militar ativo mais antigo de todas as assessorias reunidas
+     * (AINT, ACI, AGOV, APOG, SCS, AJUR, SIJ) para atuar como representante único na Fase 2.
+     */
+    public static function getMilitarMaisAntigoAssessorias(): ?array {
+        $pdo = Database::getConnection();
+        $assessorias = SIGLAS_ASSESSORIAS;
+        $in = "'" . implode("','", $assessorias) . "'";
+        $sql = "
+            SELECT e.* 
+            FROM efetivo e
+            WHERE e.ativo = 1 AND e.divisao_sigla IN ($in)
+            ORDER BY 
+                CASE e.posto
+                    WHEN 'Ten-Brig' THEN 1
+                    WHEN 'Maj-Brig' THEN 2
+                    WHEN 'Brig' THEN 3
+                    WHEN 'Cel' THEN 4
+                    WHEN 'Ten Cel' THEN 5
+                    WHEN 'Maj' THEN 6
+                    WHEN 'Cap' THEN 7
+                    WHEN '1º Ten' THEN 8
+                    WHEN '1° Ten' THEN 8
+                    WHEN '1S Ten' THEN 8
+                    WHEN '1 Ten' THEN 8
+                    WHEN '2º Ten' THEN 9
+                    WHEN '2° Ten' THEN 9
+                    WHEN '2S Ten' THEN 9
+                    WHEN '2 Ten' THEN 9
+                    WHEN 'Asp' THEN 10
+                    WHEN 'SO' THEN 11
+                    WHEN '1S' THEN 12
+                    WHEN '2S' THEN 13
+                    WHEN '3S' THEN 14
+                    WHEN 'CB' THEN 15
+                    WHEN 'Cb' THEN 15
+                    WHEN 'S1' THEN 16
+                    WHEN 'S2' THEN 17
+                    ELSE 99
+                END,
+                e.data_admissao_comara ASC,
+                e.id ASC
+            LIMIT 1
+        ";
+        $res = $pdo->query($sql)->fetch(PDO::FETCH_ASSOC);
+        return $res ?: null;
+    }
+
+    /**
      * Lista candidatos com suas médias para a Fase 2 (Seleção pelos Chefes de Divisão e Assessoria)
+     * Regra regimental atualizada:
+     * 1. Filtra candidatos da respectiva divisão ou das assessorias unificadas.
+     * 2. Exibe apenas os 20% das melhores notas da Fase 1.
+     * 3. Exibe a listagem final em ordem alfabética por nome de guerra.
      */
     public static function listarParaSelecaoFase2(int $pleitoId, string $categoria, string $orgaoSigla): array {
         $pdo = Database::getConnection();
+        
+        $whereOrgao = "";
+        $params = [':p' => $pleitoId, ':cat' => $categoria, ':orgao' => $orgaoSigla];
+
+        if ($orgaoSigla === 'ASSESSORIAS') {
+            $inAss = "'" . implode("','", SIGLAS_ASSESSORIAS) . "'";
+            $whereOrgao = " AND e.divisao_sigla IN ($inAss)";
+        } else {
+            $whereOrgao = " AND e.divisao_sigla = :orgao_filtro";
+            $params[':orgao_filtro'] = $orgaoSigla;
+        }
+
         $sql = "
             SELECT e.*, 
                    MAX(t.nota_tacf) as nota_tacf,
@@ -185,13 +249,95 @@ class Efetivo {
             LEFT JOIN avaliacoes_tacf t ON t.candidato_id = e.id AND t.pleito_id = :p
             LEFT JOIN fichas_indicacao f ON f.candidato_id = e.id AND f.pleito_id = :p
             LEFT JOIN selecao_fase2 s ON s.candidato_id = e.id AND s.pleito_id = :p AND s.orgao_sigla = :orgao
-            WHERE e.ativo = 1 AND e.categoria = :cat
+            WHERE e.ativo = 1 AND e.categoria = :cat {$whereOrgao}
             GROUP BY e.id
-            ORDER BY media_fase1 DESC, nota_tacf DESC, e.nome
+            ORDER BY media_fase1 DESC, nota_tacf DESC, e.indicacoes_anteriores_qtd ASC, e.nome_guerra ASC
         ";
+
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([':p' => $pleitoId, ':cat' => $categoria, ':orgao' => $orgaoSigla]);
-        return $stmt->fetchAll();
+        $stmt->execute($params);
+        $todos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (empty($todos)) {
+            return [];
+        }
+
+        // Filtra candidatos avaliados com nota válida (não NOB e média > 0)
+        $avaliadosComNota = array_values(array_filter($todos, function($c) {
+            return (float)$c['media_fase1'] > 0 && (int)$c['foi_nob'] === 0;
+        }));
+
+        $candidatosFinais = [];
+        if (!empty($avaliadosComNota)) {
+            // Regra dos 20% das melhores notas da fase anterior (mínimo de 1 candidato)
+            $qtdTop20 = max(1, (int)ceil(count($avaliadosComNota) * 0.20));
+            $candidatosFinais = array_slice($avaliadosComNota, 0, $qtdTop20);
+        } else {
+            // Caso nenhum candidato do órgão tenha sido avaliado ainda, lista os disponíveis
+            $candidatosFinais = $todos;
+        }
+
+        // Exibe a lista final em ordem alfabética por Nome de Guerra
+        usort($candidatosFinais, function($a, $b) {
+            $cmp = strcasecmp((string)$a['nome_guerra'], (string)$b['nome_guerra']);
+            if ($cmp === 0) {
+                return strcasecmp((string)$a['nome'], (string)$b['nome']);
+            }
+            return $cmp;
+        });
+
+        return $candidatosFinais;
+    }
+
+    /**
+     * Retorna o resumo completo da ficha do candidato para o popup da Fase 4 (Estado-Maior)
+     */
+    public static function getResumoFichaCandidato(int $pleitoId, int $candidatoId): ?array {
+        $candidato = self::getPorId($candidatoId);
+        if (!$candidato) {
+            return null;
+        }
+
+        $pdo = Database::getConnection();
+
+        // Busca a ficha de indicação da Fase 1 (preferencialmente a obrigatória do chefe, ou a mais recente)
+        $stmtF = $pdo->prepare("
+            SELECT f.*, 
+                   u.login as avaliador_login,
+                   COALESCE(av_ef.nome_guerra, u.login) as avaliador_guerra,
+                   av_ef.posto as avaliador_posto
+            FROM fichas_indicacao f
+            LEFT JOIN usuarios u ON u.id = f.avaliador_id
+            LEFT JOIN efetivo av_ef ON av_ef.id = u.efetivo_id
+            WHERE f.pleito_id = :p AND f.candidato_id = :c
+            ORDER BY FIELD(f.tipo_avaliacao, 'OBRIGATORIA_CHEFE', 'VOLUNTARIA'), f.updated_at DESC
+            LIMIT 1
+        ");
+        $stmtF->execute([':p' => $pleitoId, ':c' => $candidatoId]);
+        $ficha = $stmtF->fetch(PDO::FETCH_ASSOC) ?: null;
+
+        // TACF
+        $stmtT = $pdo->prepare("SELECT * FROM avaliacoes_tacf WHERE pleito_id = :p AND candidato_id = :c LIMIT 1");
+        $stmtT->execute([':p' => $pleitoId, ':c' => $candidatoId]);
+        $tacf = $stmtT->fetch(PDO::FETCH_ASSOC) ?: null;
+
+        // Status na consolidação / validação da Fase 4
+        $stmtC = $pdo->prepare("
+            SELECT status_validacao_superior, justificativa_exclusao, total_indicacoes_orgaos, media_fase1
+            FROM indicados_consolidados 
+            WHERE pleito_id = :p AND candidato_id = :c 
+            LIMIT 1
+        ");
+        $stmtC->execute([':p' => $pleitoId, ':c' => $candidatoId]);
+        $consolidado = $stmtC->fetch(PDO::FETCH_ASSOC) ?: null;
+
+        return [
+            'candidato'   => $candidato,
+            'ficha'       => $ficha,
+            'tacf'        => $tacf,
+            'consolidado' => $consolidado,
+            'foto_url'    => '/index.php?r=foto&saram=' . urlencode((string)$candidato['saram']) . '&id=' . $candidato['id']
+        ];
     }
 
     /**

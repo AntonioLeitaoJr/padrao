@@ -48,7 +48,7 @@ const CATEGORIAS_PADRAO = [
 define('FASE_1', 1); // Avaliação pelos Chefes Diretos
 define('FASE_2', 2); // Seleção pelos Chefes de Divisão e Assessoria (Exatamente 6 por categoria)
 define('FASE_3', 3); // Votação Geral do Efetivo
-define('FASE_4', 4); // Validação pela Direção Superior
+define('FASE_4', 4); // Estado-Maior (Apreciação por Oficiais Superiores)
 define('FASE_5', 5); // Homologação dos Resultados e Voto de Minerva
 
 const FASES_PROCESSO = [
@@ -60,7 +60,7 @@ const FASES_PROCESSO = [
     FASE_2 => [
         'numero'    => 2,
         'nome'      => 'Seleção por Divisões e Assessorias',
-        'descricao' => 'Seleção de exatamente 6 candidatos por categoria pelos chefes autorizados de Divisão e Assessoria.'
+        'descricao' => 'Seleção de 1 candidato por categoria por cada Divisão e pelas Assessorias unificadas (total de 6 indicados por categoria para a Fase 3).'
     ],
     FASE_3 => [
         'numero'    => 3,
@@ -69,8 +69,8 @@ const FASES_PROCESSO = [
     ],
     FASE_4 => [
         'numero'    => 4,
-        'nome'      => 'Validação pela Direção Superior',
-        'descricao' => 'Análise de condições regimentais pelo Sr. Presidente e Oficiais Superiores com justificativa de exclusão.'
+        'nome'      => 'Estado-Maior',
+        'descricao' => 'Apreciação pelos Oficiais Superiores da COMARA (Majores, Tenentes-Coronéis e Coronéis) com consulta detalhada da ficha de indicação.'
     ],
     FASE_5 => [
         'numero'    => 5,
@@ -84,7 +84,7 @@ define('PERFIL_ADMIN',              'ADMIN');
 define('PERFIL_RH',                 'RH');               // Recursos Humanos: Gestão exclusiva de cadastro de usuários
 define('PERFIL_PRESIDENTE',         'PRESIDENTE');
 define('PERFIL_DIRECAO_SUPERIOR',   'DIRECAO_SUPERIOR'); // Cel, Ten Cel, Maj
-define('PERFIL_CHEFE_DIV_ASSESS',   'CHEFE_DIV_ASSESS'); // Chefes DPC, DA, DL, DE, DS, AINT, etc.
+define('PERFIL_CHEFE_DIV_ASSESS',   'CHEFE_DIV_ASSESS'); // Chefes DPC, DA, DL, DE, DS e Representação das Assessorias
 define('PERFIL_CHEFE_DIRETO',       'CHEFE_DIRETO');     // Oficiais avaliadores de seus subordinados
 define('PERFIL_ED_FISICA',          'ED_FISICA');        // Seção de Educação Física / DAEF
 define('PERFIL_ELEITOR',            'ELEITOR');          // Todo o efetivo
@@ -97,6 +97,13 @@ const POSTOS_OFICIAIS = [
     '2º Ten', '2° Ten', '2S Ten', '2 Ten'
 ];
 
+// Postos que integram o Estado-Maior na Fase 4 (Majores, Tenentes-Coronéis e Coronéis)
+const POSTOS_ESTADO_MAIOR = [
+    'Cel',
+    'Ten Cel',
+    'Maj'
+];
+
 // Postos habilitados exclusivamente para avaliação na Fase 1 (Tenentes e Capitães)
 const POSTOS_AVALIADORES_FASE1 = [
     'Cap',
@@ -105,7 +112,11 @@ const POSTOS_AVALIADORES_FASE1 = [
     'Ten'
 ];
 
+// Siglas das Assessorias da COMARA que compõem a representação unificada
+const SIGLAS_ASSESSORIAS = ['AINT', 'ACI', 'AGOV', 'APOG', 'SCS', 'AJUR', 'SIJ'];
+
 // Divisões e Assessorias com prerrogativa de seleção na Fase 2
+// 5 Divisões + 1 Representação Unificada das Assessorias = 6 Selecionadores
 const ORGAOS_SELECAO_FASE2 = [
     'DIVISOES' => [
         'DPC' => 'Divisão de Planejamento e Coordenação',
@@ -115,15 +126,9 @@ const ORGAOS_SELECAO_FASE2 = [
         'DS'  => 'Divisão de Suprimento'
     ],
     'ASSESSORIAS' => [
-        'AINT' => 'Assessoria de Inteligência',
-        'ACI'  => 'Assessoria de Controle Interno',
-        'AGOV' => 'Assessoria de Governança',
-        'APOG' => 'Assessoria de Planejamento e Orçamento de Gestão',
-        'SCS'  => 'Seção de Comunicação Social',
-        'AJUR' => 'Assessoria Jurídica',
-        'SIJ'  => 'Seção de Investigação e Justiça'
+        'ASSESSORIAS' => 'Representação Unificada das Assessorias'
     ]
 ];
 
-// Quantidade exata de candidatos por categoria que cada chefe de divisão/assessoria DEVE escolher na Fase 2
-define('QTD_SELECAO_FASE2', 6);
+// Quantidade exata de candidatos por categoria que cada órgão DEVE escolher na Fase 2 (1 de cada divisão + 1 de todas as assessorias = 6 para a Fase 3)
+define('QTD_SELECAO_FASE2', 1);

@@ -78,9 +78,12 @@ switch ($rota) {
         (new Fase3Controller())->comprovante();
         break;
 
-    // Fase 4: Validação pela Direção Superior
+    // Fase 4: Estado-Maior (Oficiais Superiores: Majores, Tenentes-Coronéis e Coronéis)
     case 'fase4':
         (new Fase4Controller())->index();
+        break;
+    case 'fase4/resumo_ficha':
+        (new Fase4Controller())->resumoFicha();
         break;
     case 'fase4/excluir':
         (new Fase4Controller())->excluir();

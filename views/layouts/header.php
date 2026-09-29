@@ -69,7 +69,7 @@ $rotaAtual = $_GET['r'] ?? 'dashboard';
                         </li>
                     <?php endif; ?>
 
-                    <?php if (AuthManager::hasRole([PERFIL_CHEFE_DIV_ASSESS, PERFIL_ADMIN, PERFIL_PRESIDENTE])): ?>
+                    <?php if (AuthManager::hasRole([PERFIL_CHEFE_DIV_ASSESS, PERFIL_ADMIN, PERFIL_PRESIDENTE]) || AuthManager::isChefeOuRepresentanteFase2()): ?>
                         <li class="nav-item">
                             <a class="nav-link <?= (str_starts_with($rotaAtual, 'fase2')) ? 'active' : '' ?>" href="/index.php?r=fase2">
                                 <i class="bi bi-diagram-3 me-1"></i> Fase 2: Divisões & Assessorias
@@ -83,10 +83,10 @@ $rotaAtual = $_GET['r'] ?? 'dashboard';
                         </a>
                     </li>
 
-                    <?php if (AuthManager::hasRole([PERFIL_DIRECAO_SUPERIOR, PERFIL_PRESIDENTE, PERFIL_ADMIN])): ?>
+                    <?php if (AuthManager::isEstadoMaior()): ?>
                         <li class="nav-item">
                             <a class="nav-link <?= (str_starts_with($rotaAtual, 'fase4')) ? 'active' : '' ?>" href="/index.php?r=fase4">
-                                <i class="bi bi-shield-check me-1"></i> Fase 4: Direção Superior
+                                <i class="bi bi-shield-shaded me-1"></i> Fase 4: Estado-Maior
                             </a>
                         </li>
                     <?php endif; ?>

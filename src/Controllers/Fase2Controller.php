@@ -12,7 +12,12 @@ class Fase2Controller {
 
     public function index(): void {
         AuthMiddleware::handle();
-        RoleMiddleware::handle([PERFIL_CHEFE_DIV_ASSESS, PERFIL_ADMIN, PERFIL_PRESIDENTE]);
+
+        if (!AuthManager::isChefeOuRepresentanteFase2()) {
+            flash_message('erro', 'Acesso negado: A Fase 2 é restrita aos Chefes de Divisão e ao Representante Unificado das Assessorias.', 'danger');
+            header('Location: /index.php?r=dashboard');
+            exit;
+        }
 
         $user = AuthManager::user();
         $pleito = Pleito::getAtivo();
@@ -24,10 +29,25 @@ class Fase2Controller {
         }
 
         // Determina o órgão do chefe ou permite admin selecionar o órgão a visualizar
+        $orgaosValidos = array_merge(array_keys(ORGAOS_SELECAO_FASE2['DIVISOES']), array_keys(ORGAOS_SELECAO_FASE2['ASSESSORIAS']));
+
         if (AuthManager::hasRole(PERFIL_ADMIN)) {
-            $orgaoSigla = $_POST['orgao'] ?? ($_GET['orgao'] ?? ($user['orgao_chefe_sigla'] ?? 'DPC'));
+            $orgaoSigla = $_POST['orgao'] ?? ($_GET['orgao'] ?? 'DPC');
         } else {
-            $orgaoSigla = $user['orgao_chefe_sigla'] ?? ($_GET['orgao'] ?? 'DPC');
+            // Verifica se é de alguma das assessorias ou representante das assessorias
+            $maisAntigoAss = Efetivo::getMilitarMaisAntigoAssessorias();
+            $userDiv = (string)($user['divisao_sigla'] ?? ($user['orgao_chefe_sigla'] ?? ''));
+            $isAss = in_array($userDiv, SIGLAS_ASSESSORIAS, true) || ($maisAntigoAss && (int)$maisAntigoAss['id'] === (int)($user['efetivo_id'] ?? 0));
+
+            if ($isAss) {
+                $orgaoSigla = 'ASSESSORIAS';
+            } else {
+                $orgaoSigla = $user['orgao_chefe_sigla'] ?? ($user['divisao_sigla'] ?? 'DPC');
+            }
+        }
+
+        if (!in_array($orgaoSigla, $orgaosValidos, true)) {
+            $orgaoSigla = 'DPC';
         }
 
         // Carrega candidatos de cada uma das 4 categorias com suas médias da Fase 1

@@ -150,14 +150,14 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                                                     <i class="bi bi-pencil-square me-1"></i> Preencher Ficha
                                                 </button>
                                             <?php elseif (($sub['ficha_status'] ?? '') === 'preenchido'): ?>
-                                                <button type="button" class="btn btn-sm btn-outline-primary fw-bold"
+                                                <button type="button" class="btn btn-sm btn-info text-white fw-bold"
                                                         onclick="abrirModalAvaliacao(<?= $sub['id'] ?>, false)">
-                                                    <i class="bi bi-pencil-square me-1"></i> Editar Ficha
+                                                    <i class="bi bi-pencil me-1"></i> Editar Ficha (Rascunho)
                                                 </button>
                                             <?php else: ?>
-                                                <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                        onclick="abrirModalAvaliacao(<?= $sub['id'] ?>, true)">
-                                                    <i class="bi bi-eye me-1"></i> Ver Ficha
+                                                <button type="button" class="btn btn-sm btn-outline-primary fw-bold"
+                                                        onclick="abrirModalAvaliacao(<?= $sub['id'] ?>, false)">
+                                                    <i class="bi bi-pencil-square me-1"></i> Editar / Revisar
                                                 </button>
                                             <?php endif; ?>
                                         </td>
@@ -545,14 +545,6 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                     <!-- Conteúdo da Avaliação -->
                     <div id="modal_conteudo" style="display: none;">
 
-                        <!-- BANNER INFORMATIVO PARA FICHA CONCLUÍDA (SOMENTE LEITURA) -->
-                        <div id="modal_banner_concluido" class="alert alert-secondary py-2 px-3 small d-flex align-items-center mb-3" style="display: none;">
-                            <i class="bi bi-lock-fill me-2 fs-5 text-secondary"></i>
-                            <div>
-                                <strong>Ficha Concluída e Enviada:</strong> Esta ficha já foi finalizada pelo avaliador. A edição das notas está bloqueada.
-                            </div>
-                        </div>
-                        
                         <!-- PARTE 1. DADOS DO AVALIADO (Apenas Foto, Posto/Nome de Guerra e Setor de Trabalho) -->
                         <div class="card border mb-3 shadow-sm">
                             <div class="card-body p-3 bg-white rounded">
@@ -582,7 +574,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                                 <option value="1" class="text-danger">Não Observado (NOB) — Militar recém-chegado, afastado ou sem observação direta</option>
                             </select>
                             <div class="form-text text-muted small mt-1">
-                                <i class="bi bi-info-circle me-1"></i> Ao selecionar <strong>Não Observado (NOB)</strong>, todos os campos de notas são bloqueados e a ficha é salva e concluída imediatamente.
+                                <i class="bi bi-info-circle me-1"></i> Ao selecionar <strong>Não Observado (NOB)</strong>, os campos de notas são desabilitados. Clique em Salvar Ficha ou Salvar e Enviar Ficha para registrar.
                             </div>
                         </div>
 
@@ -815,24 +807,14 @@ function abrirModalAvaliacao(candidatoId, apenasVisualizacao = false) {
                 document.getElementById('modal_conduta_fichas').value = '';
             }
 
-            // Alterna layout visual para Modo Visualização (bloqueado) vs Edição
-            const bannerConcluido = document.getElementById('modal_banner_concluido');
+            // Modo Edição sempre ativo para o avaliador
             const rodapeEdicao = document.getElementById('modal_rodape_edicao');
             const rodapeVisualizacao = document.getElementById('modal_rodape_visualizacao');
+            if (rodapeEdicao) rodapeEdicao.style.display = 'flex';
+            if (rodapeVisualizacao) rodapeVisualizacao.style.display = 'none';
 
-            if (isConcluido) {
-                bannerConcluido.style.display = 'flex';
-                rodapeEdicao.style.display = 'none';
-                rodapeVisualizacao.style.display = 'flex';
-                selectNob.disabled = true;
-                bloquearCamposAvaliacao(true, true);
-            } else {
-                bannerConcluido.style.display = 'none';
-                rodapeEdicao.style.display = 'flex';
-                rodapeVisualizacao.style.display = 'none';
-                selectNob.disabled = false;
-                bloquearCamposAvaliacao(selectNob.value === "1", false);
-            }
+            selectNob.disabled = false;
+            bloquearCamposAvaliacao(selectNob.value === "1", false);
 
             modalLoading.style.display = 'none';
             modalConteudo.style.display = 'block';
@@ -872,8 +854,12 @@ function bloquearCamposAvaliacao(bloquear, modoVisualizacao = false) {
 
 function submeterFicha(status) {
     document.getElementById('modal_status').value = status;
+    const isNob = document.getElementById('modal_is_nob').value === "1";
     if (status === 'concluido') {
-        if (!confirm("Confirma o envio definitivo da ficha de avaliação?\n\nApós o envio, a ficha será marcada como CONCLUÍDA e sua edição será BLOQUEADA.")) {
+        const msg = isNob 
+            ? "Confirma o registro deste integrante como NÃO OBSERVADO (NOB) e o envio da ficha?"
+            : "Confirma o envio e conclusão da ficha de avaliação?";
+        if (!confirm(msg)) {
             return;
         }
     }
@@ -882,14 +868,7 @@ function submeterFicha(status) {
 
 function tratarSelecaoNob(valor) {
     if (valor === "1") {
-        if (confirm("Confirma o registro deste integrante como NÃO OBSERVADO (NOB)?\n\nTodos os campos de notas serão bloqueados e a ficha será salva e concluída agora.")) {
-            document.getElementById('modal_status').value = 'concluido';
-            bloquearCamposAvaliacao(true);
-            document.getElementById('formAvaliacaoModal').submit();
-        } else {
-            document.getElementById('modal_is_nob').value = "0";
-            bloquearCamposAvaliacao(false);
-        }
+        bloquearCamposAvaliacao(true);
     } else {
         bloquearCamposAvaliacao(false);
     }

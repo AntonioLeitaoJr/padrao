@@ -3,15 +3,20 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../Middleware/AuthMiddleware.php';
-require_once __DIR__ . '/../Middleware/RoleMiddleware.php';
 require_once __DIR__ . '/../Models/Pleito.php';
+require_once __DIR__ . '/../Models/Efetivo.php';
 require_once __DIR__ . '/../Models/ValidacaoSuperior.php';
 
 class Fase4Controller {
 
     public function index(): void {
         AuthMiddleware::handle();
-        RoleMiddleware::handle([PERFIL_DIRECAO_SUPERIOR, PERFIL_PRESIDENTE, PERFIL_ADMIN]);
+
+        if (!AuthManager::isEstadoMaior()) {
+            flash_message('erro', 'Acesso negado: A Fase 4 (Estado-Maior) é exclusiva para Oficiais Superiores (Majores, Tenentes-Coronéis e Coronéis).', 'danger');
+            header('Location: /index.php?r=dashboard');
+            exit;
+        }
 
         $user = AuthManager::user();
         $pleito = Pleito::getAtivo();
@@ -41,9 +46,47 @@ class Fase4Controller {
         require_once ROOT_PATH . '/views/fase4/index.php';
     }
 
+    /**
+     * Retorna os dados detalhados da ficha de indicação e TACF do candidato para o popup da Fase 4
+     */
+    public function resumoFicha(): void {
+        AuthMiddleware::handle();
+
+        if (!AuthManager::isEstadoMaior()) {
+            header('Content-Type: application/json');
+            echo json_encode(['sucesso' => false, 'mensagem' => 'Acesso negado: Exclusivo para integrantes do Estado-Maior.']);
+            exit;
+        }
+
+        $pleito = Pleito::getAtivo();
+        $candidatoId = (int)($_GET['id'] ?? 0);
+
+        if (!$pleito || $candidatoId <= 0) {
+            header('Content-Type: application/json');
+            echo json_encode(['sucesso' => false, 'mensagem' => 'Parâmetros inválidos.']);
+            exit;
+        }
+
+        $resumo = Efetivo::getResumoFichaCandidato((int)$pleito['id'], $candidatoId);
+
+        header('Content-Type: application/json');
+        if (!$resumo) {
+            echo json_encode(['sucesso' => false, 'mensagem' => 'Ficha ou candidato não localizado.']);
+            exit;
+        }
+
+        echo json_encode(['sucesso' => true, 'dados' => $resumo]);
+        exit;
+    }
+
     public function excluir(): void {
         AuthMiddleware::handle();
-        RoleMiddleware::handle([PERFIL_DIRECAO_SUPERIOR, PERFIL_PRESIDENTE, PERFIL_ADMIN]);
+
+        if (!AuthManager::isEstadoMaior()) {
+            flash_message('erro', 'Acesso negado.', 'danger');
+            header('Location: /index.php?r=dashboard');
+            exit;
+        }
 
         $user = AuthManager::user();
         $pleito = Pleito::getAtivo();
@@ -78,7 +121,12 @@ class Fase4Controller {
 
     public function reverter(): void {
         AuthMiddleware::handle();
-        RoleMiddleware::handle([PERFIL_DIRECAO_SUPERIOR, PERFIL_PRESIDENTE, PERFIL_ADMIN]);
+
+        if (!AuthManager::isEstadoMaior()) {
+            flash_message('erro', 'Acesso negado.', 'danger');
+            header('Location: /index.php?r=dashboard');
+            exit;
+        }
 
         $user = AuthManager::user();
         $pleito = Pleito::getAtivo();

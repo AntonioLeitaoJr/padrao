@@ -96,6 +96,64 @@ class AuthManager {
         return in_array($posto, POSTOS_AVALIADORES_FASE1, true);
     }
 
+    /**
+     * Verifica se o usuário autenticado integra o Estado-Maior (Majores, Tenentes-Coronéis e Coronéis)
+     * com prerrogativa de consulta das fichas e validação na Fase 4.
+     */
+    public static function isEstadoMaior(?array $user = null): bool {
+        if ($user === null) {
+            if (!self::check()) {
+                return false;
+            }
+            $user = self::user();
+        }
+
+        if (!$user) {
+            return false;
+        }
+
+        if (in_array(($user['perfil'] ?? ''), [PERFIL_ADMIN, PERFIL_PRESIDENTE, PERFIL_DIRECAO_SUPERIOR], true)) {
+            return true;
+        }
+
+        $posto = trim((string)($user['posto'] ?? ''));
+        return in_array($posto, POSTOS_ESTADO_MAIOR, true);
+    }
+
+    /**
+     * Verifica se o usuário autenticado pode atuar como selecionador na Fase 2
+     * (Chefe de Divisão ou Representante Unificado das Assessorias).
+     */
+    public static function isChefeOuRepresentanteFase2(?array $user = null): bool {
+        if ($user === null) {
+            if (!self::check()) {
+                return false;
+            }
+            $user = self::user();
+        }
+
+        if (!$user) {
+            return false;
+        }
+
+        if (in_array(($user['perfil'] ?? ''), [PERFIL_ADMIN, PERFIL_PRESIDENTE, PERFIL_CHEFE_DIV_ASSESS], true)) {
+            return true;
+        }
+
+        if (!empty($user['orgao_chefe_sigla'])) {
+            return true;
+        }
+
+        // Verifica se é o militar mais antigo das assessorias reunidas
+        require_once ROOT_PATH . '/src/Models/Efetivo.php';
+        $maisAntigo = Efetivo::getMilitarMaisAntigoAssessorias();
+        if ($maisAntigo && (int)$maisAntigo['id'] === (int)($user['efetivo_id'] ?? 0)) {
+            return true;
+        }
+
+        return false;
+    }
+
     public static function login(string $username, string $password): array {
         $username = trim($username);
         if ($username === '' || $password === '') {

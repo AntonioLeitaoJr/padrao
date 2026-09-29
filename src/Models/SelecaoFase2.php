@@ -26,7 +26,8 @@ class SelecaoFase2 {
     }
 
     /**
-     * Salva as seleções do chefe de divisão/assessoria com validação de 6 candidatos por categoria
+     * Salva as seleções do chefe de divisão ou representante das assessorias
+     * Regra: Exatamente 1 candidato por categoria onde houver candidatos disponíveis
      */
     public static function salvarSelecao(
         int $pleitoId,
@@ -34,20 +35,29 @@ class SelecaoFase2 {
         int $chefeUsuarioId,
         array $selecoesPorCategoria
     ): array {
+        require_once ROOT_PATH . '/src/Models/Efetivo.php';
         $categorias = [CAT_GRADUADO, CAT_PRACA, CAT_SPPF, CAT_SPTF];
+        $totalIndicados = 0;
 
-        // Validação rigorosa: exatamente 6 por categoria
+        // Validação: exatamente 1 por categoria onde houver candidatos
         foreach ($categorias as $cat) {
             $selecionados = $selecoesPorCategoria[$cat] ?? [];
+            if (!is_array($selecionados)) {
+                $selecionados = !empty($selecionados) ? [$selecionados] : [];
+            }
             $selecionados = array_unique(array_filter(array_map('intval', (array)$selecionados)));
 
-            if (count($selecionados) !== QTD_SELECAO_FASE2) {
-                $nomeCat = CATEGORIAS_PADRAO[$cat]['nome'];
-                $qtd = count($selecionados);
-                return [
-                    'sucesso' => false,
-                    'mensagem' => "Regra regimental violada: É obrigatório selecionar exatamente 6 candidatos na categoria '{$nomeCat}'. Atualmente você selecionou {$qtd}."
-                ];
+            $disponiveis = Efetivo::listarParaSelecaoFase2($pleitoId, $cat, $orgaoSigla);
+            if (!empty($disponiveis)) {
+                if (count($selecionados) !== QTD_SELECAO_FASE2) {
+                    $nomeCat = CATEGORIAS_PADRAO[$cat]['nome'];
+                    $qtd = count($selecionados);
+                    return [
+                        'sucesso' => false,
+                        'mensagem' => "Regra regimental: É obrigatório selecionar exatamente 1 candidato na categoria '{$nomeCat}'. Atualmente você selecionou {$qtd}."
+                    ];
+                }
+                $totalIndicados += count($selecionados);
             }
         }
 
@@ -65,7 +75,12 @@ class SelecaoFase2 {
             ');
 
             foreach ($categorias as $cat) {
-                $selecionados = array_unique(array_filter(array_map('intval', (array)$selecoesPorCategoria[$cat])));
+                $selecionados = $selecoesPorCategoria[$cat] ?? [];
+                if (!is_array($selecionados)) {
+                    $selecionados = !empty($selecionados) ? [$selecionados] : [];
+                }
+                $selecionados = array_unique(array_filter(array_map('intval', (array)$selecionados)));
+
                 foreach ($selecionados as $candId) {
                     $stmtIns->execute([
                         ':pleito' => $pleitoId,
@@ -80,14 +95,15 @@ class SelecaoFase2 {
             $pdo->commit();
 
             AuditoriaService::log('SELECAO_FASE2_CONCLUIDA', [
-                'pleito_id'   => $pleitoId,
-                'orgao_sigla' => $orgaoSigla,
-                'total_indicados' => count($categorias) * QTD_SELECAO_FASE2
+                'pleito_id'       => $pleitoId,
+                'orgao_sigla'     => $orgaoSigla,
+                'total_indicados' => $totalIndicados
             ], $chefeUsuarioId);
 
+            $nomeOrgao = ($orgaoSigla === 'ASSESSORIAS') ? 'Assessorias Unificadas' : "Divisão {$orgaoSigla}";
             return [
-                'sucesso' => true,
-                'mensagem' => "Seleção oficial do órgão {$orgaoSigla} registrada com sucesso (6 indicados em cada uma das 4 categorias)."
+                'sucesso'  => true,
+                'mensagem' => "Seleção oficial da {$nomeOrgao} registrada com sucesso (1 indicado por categoria)."
             ];
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) {
@@ -98,7 +114,7 @@ class SelecaoFase2 {
     }
 
     /**
-     * Retorna o status de preenchimento da Fase 2 para todos os órgãos autorizados
+     * Retorna o status de preenchimento da Fase 2 para os 6 órgãos autorizados (5 Divisões + Assessorias)
      */
     public static function relatorioProgressoOrgaos(int $pleitoId): array {
         $pdo = Database::getConnection();
@@ -119,12 +135,10 @@ class SelecaoFase2 {
             $stmt->execute([':p' => $pleitoId, ':sigla' => $sigla]);
             $contagens = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
 
-            $concluido = (
-                ($contagens[CAT_GRADUADO] ?? 0) === QTD_SELECAO_FASE2 &&
-                ($contagens[CAT_PRACA] ?? 0)    === QTD_SELECAO_FASE2 &&
-                ($contagens[CAT_SPPF] ?? 0)     === QTD_SELECAO_FASE2 &&
-                ($contagens[CAT_SPTF] ?? 0)     === QTD_SELECAO_FASE2
-            );
+            // Considera concluído se selecionou pelo menos 1 nas categorias militares principais
+            $gradQtd  = $contagens[CAT_GRADUADO] ?? 0;
+            $pracaQtd = $contagens[CAT_PRACA] ?? 0;
+            $concluido = ($gradQtd >= 1 && $pracaQtd >= 1);
 
             $relatorio[$sigla] = [
                 'nome'       => $nome,
