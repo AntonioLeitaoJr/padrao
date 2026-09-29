@@ -309,7 +309,7 @@ class AdminController {
      */
     public function efetivo(): void {
         AuthMiddleware::handle();
-        RoleMiddleware::handle(PERFIL_ADMIN);
+        RoleMiddleware::handle([PERFIL_ADMIN, PERFIL_RH]);
 
         $categoria = $_GET['cat'] ?? 'todas';
         $divisao = $_GET['div'] ?? 'todas';
@@ -349,7 +349,7 @@ class AdminController {
      */
     public function salvarEfetivo(): void {
         AuthMiddleware::handle();
-        RoleMiddleware::handle(PERFIL_ADMIN);
+        RoleMiddleware::handle([PERFIL_ADMIN, PERFIL_RH]);
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
@@ -377,18 +377,38 @@ class AdminController {
 
             $salvoId = Efetivo::salvarOuAtualizar($_POST, $fotoCustom);
 
-            // Atualiza papel de Administrador se informado
-            if (isset($_POST['is_admin_enviado'])) {
-                $isAdmin = !empty($_POST['is_admin']);
+            // Atualiza papel de Administrador ou RH exclusivamente se a alteração for feita por um Administrador Geral
+            if (AuthManager::hasRole(PERFIL_ADMIN)) {
                 $pdo = Database::getConnection();
                 $stmtU = $pdo->prepare('SELECT id, login, perfil FROM usuarios WHERE efetivo_id = :ef LIMIT 1');
                 $stmtU->execute([':ef' => $salvoId]);
                 $userFound = $stmtU->fetch();
 
                 if ($userFound && $userFound['login'] !== 'admin') {
-                    $novoPerfil = $isAdmin ? 'ADMIN' : ($userFound['perfil'] === 'ADMIN' ? 'ELEITOR' : $userFound['perfil']);
-                    $pdo->prepare('UPDATE usuarios SET perfil = :p WHERE id = :id')->execute([':p' => $novoPerfil, ':id' => $userFound['id']]);
-                    AuditoriaService::log('PERFIL_ADMIN_ATUALIZADO', ['efetivo_id' => $salvoId, 'is_admin' => $isAdmin]);
+                    $novoPerfil = $userFound['perfil'];
+
+                    if (isset($_POST['is_admin_enviado'])) {
+                        $isAdmin = !empty($_POST['is_admin']);
+                        if ($isAdmin) {
+                            $novoPerfil = PERFIL_ADMIN;
+                        } elseif ($userFound['perfil'] === PERFIL_ADMIN) {
+                            $novoPerfil = PERFIL_ELEITOR;
+                        }
+                    }
+
+                    if (isset($_POST['is_rh_enviado'])) {
+                        $isRh = !empty($_POST['is_rh']);
+                        if ($isRh && $novoPerfil !== PERFIL_ADMIN) {
+                            $novoPerfil = PERFIL_RH;
+                        } elseif (!$isRh && $userFound['perfil'] === PERFIL_RH) {
+                            $novoPerfil = PERFIL_ELEITOR;
+                        }
+                    }
+
+                    if ($novoPerfil !== $userFound['perfil']) {
+                        $pdo->prepare('UPDATE usuarios SET perfil = :p WHERE id = :id')->execute([':p' => $novoPerfil, ':id' => $userFound['id']]);
+                        AuditoriaService::log('PERFIL_USUARIO_ATUALIZADO', ['efetivo_id' => $salvoId, 'novo_perfil' => $novoPerfil]);
+                    }
                 }
             }
 
@@ -411,7 +431,7 @@ class AdminController {
      */
     public function toggleAtivoEfetivo(): void {
         AuthMiddleware::handle();
-        RoleMiddleware::handle(PERFIL_ADMIN);
+        RoleMiddleware::handle([PERFIL_ADMIN, PERFIL_RH]);
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
@@ -437,7 +457,7 @@ class AdminController {
      */
     public function baixarModeloCsv(): void {
         AuthMiddleware::handle();
-        RoleMiddleware::handle(PERFIL_ADMIN);
+        RoleMiddleware::handle([PERFIL_ADMIN, PERFIL_RH]);
 
         header('Content-Type: text/csv; charset=UTF-8');
         header('Content-Disposition: attachment; filename="modelo_efetivo_comara.csv"');
@@ -470,7 +490,7 @@ class AdminController {
      */
     public function baixarEfetivoCsv(): void {
         AuthMiddleware::handle();
-        RoleMiddleware::handle(PERFIL_ADMIN);
+        RoleMiddleware::handle([PERFIL_ADMIN, PERFIL_RH]);
 
         $pdo = Database::getConnection();
         $stmt = $pdo->query('
@@ -513,7 +533,7 @@ class AdminController {
      */
     public function importarCsv(): void {
         AuthMiddleware::handle();
-        RoleMiddleware::handle(PERFIL_ADMIN);
+        RoleMiddleware::handle([PERFIL_ADMIN, PERFIL_RH]);
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
@@ -745,7 +765,17 @@ class AdminController {
             ORDER BY u.id ASC
         ')->fetchAll();
 
-        // 8. Todo o Efetivo ativo para seleção de novos administradores
+        // 8. Operadores de Recursos Humanos (RH)
+        $operadoresRh = $pdo->query('
+            SELECT u.id as usuario_id, u.login, u.perfil, u.ativo,
+                   e.id as efetivo_id, e.nome, e.nome_guerra, e.posto, e.saram, e.setor, e.divisao_sigla
+            FROM usuarios u
+            LEFT JOIN efetivo e ON e.id = u.efetivo_id
+            WHERE u.perfil = "RH"
+            ORDER BY u.id ASC
+        ')->fetchAll();
+
+        // 9. Todo o Efetivo ativo para seleção de novos administradores e operadores de RH
         $todoEfetivo = $pdo->query('
             SELECT id, nome, nome_guerra, posto, saram, setor, divisao_sigla 
             FROM efetivo 
@@ -975,6 +1005,48 @@ class AdminController {
                             'removido_por' => AuthManager::user()['id']
                         ]);
                         flash_message('sucesso', 'Permissão de Administrador revogada com sucesso.', 'success');
+                    }
+                }
+            } elseif ($secao === 'rh_adicionar') {
+                $efetivoId = (int)($_POST['rh_efetivo_id'] ?? 0);
+                if ($efetivoId > 0) {
+                    $militar = Efetivo::getPorId($efetivoId);
+                    if ($militar) {
+                        $stmtU = $pdo->prepare('SELECT id FROM usuarios WHERE efetivo_id = :ef LIMIT 1');
+                        $stmtU->execute([':ef' => $efetivoId]);
+                        $userId = $stmtU->fetchColumn();
+
+                        if ($userId) {
+                            $pdo->prepare('UPDATE usuarios SET perfil = "RH", ativo = 1 WHERE id = :u')->execute([':u' => $userId]);
+                        } else {
+                            $login = $militar['saram'] ?: preg_replace('/\D/', '', (string)$militar['cpf']);
+                            $hashPadrao = password_hash('padrao@2026', PASSWORD_BCRYPT);
+                            $pdo->prepare('INSERT INTO usuarios (login, senha_hash, efetivo_id, perfil, ativo) VALUES (:l, :s, :ef, "RH", 1)')
+                                ->execute([':l' => $login, ':s' => $hashPadrao, ':ef' => $efetivoId]);
+                        }
+
+                        AuditoriaService::log('OPERADOR_RH_ADICIONADO', [
+                            'efetivo_id'   => $efetivoId,
+                            'nome'         => $militar['nome_guerra'],
+                            'adicionado_por' => AuthManager::user()['id']
+                        ]);
+                        flash_message('sucesso', "Permissão de Recursos Humanos (RH) concedida com sucesso para {$militar['posto']} {$militar['nome_guerra']}!", 'success');
+                    }
+                }
+            } elseif ($secao === 'rh_remover') {
+                $removerUserId = (int)($_POST['usuario_id'] ?? 0);
+                if ($removerUserId > 0) {
+                    $stmtU = $pdo->prepare('SELECT id, login, efetivo_id FROM usuarios WHERE id = :u LIMIT 1');
+                    $stmtU->execute([':u' => $removerUserId]);
+                    $usr = $stmtU->fetch();
+
+                    if ($usr) {
+                        $pdo->prepare('UPDATE usuarios SET perfil = "ELEITOR" WHERE id = :u')->execute([':u' => $removerUserId]);
+                        AuditoriaService::log('OPERADOR_RH_REMOVIDO', [
+                            'usuario_id'   => $removerUserId,
+                            'removido_por' => AuthManager::user()['id']
+                        ]);
+                        flash_message('sucesso', 'Permissão de Recursos Humanos (RH) revogada com sucesso.', 'success');
                     }
                 }
             }

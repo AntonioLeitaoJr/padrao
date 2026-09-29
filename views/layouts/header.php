@@ -53,10 +53,18 @@ $rotaAtual = $_GET['r'] ?? 'dashboard';
                 </li>
 
                 <?php if (AuthManager::check()): ?>
-                    <?php if (AuthManager::isOficial()): ?>
+                    <?php if (AuthManager::isAvaliadorFase1() || AuthManager::hasRole([PERFIL_ED_FISICA, PERFIL_ADMIN])): ?>
                         <li class="nav-item">
                             <a class="nav-link <?= (str_starts_with($rotaAtual, 'fase1')) ? 'active' : '' ?>" href="/index.php?r=fase1">
                                 <i class="bi bi-file-earmark-check me-1"></i> Fase 1: Avaliações
+                            </a>
+                        </li>
+                    <?php endif; ?>
+
+                    <?php if (AuthManager::hasRole(PERFIL_RH) && !AuthManager::hasRole(PERFIL_ADMIN)): ?>
+                        <li class="nav-item">
+                            <a class="nav-link <?= (str_starts_with($rotaAtual, 'admin/efetivo')) ? 'active' : '' ?>" href="/index.php?r=admin/efetivo">
+                                <i class="bi bi-people-fill me-1 text-primary"></i> <strong>Cadastro de Usuários (RH)</strong>
                             </a>
                         </li>
                     <?php endif; ?>

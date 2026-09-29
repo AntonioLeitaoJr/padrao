@@ -81,6 +81,7 @@ const FASES_PROCESSO = [
 
 // Perfis de Acesso (RBAC)
 define('PERFIL_ADMIN',              'ADMIN');
+define('PERFIL_RH',                 'RH');               // Recursos Humanos: Gestão exclusiva de cadastro de usuários
 define('PERFIL_PRESIDENTE',         'PRESIDENTE');
 define('PERFIL_DIRECAO_SUPERIOR',   'DIRECAO_SUPERIOR'); // Cel, Ten Cel, Maj
 define('PERFIL_CHEFE_DIV_ASSESS',   'CHEFE_DIV_ASSESS'); // Chefes DPC, DA, DL, DE, DS, AINT, etc.
@@ -88,12 +89,20 @@ define('PERFIL_CHEFE_DIRETO',       'CHEFE_DIRETO');     // Oficiais avaliadores
 define('PERFIL_ED_FISICA',          'ED_FISICA');        // Seção de Educação Física / DAEF
 define('PERFIL_ELEITOR',            'ELEITOR');          // Todo o efetivo
 
-// Postos exclusivos de Oficiais (Habilitados para visualização e avaliação na Fase 1)
+// Postos exclusivos de Oficiais
 const POSTOS_OFICIAIS = [
     'Ten-Brig', 'Maj-Brig', 'Brig',
     'Cel', 'Ten Cel', 'Maj', 'Cap',
     '1º Ten', '1° Ten', '1S Ten', '1 Ten',
     '2º Ten', '2° Ten', '2S Ten', '2 Ten'
+];
+
+// Postos habilitados exclusivamente para avaliação na Fase 1 (Tenentes e Capitães)
+const POSTOS_AVALIADORES_FASE1 = [
+    'Cap',
+    '1º Ten', '1° Ten', '1S Ten', '1 Ten',
+    '2º Ten', '2° Ten', '2S Ten', '2 Ten',
+    'Ten'
 ];
 
 // Divisões e Assessorias com prerrogativa de seleção na Fase 2

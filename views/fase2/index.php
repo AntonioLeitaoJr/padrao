@@ -98,12 +98,21 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                                         </tr>
                                     <?php else: ?>
                                         <?php foreach ($cands as $c): ?>
-                                            <?php $isSelected = in_array((int)$c['id'], array_map('intval', $selecionadosAtuais[$catKey] ?? []), true); ?>
-                                            <tr class="<?= $isSelected ? 'table-primary' : '' ?>">
+                                            <?php 
+                                            $isNob = ((int)($c['foi_nob'] ?? 0) === 1 && (float)$c['media_fase1'] == 0);
+                                            $isSelected = in_array((int)$c['id'], array_map('intval', $selecionadosAtuais[$catKey] ?? []), true); 
+                                            ?>
+                                            <tr class="<?= $isSelected ? 'table-primary' : ($isNob ? 'text-muted opacity-75' : '') ?>">
                                                 <td class="text-center">
-                                                    <input type="checkbox" class="form-check-input fs-5"
-                                                           name="selecao[<?= $catKey ?>][]" value="<?= $c['id'] ?>"
-                                                           <?= $isSelected ? 'checked' : '' ?>>
+                                                    <?php if ($isNob): ?>
+                                                        <span class="badge bg-secondary" title="Militar marcado como Não Observado (NOB) na Fase 1">
+                                                            <i class="bi bi-eye-slash"></i>
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <input type="checkbox" class="form-check-input fs-5"
+                                                               name="selecao[<?= $catKey ?>][]" value="<?= $c['id'] ?>"
+                                                               <?= $isSelected ? 'checked' : '' ?>>
+                                                    <?php endif; ?>
                                                 </td>
                                                 <td>
                                                     <img src="/index.php?r=foto&saram=<?= $c['saram'] ?>&id=<?= $c['id'] ?>" class="cand-photo-sm" alt="Foto">
@@ -125,7 +134,11 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                                                     <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <span class="badge bg-primary fs-6"><?= number_format((float)$c['media_fase1'], 2, ',', '.') ?></span>
+                                                    <?php if ($isNob): ?>
+                                                        <span class="badge bg-secondary fs-6" title="Não Observado na Fase 1">NOB</span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-primary fs-6"><?= number_format((float)$c['media_fase1'], 2, ',', '.') ?></span>
+                                                    <?php endif; ?>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>

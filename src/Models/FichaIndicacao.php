@@ -26,46 +26,69 @@ class FichaIndicacao {
         }
 
         $isMilitar = in_array($candidato['categoria'], ['graduado', 'praca'], true);
+        $isNob = (!empty($dados['is_nob']) && (int)$dados['is_nob'] === 1) ? 1 : 0;
 
-        // Validação de Serviço de Escala (obrigatório para militares)
-        $servicoEscala = trim($dados['servico_escala'] ?? '');
-        if ($isMilitar && $servicoEscala === '') {
-            return ['sucesso' => false, 'mensagem' => 'O campo Serviço de Escala é obrigatório para candidatos militares.'];
-        }
+        if ($isNob === 1) {
+            $servicoEscala = null;
+            $criterios = [
+                'eficiencia_eficacia'        => null,
+                'conhecimento_especialidade' => null,
+                'iniciativa_adaptabilidade'  => null,
+                'conduta_pontuacao'          => null,
+                'apresentacao_pessoal'       => null,
+                'relacionamento_trabalho'    => null,
+                'lideranca'                  => null
+            ];
+            $condutaFichas = '';
+            $justificativa = 'Não Observado (NOB)';
+            $media = 0.00;
+        } else {
+            // Validação de Serviço de Escala (obrigatório para militares: nota inteira de 1 a 5)
+            $servicoEscala = null;
+            if ($isMilitar) {
+                $notaEscala = (int)($dados['servico_escala'] ?? 0);
+                if ($notaEscala < 1 || $notaEscala > 5) {
+                    return ['sucesso' => false, 'mensagem' => 'A nota do Serviço de Escala deve variar exclusivamente entre 1 e 5.'];
+                }
+                $servicoEscala = (string)$notaEscala;
+            }
 
-        // Validação dos 7 Critérios Avaliativos (Valores exclusivamente inteiros de 1 a 5)
-        $criterios = [
-            'eficiencia_eficacia'        => (int)($dados['eficiencia_eficacia'] ?? 0),
-            'conhecimento_especialidade' => (int)($dados['conhecimento_especialidade'] ?? 0),
-            'iniciativa_adaptabilidade'  => (int)($dados['iniciativa_adaptabilidade'] ?? 0),
-            'conduta_pontuacao'          => (int)($dados['conduta_pontuacao'] ?? 0),
-            'apresentacao_pessoal'       => (int)($dados['apresentacao_pessoal'] ?? 0),
-            'relacionamento_trabalho'    => (int)($dados['relacionamento_trabalho'] ?? 0),
-            'lideranca'                  => (int)($dados['lideranca'] ?? 0)
-        ];
+            // Validação dos 7 Critérios Avaliativos (Valores exclusivamente inteiros de 1 a 5)
+            $criterios = [
+                'eficiencia_eficacia'        => (int)($dados['eficiencia_eficacia'] ?? 0),
+                'conhecimento_especialidade' => (int)($dados['conhecimento_especialidade'] ?? 0),
+                'iniciativa_adaptabilidade'  => (int)($dados['iniciativa_adaptabilidade'] ?? 0),
+                'conduta_pontuacao'          => (int)($dados['conduta_pontuacao'] ?? 0),
+                'apresentacao_pessoal'       => (int)($dados['apresentacao_pessoal'] ?? 0),
+                'relacionamento_trabalho'    => (int)($dados['relacionamento_trabalho'] ?? 0),
+                'lideranca'                  => (int)($dados['lideranca'] ?? 0)
+            ];
 
-        foreach ($criterios as $campo => $valor) {
-            if ($valor < 1 || $valor > 5) {
-                return [
-                    'sucesso' => false,
-                    'mensagem' => "A nota do critério {$campo} deve variar exclusivamente entre 1 e 5."
-                ];
+            foreach ($criterios as $campo => $valor) {
+                if ($valor < 1 || $valor > 5) {
+                    return [
+                        'sucesso' => false,
+                        'mensagem' => "A nota do critério {$campo} deve variar exclusivamente entre 1 e 5."
+                    ];
+                }
+            }
+
+            $condutaFichas = trim($dados['conduta_fichas'] ?? '');
+            $justificativa = trim($dados['justificativa'] ?? '');
+
+            // Cálculo da média aritmética dos critérios
+            // Para militares: 8 critérios (7 regimentais + 1 de serviço de escala)
+            // Para civis: 7 critérios regimentais
+            if ($isMilitar) {
+                $media = (array_sum($criterios) + (int)$servicoEscala) / 8;
+            } else {
+                $media = array_sum($criterios) / count($criterios);
             }
         }
 
-        $justificativa = trim($dados['justificativa'] ?? '');
-        if (mb_strlen($justificativa) < 10) {
-            return ['sucesso' => false, 'mensagem' => 'A justificativa da indicação é obrigatória e deve conter pelo menos 10 caracteres.'];
-        }
-
-        $condutaFichas = trim($dados['conduta_fichas'] ?? '');
-
-        // Cálculo da média aritmética dos critérios
-        $media = array_sum($criterios) / count($criterios);
-
         // Assinatura e Hash de integridade dos dados
         $agora = date('Y-m-d H:i:s');
-        $stringIntegridade = "{$pleitoId}|{$candidatoId}|{$avaliadorUsuarioId}|" . implode('|', $criterios) . "|{$justificativa}|{$agora}";
+        $stringIntegridade = "{$pleitoId}|{$candidatoId}|{$avaliadorUsuarioId}|{$isNob}|" . implode('|', array_map(fn($v) => (string)($v ?? 'NULL'), $criterios)) . "|{$justificativa}|{$agora}";
         $hashIntegridade = hash('sha256', $stringIntegridade);
 
         $pdo = Database::getConnection();
@@ -73,17 +96,18 @@ class FichaIndicacao {
         $stmt = $pdo->prepare('
             INSERT INTO `fichas_indicacao` (
                 `pleito_id`, `candidato_id`, `avaliador_id`, `tipo_avaliacao`,
-                `servico_escala`, `eficiencia_eficacia`, `conhecimento_especialidade`,
+                `is_nob`, `servico_escala`, `eficiencia_eficacia`, `conhecimento_especialidade`,
                 `iniciativa_adaptabilidade`, `conduta_pontuacao`, `conduta_fichas`,
                 `apresentacao_pessoal`, `relacionamento_trabalho`, `lideranca`,
                 `justificativa`, `media_calculada`, `hash_integridade`, `created_at`
             ) VALUES (
                 :pleito, :candidato, :avaliador, :tipo,
-                :escala, :efic, :conhec,
+                :is_nob, :escala, :efic, :conhec,
                 :inic, :conduta, :fichas,
                 :apres, :relac, :lider,
                 :justif, :media, :hash, :created
             ) ON DUPLICATE KEY UPDATE
+                `is_nob`                    = VALUES(`is_nob`),
                 `servico_escala`            = VALUES(`servico_escala`),
                 `eficiencia_eficacia`        = VALUES(`eficiencia_eficacia`),
                 `conhecimento_especialidade` = VALUES(`conhecimento_especialidade`),
@@ -104,6 +128,7 @@ class FichaIndicacao {
             ':candidato' => $candidatoId,
             ':avaliador' => $avaliadorUsuarioId,
             ':tipo'      => $tipoAval,
+            ':is_nob'    => $isNob,
             ':escala'    => $servicoEscala,
             ':efic'      => $criterios['eficiencia_eficacia'],
             ':conhec'    => $criterios['conhecimento_especialidade'],
@@ -126,10 +151,15 @@ class FichaIndicacao {
             'media'        => round($media, 2)
         ], $avaliadorUsuarioId);
 
+        $msgSucesso = ($isNob === 1) 
+            ? 'Ficha registrada com sucesso como Não Observado (NOB).' 
+            : 'Ficha de indicação registrada com sucesso.';
+
         return [
             'sucesso'  => true,
+            'is_nob'   => ($isNob === 1),
             'media'    => round($media, 2),
-            'mensagem' => 'Ficha de indicação registrada com sucesso.'
+            'mensagem' => $msgSucesso
         ];
     }
 

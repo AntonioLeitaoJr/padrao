@@ -17,15 +17,10 @@ require_once ROOT_PATH . '/views/layouts/header.php';
 <ul class="nav nav-tabs mb-4" id="fase1Tabs" role="tablist">
     <li class="nav-item" role="presentation">
         <button class="nav-link active fw-bold" id="subord-tab" data-bs-toggle="tab" data-bs-target="#tabSubordinados" type="button">
-            <i class="bi bi-person-check-fill me-1"></i> Minhas Avaliações Obrigatórias
+            <i class="bi bi-person-check-fill me-1"></i> Minhas Avaliações dos Subordinados
             <?php if (!empty($subordinados)): ?>
                 <span class="badge bg-primary ms-1"><?= count($subordinados) ?></span>
             <?php endif; ?>
-        </button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link fw-bold" id="voluntaria-tab" data-bs-toggle="tab" data-bs-target="#tabVoluntaria" type="button">
-            <i class="bi bi-star me-1"></i> Avaliações Voluntárias (Outros Militares/Civis)
         </button>
     </li>
     <?php if (AuthManager::hasRole([PERFIL_ED_FISICA, PERFIL_ADMIN])): ?>
@@ -59,8 +54,8 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                 <?php if (empty($subordinados)): ?>
                     <div class="p-4 text-center text-muted">
                         <i class="bi bi-info-circle fs-3 d-block mb-2 text-secondary"></i>
-                        Você não possui militares diretamente subordinados vinculados no cadastro funcional ou não está logado como Chefe Direto.<br>
-                        Você pode realizar avaliações voluntárias na aba ao lado.
+                        Você não possui integrantes diretamente subordinados vinculados no cadastro funcional.<br>
+                        Caso seja chefe de seção ou divisão, solicite ao Administrador a vinculação do seu efetivo.
                     </div>
                 <?php else: ?>
                     <div class="table-responsive">
@@ -118,22 +113,31 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                                         </td>
                                         <td>
                                             <?php if ($sub['ficha_id']): ?>
-                                                <span class="badge bg-success fs-6"><?= number_format((float)$sub['media_calculada'], 2, ',', '.') ?></span>
+                                                <?php if (!empty($sub['is_nob'])): ?>
+                                                    <span class="badge bg-secondary fs-6"><i class="bi bi-eye-slash me-1"></i>NOB</span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-success fs-6"><?= number_format((float)$sub['media_calculada'], 2, ',', '.') ?></span>
+                                                <?php endif; ?>
                                             <?php else: ?>
                                                 <span class="badge bg-warning text-dark">Não Avaliado</span>
                                             <?php endif; ?>
                                         </td>
                                         <td>
                                             <?php if ($sub['ficha_id']): ?>
-                                                <span class="text-success small fw-semibold"><i class="bi bi-check-all"></i> Concluído</span>
+                                                <?php if (!empty($sub['is_nob'])): ?>
+                                                    <span class="text-secondary small fw-semibold"><i class="bi bi-check-all"></i> Não Observado</span>
+                                                <?php else: ?>
+                                                    <span class="text-success small fw-semibold"><i class="bi bi-check-all"></i> Concluído</span>
+                                                <?php endif; ?>
                                             <?php else: ?>
                                                 <span class="text-danger small fw-semibold"><i class="bi bi-exclamation-circle"></i> Obrigatória</span>
                                             <?php endif; ?>
                                         </td>
                                         <td class="text-end text-nowrap">
-                                            <a href="/index.php?r=fase1/avaliar&id=<?= $sub['id'] ?>" class="btn btn-sm <?= $sub['ficha_id'] ? 'btn-outline-primary' : 'btn-primary fw-bold' ?>">
+                                            <button type="button" class="btn btn-sm <?= $sub['ficha_id'] ? 'btn-outline-primary' : 'btn-primary fw-bold' ?>"
+                                                    onclick="abrirModalAvaliacao(<?= $sub['id'] ?>)">
                                                 <i class="bi bi-pencil-square me-1"></i> <?= $sub['ficha_id'] ? 'Editar Ficha' : 'Preencher Ficha' ?>
-                                            </a>
+                                            </button>
                                             <?php if (!$sub['ficha_id'] && (int)$sub['sou_o_delegado'] === 0): ?>
                                                 <button type="button" class="btn btn-sm btn-outline-warning ms-1"
                                                         data-bs-toggle="modal" data-bs-target="#modalDelegarOficial"
@@ -166,58 +170,6 @@ require_once ROOT_PATH . '/views/layouts/header.php';
         </div>
     </div>
 
-    <!-- 2. ABA DE AVALIAÇÕES VOLUNTÁRIAS -->
-    <div class="tab-pane fade" id="tabVoluntaria" role="tabpanel">
-        <div class="card card-comara">
-            <div class="card-comara-header">
-                <span>Avaliações Voluntárias (Efetivo COMARA)</span>
-                <span class="small text-muted">Avaliador identificado e gravado em log permanente</span>
-            </div>
-            <div class="card-body">
-                <p class="small text-muted">Como oficial ou avaliador credenciado, você pode indicar voluntariamente outros militares e servidores civis que se destacaram pelo desempenho e virtudes regimentais.</p>
-                
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Foto</th>
-                                <th>Nome / Nome de Guerra</th>
-                                <th>Posto / Categoria</th>
-                                <th>Setor</th>
-                                <th>Média Fase 1</th>
-                                <th class="text-end">Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($todosCandidatos as $cand): ?>
-                                <tr>
-                                    <td style="width: 50px;">
-                                        <img src="/index.php?r=foto&saram=<?= $cand['saram'] ?>&id=<?= $cand['id'] ?>" class="cand-photo-sm" alt="Foto">
-                                    </td>
-                                    <td>
-                                        <strong><?= sanitize_output($cand['posto']) ?> <?= sanitize_output($cand['nome_guerra']) ?></strong><br>
-                                        <small class="text-muted"><?= sanitize_output($cand['nome']) ?></small>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-secondary"><?= CATEGORIAS_PADRAO[$cand['categoria']]['nome'] ?></span>
-                                    </td>
-                                    <td><?= sanitize_output($cand['setor']) ?> (<?= sanitize_output($cand['divisao_sigla']) ?>)</td>
-                                    <td>
-                                        <span class="badge bg-light text-dark border"><?= number_format((float)$cand['media_geral_fase1'], 2, ',', '.') ?> (<?= $cand['total_avaliacoes'] ?> aval.)</span>
-                                    </td>
-                                    <td class="text-end">
-                                        <a href="/index.php?r=fase1/avaliar&id=<?= $cand['id'] ?>" class="btn btn-outline-primary btn-sm">
-                                            <i class="bi bi-star me-1"></i> Avaliação Voluntária
-                                        </a>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- 3. MÓDULO EXCLUSIVO EDUCAÇÃO FÍSICA (TACF) -->
     <?php if (AuthManager::hasRole([PERFIL_ED_FISICA, PERFIL_ADMIN])): ?>
@@ -472,7 +424,335 @@ require_once ROOT_PATH . '/views/layouts/header.php';
     </div>
 </div>
 
+<!-- Modal de Avaliação Digital da Fase 1 (Popup) -->
+<div class="modal fade" id="modalAvaliarSubordinado" tabindex="-1" aria-labelledby="modalAvaliarSubordinadoLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalAvaliarSubordinadoLabel">
+                    <i class="bi bi-file-earmark-check me-2"></i>Ficha Digital de Avaliação — Fase 1
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            
+            <form id="formAvaliacaoModal" method="POST" action="/index.php?r=fase1/avaliar">
+                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                <input type="hidden" name="candidato_id" id="modal_candidato_id" value="">
+
+                <div class="modal-body p-4 bg-light">
+                    <!-- Loading Spinner -->
+                    <div id="modal_loading" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                        <div class="mt-2 text-muted fw-semibold">Carregando dados do integrante...</div>
+                    </div>
+
+                    <!-- Conteúdo da Avaliação -->
+                    <div id="modal_conteudo" style="display: none;">
+                        
+                        <!-- PARTE 1. DADOS DO AVALIADO (Apenas Foto, Posto/Nome de Guerra e Setor de Trabalho) -->
+                        <div class="card border mb-3 shadow-sm">
+                            <div class="card-body p-3 bg-white rounded">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3 flex-shrink-0">
+                                        <img id="modal_foto" src="" class="rounded-circle shadow-sm" style="width: 68px; height: 68px; object-fit: cover; border: 2px solid #003366;" alt="Foto do Avaliado">
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="text-muted small fw-bold text-uppercase">1. Dados do Integrante</div>
+                                        <div class="h5 fw-bold text-primary mb-1" id="modal_posto_nome_guerra">-</div>
+                                        <div class="text-dark small">
+                                            <i class="bi bi-geo-alt-fill text-secondary me-1"></i>
+                                            Setor de Trabalho: <strong id="modal_setor">-</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SELECTBOX DE NOB (NÃO OBSERVADO) -->
+                        <div class="p-3 mb-3 border rounded bg-white shadow-sm">
+                            <label for="modal_is_nob" class="form-label fw-bold text-dark mb-1">
+                                <i class="bi bi-eye me-1 text-primary"></i> Situação de Observação Funcional:
+                            </label>
+                            <select name="is_nob" id="modal_is_nob" class="form-select form-select-lg fw-bold" onchange="tratarSelecaoNob(this.value)">
+                                <option value="0" class="text-success">Observado — Preencher avaliação com notas</option>
+                                <option value="1" class="text-danger">Não Observado (NOB) — Militar recém-chegado, afastado ou sem observação direta</option>
+                            </select>
+                            <div class="form-text text-muted small mt-1">
+                                <i class="bi bi-info-circle me-1"></i> Ao selecionar <strong>Não Observado (NOB)</strong>, todos os campos de notas são bloqueados e a ficha é salva imediatamente.
+                            </div>
+                        </div>
+
+                        <!-- CONTAINER DOS CRITÉRIOS AVALIATIVOS (BLOQUEÁVEL POR NOB) -->
+                        <div id="container_campos_avaliacao">
+                            
+                            <!-- 2. SERVIÇO DE ESCALA (MILITARES) - NOTA DE 1 A 5 -->
+                            <div id="bloco_servico_escala" class="card border mb-3 shadow-sm bg-white p-3">
+                                <label class="fw-bold text-dark mb-1">
+                                    2. Serviço de Escala <span class="text-danger">*</span>
+                                </label>
+                                <small class="text-muted mb-2 d-block">Avalie a participação, aprumo e pontualidade do militar nos serviços de escala da OM (Guarda, Permanência, Operações).</small>
+                                <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded border">
+                                    <?php for ($n = 1; $n <= 5; $n++): ?>
+                                        <div class="form-check form-check-inline m-0 text-center">
+                                            <input class="form-check-input crit-radio input-criterio" type="radio" 
+                                                   name="servico_escala" id="escala_<?= $n ?>" value="<?= $n ?>" required>
+                                            <label class="form-check-label d-block fw-bold" for="escala_<?= $n ?>">
+                                                <?= $n ?>
+                                            </label>
+                                            <small class="text-muted" style="font-size: 0.65rem;">
+                                                <?= $n === 1 ? 'Fraco' : ($n === 5 ? 'Notável' : '') ?>
+                                            </small>
+                                        </div>
+                                    <?php endfor; ?>
+                                </div>
+                            </div>
+
+                            <!-- CRITÉRIOS REGIMENTAIS (NOTAS INTEIRAS DE 1 A 5) -->
+                            <div class="card border mb-3 shadow-sm bg-white p-3">
+                                <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                                    Critérios Regimentais de Desempenho (Notas de 1 a 5)
+                                </h6>
+
+                                <?php
+                                $criteriosModal = [
+                                    'eficiencia_eficacia' => [
+                                        'num' => 3,
+                                        'titulo' => 'Eficiência e eficácia no desempenho de atribuições',
+                                        'desc' => 'Zelo, exatidão técnica, celeridade e otimização dos recursos públicos.'
+                                    ],
+                                    'conhecimento_especialidade' => [
+                                        'num' => 4,
+                                        'titulo' => 'Nível de conhecimento e interesse na especialidade',
+                                        'desc' => 'Domínio prático-teórico da sua área e busca contínua por aperfeiçoamento.'
+                                    ],
+                                    'iniciativa_adaptabilidade' => [
+                                        'num' => 5,
+                                        'titulo' => 'Iniciativa, criatividade e adaptabilidade',
+                                        'desc' => 'Capacidade de antecipar soluções em situações imprevistas e adaptar-se com rapidez.'
+                                    ],
+                                    'conduta_pontuacao' => [
+                                        'num' => 6,
+                                        'titulo' => 'Conduta e disciplina',
+                                        'desc' => 'Postura ética, respeito à hierarquia, disciplina e lealdade institucional.'
+                                    ],
+                                    'apresentacao_pessoal' => [
+                                        'num' => 7,
+                                        'titulo' => 'Apresentação pessoal',
+                                        'desc' => 'Asseio pessoal, aprumo militar e vestimenta corporativa padrão.'
+                                    ],
+                                    'relacionamento_trabalho' => [
+                                        'num' => 8,
+                                        'titulo' => 'Relacionamento no ambiente de trabalho',
+                                        'desc' => 'Espírito de corpo, camaradagem, cortesia, urbanidade e cooperação mútua.'
+                                    ],
+                                    'lideranca' => [
+                                        'num' => 9,
+                                        'titulo' => 'Liderança',
+                                        'desc' => 'Capacidade de inspirar confiança, motivar equipes e conduzir atividades com firmeza.'
+                                    ],
+                                ];
+                                ?>
+
+                                <div class="row g-3">
+                                    <?php foreach ($criteriosModal as $campo => $crit): ?>
+                                        <div class="col-12">
+                                            <div class="border rounded p-2 bg-light">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <span class="fw-bold text-dark small"><?= $crit['num'] ?>. <?= $crit['titulo'] ?> <span class="text-danger">*</span></span>
+                                                    <small class="text-muted fst-italic" style="font-size: 0.75rem;"><?= $crit['desc'] ?></small>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center bg-white p-2 rounded border">
+                                                    <?php for ($nota = 1; $nota <= 5; $nota++): ?>
+                                                        <div class="form-check form-check-inline m-0 text-center">
+                                                            <input class="form-check-input crit-radio input-criterio" type="radio" 
+                                                                   name="<?= $campo ?>" id="<?= $campo ?>_<?= $nota ?>" 
+                                                                   value="<?= $nota ?>" required>
+                                                            <label class="form-check-label d-block fw-bold" for="<?= $campo ?>_<?= $nota ?>">
+                                                                <?= $nota ?>
+                                                            </label>
+                                                            <small class="text-muted" style="font-size: 0.65rem;">
+                                                                <?= $nota === 1 ? 'Fraco' : ($nota === 5 ? 'Notável' : '') ?>
+                                                            </small>
+                                                        </div>
+                                                    <?php endfor; ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+
+                            <!-- REGISTRO COMPLEMENTAR DE CONDUTA (OPCIONAL) -->
+                            <div class="card border mb-2 shadow-sm bg-white p-3">
+                                <label for="modal_conduta_fichas" class="form-label fw-bold text-dark small mb-1">
+                                    10. Registro Complementar de Conduta (Elogios / Menções / Punições - Opcional)
+                                </label>
+                                <textarea class="form-control form-control-sm input-criterio" id="modal_conduta_fichas" name="conduta_fichas" rows="2"
+                                          placeholder="Mencione elogios registrados em alterações ou apontamentos disciplinares..."></textarea>
+                            </div>
+
+                        </div> <!-- /container_campos_avaliacao -->
+
+                    </div> <!-- /modal_conteudo -->
+                </div>
+
+                <div class="modal-footer bg-light p-3 d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" id="btnSalvarModal" class="btn btn-primary fw-bold px-4">
+                        <i class="bi bi-check-circle-fill me-2"></i> Salvar e Assinar Ficha
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
+let modalAvaliarInstancia = null;
+
+function abrirModalAvaliacao(candidatoId) {
+    const modalEl = document.getElementById('modalAvaliarSubordinado');
+    if (!modalAvaliarInstancia) {
+        modalAvaliarInstancia = new bootstrap.Modal(modalEl);
+    }
+
+    const modalLoading = document.getElementById('modal_loading');
+    const modalConteudo = document.getElementById('modal_conteudo');
+    const form = document.getElementById('formAvaliacaoModal');
+
+    form.reset();
+    document.getElementById('modal_candidato_id').value = candidatoId;
+    modalLoading.style.display = 'block';
+    modalConteudo.style.display = 'none';
+
+    modalAvaliarInstancia.show();
+
+    fetch('/index.php?r=fase1/dados_ficha&id=' + candidatoId)
+        .then(response => response.json())
+        .then(res => {
+            if (!res.sucesso) {
+                alert(res.mensagem || 'Erro ao carregar dados do candidato.');
+                modalAvaliarInstancia.hide();
+                return;
+            }
+
+            const c = res.candidato;
+            const f = res.ficha;
+
+            document.getElementById('modal_foto').src = c.foto_url;
+            document.getElementById('modal_posto_nome_guerra').innerText = c.posto + ' ' + c.nome_guerra;
+            document.getElementById('modal_setor').innerText = c.setor || 'Não informado';
+
+            // Serviço de escala só para militares
+            const blocoEscala = document.getElementById('bloco_servico_escala');
+            const inputsEscala = blocoEscala.querySelectorAll('input[type="radio"]');
+            if (c.is_militar) {
+                blocoEscala.style.display = 'block';
+                inputsEscala.forEach(inp => inp.required = true);
+            } else {
+                blocoEscala.style.display = 'none';
+                inputsEscala.forEach(inp => {
+                    inp.required = false;
+                    inp.checked = false;
+                });
+            }
+
+            // Preenche dados da ficha se já existir
+            const selectNob = document.getElementById('modal_is_nob');
+            if (f) {
+                selectNob.value = f.is_nob ? "1" : "0";
+
+                if (!f.is_nob) {
+                    if (c.is_militar && f.servico_escala) {
+                        const rEscala = document.getElementById('escala_' + f.servico_escala);
+                        if (rEscala) rEscala.checked = true;
+                    }
+
+                    const camposCriterios = [
+                        'eficiencia_eficacia', 'conhecimento_especialidade', 'iniciativa_adaptabilidade',
+                        'conduta_pontuacao', 'apresentacao_pessoal', 'relacionamento_trabalho', 'lideranca'
+                    ];
+                    camposCriterios.forEach(campo => {
+                        const val = f[campo] || 5;
+                        const rCrit = document.getElementById(campo + '_' + val);
+                        if (rCrit) rCrit.checked = true;
+                    });
+
+                    document.getElementById('modal_conduta_fichas').value = f.conduta_fichas || '';
+                }
+            } else {
+                selectNob.value = "0";
+                // Default 5 para novos
+                if (c.is_militar) {
+                    const rEscala5 = document.getElementById('escala_5');
+                    if (rEscala5) rEscala5.checked = true;
+                }
+                const camposCriterios = [
+                    'eficiencia_eficacia', 'conhecimento_especialidade', 'iniciativa_adaptabilidade',
+                    'conduta_pontuacao', 'apresentacao_pessoal', 'relacionamento_trabalho', 'lideranca'
+                ];
+                camposCriterios.forEach(campo => {
+                    const rCrit5 = document.getElementById(campo + '_5');
+                    if (rCrit5) rCrit5.checked = true;
+                });
+                document.getElementById('modal_conduta_fichas').value = '';
+            }
+
+            // Ajusta bloqueio conforme o estado do NOB
+            bloquearCamposAvaliacao(selectNob.value === "1");
+
+            modalLoading.style.display = 'none';
+            modalConteudo.style.display = 'block';
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Falha na comunicação com o servidor.');
+            modalAvaliarInstancia.hide();
+        });
+}
+
+function bloquearCamposAvaliacao(bloquear) {
+    const container = document.getElementById('container_campos_avaliacao');
+    const inputs = container.querySelectorAll('input, textarea');
+    inputs.forEach(inp => {
+        inp.disabled = bloquear;
+        if (bloquear) {
+            inp.required = false;
+        }
+    });
+
+    if (bloquear) {
+        container.style.opacity = '0.4';
+        container.style.pointerEvents = 'none';
+    } else {
+        container.style.opacity = '1';
+        container.style.pointerEvents = 'auto';
+        const blocoEscala = document.getElementById('bloco_servico_escala');
+        if (blocoEscala.style.display !== 'none') {
+            blocoEscala.querySelectorAll('input[type="radio"]').forEach(i => i.required = true);
+        }
+        document.querySelectorAll('.input-criterio[type="radio"]').forEach(i => {
+            if (!i.name.includes('servico_escala')) i.required = true;
+        });
+    }
+}
+
+function tratarSelecaoNob(valor) {
+    if (valor === "1") {
+        if (confirm("Confirma o registro deste integrante como NÃO OBSERVADO (NOB)?\n\nTodos os campos de notas serão bloqueados e a ficha será salva agora.")) {
+            bloquearCamposAvaliacao(true);
+            document.getElementById('formAvaliacaoModal').submit();
+        } else {
+            document.getElementById('modal_is_nob').value = "0";
+            bloquearCamposAvaliacao(false);
+        }
+    } else {
+        bloquearCamposAvaliacao(false);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     const modalDelegar = document.getElementById('modalDelegarOficial');
     if (modalDelegar) {

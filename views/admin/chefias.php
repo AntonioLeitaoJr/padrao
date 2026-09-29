@@ -64,7 +64,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link fw-bold" id="especiais-tab" data-bs-toggle="tab" data-bs-target="#especiais-pane" type="button" role="tab">
-            <i class="bi bi-shield-check me-2"></i> Administradores, TACF & Direção Superior
+            <i class="bi bi-shield-check me-2"></i> Administradores, RH, TACF & Direção Superior
         </button>
     </li>
     <li class="nav-item" role="presentation">
@@ -448,6 +448,109 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                                 <div class="col-md-3">
                                     <button type="submit" class="btn btn-danger fw-bold w-100" onclick="return confirm('Confirma a concessão de privilégios totais de Administrador a este integrante?')">
                                         <i class="bi bi-shield-plus me-1"></i> Tornar Administrador
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Operadores de Recursos Humanos (RH - Gestão Exclusiva de Efetivo) -->
+            <div class="col-12">
+                <div class="card card-comara shadow-sm border-2 border-info">
+                    <div class="card-comara-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-person-badge-fill me-2"></i> Operadores de Recursos Humanos (RH - Cadastro de Efetivo)</span>
+                        <span class="badge bg-light text-info fw-bold"><?= count($operadoresRh) ?> Operador(es) Ativo(s)</span>
+                    </div>
+                    <div class="card-body p-4">
+                        <p class="text-muted small mb-3">
+                            Usuários com perfil <strong>RH</strong> possuem acesso <strong>exclusivo</strong> ao módulo de cadastro, edição e importação/exportação do efetivo (<code>admin/efetivo</code>), sem permissões sobre prazos, fases, chefias, votos ou auditoria.
+                        </p>
+
+                        <!-- Tabela de Operadores de RH Atuais -->
+                        <div class="table-responsive mb-4">
+                            <table class="table table-hover align-middle border mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 50px;">Foto</th>
+                                        <th>Nome Completo & Guerra</th>
+                                        <th>Posto / Categoria</th>
+                                        <th>SARAM / Login</th>
+                                        <th>Divisão / Setor</th>
+                                        <th class="text-center">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (empty($operadoresRh)): ?>
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted py-3">
+                                                <i class="bi bi-info-circle me-1"></i> Nenhum operador de RH cadastrado no momento.
+                                            </td>
+                                        </tr>
+                                    <?php else: ?>
+                                        <?php foreach ($operadoresRh as $rh): ?>
+                                            <tr>
+                                                <td>
+                                                    <img src="/index.php?r=foto&saram=<?= $rh['saram'] ?>&id=<?= $rh['efetivo_id'] ?>" class="rounded-circle" style="width: 38px; height: 38px; object-fit: cover;" alt="Foto">
+                                                </td>
+                                                <td>
+                                                    <div class="fw-bold text-dark"><?= sanitize_output($rh['nome_guerra'] ?: $rh['login']) ?></div>
+                                                    <small class="text-muted"><?= sanitize_output($rh['nome']) ?></small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-info text-dark"><?= sanitize_output($rh['posto'] ?: 'CIVIL') ?></span>
+                                                </td>
+                                                <td>
+                                                    <code><?= sanitize_output($rh['saram'] ?: $rh['login']) ?></code>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-light text-dark border"><?= sanitize_output($rh['divisao_sigla'] ?: 'COMARA') ?></span>
+                                                    <small class="text-muted"><?= sanitize_output($rh['setor'] ?: '') ?></small>
+                                                </td>
+                                                <td class="text-center">
+                                                    <form method="POST" action="/index.php?r=admin/salvar_chefias" class="d-inline" onsubmit="return confirm('Deseja realmente revogar o perfil de RH deste integrante?')">
+                                                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                                                        <input type="hidden" name="secao" value="rh_remover">
+                                                        <input type="hidden" name="usuario_id" value="<?= $rh['usuario_id'] ?>">
+                                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Revogar perfil de RH">
+                                                            <i class="bi bi-person-dash me-1"></i> Revogar RH
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Formulário para Conceder Permissão de RH a um Integrante -->
+                        <div class="p-3 bg-light rounded border">
+                            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-person-plus-fill me-1 text-info"></i> Conceder Função de RH a Outro Integrante:</h6>
+                            <form method="POST" action="/index.php?r=admin/salvar_chefias" class="row g-2 align-items-end">
+                                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                                <input type="hidden" name="secao" value="rh_adicionar">
+
+                                <div class="col-md-9">
+                                    <label class="form-label small text-muted mb-1">Selecione qualquer militar ou servidor civil da COMARA:</label>
+                                    <select name="rh_efetivo_id" class="form-select select2-enable" required>
+                                        <option value="">Selecione pelo Posto, Nome ou SARAM...</option>
+                                        <?php 
+                                        $rhEfetivoIds = array_filter(array_column($operadoresRh, 'efetivo_id'));
+                                        foreach ($todoEfetivo as $m): 
+                                            if (in_array($m['id'], $rhEfetivoIds)) continue;
+                                        ?>
+                                            <option value="<?= $m['id'] ?>">
+                                                <?= sanitize_output($m['posto']) ?> <?= sanitize_output($m['nome_guerra']) ?> — <?= sanitize_output($m['nome']) ?> (<?= sanitize_output($m['divisao_sigla']) ?> / <?= sanitize_output($m['setor']) ?> - SARAM: <?= sanitize_output($m['saram']) ?>)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="submit" class="btn btn-info text-white fw-bold w-100" onclick="return confirm('Confirma a concessão de perfil de Recursos Humanos (RH) a este integrante?')">
+                                        <i class="bi bi-person-check me-1"></i> Atribuir Perfil RH
                                     </button>
                                 </div>
                             </form>

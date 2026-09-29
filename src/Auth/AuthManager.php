@@ -44,11 +44,10 @@ class AuthManager {
      * Praças (Cb, S1, S2), Civis (CV), Sargentos (1S, 2S, 3S) e Suboficiais (SO) retornam FALSE.
      */
     public static function isOficial(?array $user = null): bool {
-        if (!self::check()) {
-            return false;
-        }
-
         if ($user === null) {
+            if (!self::check()) {
+                return false;
+            }
             $user = self::user();
         }
 
@@ -67,6 +66,34 @@ class AuthManager {
         }
 
         return in_array($posto, POSTOS_OFICIAIS, true);
+    }
+
+    /**
+     * Verifica se o usuário autenticado tem prerrogativa para avaliar na Fase 1.
+     * Regra: Exclusivamente Oficiais nos postos de Tenente ou Capitão (ou Administrador do sistema).
+     */
+    public static function isAvaliadorFase1(?array $user = null): bool {
+        if ($user === null) {
+            if (!self::check()) {
+                return false;
+            }
+            $user = self::user();
+        }
+
+        if (!$user) {
+            return false;
+        }
+
+        if (($user['perfil'] ?? '') === PERFIL_ADMIN) {
+            return true;
+        }
+
+        $posto = trim((string)($user['posto'] ?? ''));
+        if ($posto === '') {
+            return false;
+        }
+
+        return in_array($posto, POSTOS_AVALIADORES_FASE1, true);
     }
 
     public static function login(string $username, string $password): array {

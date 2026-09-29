@@ -140,7 +140,7 @@ if (!$candidatoPendente) {
         'pleito_id'                  => $pleitoId,
         'candidato_id'               => $candId,
         'tipo_avaliacao'             => 'OBRIGATORIA_CHEFE',
-        'servico_escala'             => 'Serviço Regular de Escala Técnica',
+        'servico_escala'             => 5,
         'eficiencia_eficacia'        => 5,
         'conhecimento_especialidade' => 5,
         'iniciativa_adaptabilidade'  => 5,

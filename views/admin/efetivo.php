@@ -241,13 +241,15 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                                         <i class="bi bi-pencil-square"></i>
                                     </button>
 
-                                    <form method="POST" action="/index.php?r=admin/resetar_senha" class="d-inline me-1" onsubmit="return confirm('Deseja realmente redefinir a senha de <?= sanitize_output($item['nome_guerra']) ?> para padrao@2026?')">
-                                        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-                                        <input type="hidden" name="efetivo_id" value="<?= $item['id'] ?>">
-                                        <button type="submit" class="btn btn-sm btn-outline-warning" title="Resetar Senha para padrao@2026">
-                                            <i class="bi bi-key"></i>
-                                        </button>
-                                    </form>
+                                    <?php if (AuthManager::hasRole(PERFIL_ADMIN)): ?>
+                                        <form method="POST" action="/index.php?r=admin/resetar_senha" class="d-inline me-1" onsubmit="return confirm('Deseja realmente redefinir a senha de <?= sanitize_output($item['nome_guerra']) ?> para padrao@2026?')">
+                                            <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                                            <input type="hidden" name="efetivo_id" value="<?= $item['id'] ?>">
+                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="Resetar Senha para padrao@2026">
+                                                <i class="bi bi-key"></i>
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
 
                                     <form method="POST" action="/index.php?r=admin/toggle_ativo_efetivo" class="d-inline" onsubmit="return confirm('Deseja realmente alterar o status deste integrante?')">
                                         <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
@@ -423,18 +425,32 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                             <div class="form-text small">Caso não envie foto, o sistema consultará automaticamente a API do SIGPES.</div>
                         </div>
 
-                        <div class="col-12">
-                            <input type="hidden" name="is_admin_enviado" value="1">
-                            <div class="p-2 border rounded bg-light mt-2 mb-1">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="is_admin" id="campo_is_admin" value="1">
-                                    <label class="form-check-label fw-bold text-danger" for="campo_is_admin">
-                                        <i class="bi bi-shield-lock me-1"></i> Perfil de Administrador do Sistema (ADMIN)
-                                    </label>
-                                    <div class="small text-muted">Concede acesso total de gestão ao sistema, prazos, reinício do pleito e auditoria.</div>
+                        <?php if (AuthManager::hasRole(PERFIL_ADMIN)): ?>
+                            <div class="col-md-6">
+                                <input type="hidden" name="is_admin_enviado" value="1">
+                                <div class="p-2 border rounded bg-light mt-2 mb-1">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="is_admin" id="campo_is_admin" value="1">
+                                        <label class="form-check-label fw-bold text-danger" for="campo_is_admin">
+                                            <i class="bi bi-shield-lock me-1"></i> Perfil Administrador (ADMIN)
+                                        </label>
+                                        <div class="small text-muted" style="font-size: 0.75rem;">Acesso total de gestão, prazos e auditoria.</div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                            <div class="col-md-6">
+                                <input type="hidden" name="is_rh_enviado" value="1">
+                                <div class="p-2 border rounded bg-light mt-2 mb-1">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="is_rh" id="campo_is_rh" value="1">
+                                        <label class="form-check-label fw-bold text-primary" for="campo_is_rh">
+                                            <i class="bi bi-person-gear me-1"></i> Perfil Recursos Humanos (RH)
+                                        </label>
+                                        <div class="small text-muted" style="font-size: 0.75rem;">Acesso exclusivo ao cadastro de usuários.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
 
                         <div class="col-12">
                             <div class="form-check form-switch mt-1">
@@ -524,7 +540,8 @@ function abrirModalCadastro() {
     document.getElementById('campo_categoria').value = 'graduado';
     document.getElementById('campo_tipo_vinculo').value = 'MILITAR_CARREIRA';
     document.getElementById('campo_chefe_direto_id').value = '';
-    document.getElementById('campo_is_admin').checked = false;
+    if (document.getElementById('campo_is_admin')) document.getElementById('campo_is_admin').checked = false;
+    if (document.getElementById('campo_is_rh')) document.getElementById('campo_is_rh').checked = false;
     document.getElementById('campo_ativo').checked = true;
 }
 
@@ -544,7 +561,8 @@ function abrirModalEdicao(item) {
     document.getElementById('campo_categoria').value = item.categoria || 'graduado';
     document.getElementById('campo_tipo_vinculo').value = item.tipo_vinculo || 'MILITAR_CARREIRA';
     document.getElementById('campo_chefe_direto_id').value = item.chefe_direto_id || '';
-    document.getElementById('campo_is_admin').checked = (item.usuario_perfil === 'ADMIN');
+    if (document.getElementById('campo_is_admin')) document.getElementById('campo_is_admin').checked = (item.usuario_perfil === 'ADMIN');
+    if (document.getElementById('campo_is_rh')) document.getElementById('campo_is_rh').checked = (item.usuario_perfil === 'RH');
     document.getElementById('campo_ativo').checked = (item.ativo == 1);
 
     const modal = new bootstrap.Modal(document.getElementById('modalCadastrarEfetivo'));

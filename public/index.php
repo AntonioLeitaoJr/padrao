@@ -49,6 +49,9 @@ switch ($rota) {
     case 'fase1/avaliar':
         (new Fase1Controller())->avaliar();
         break;
+    case 'fase1/dados_ficha':
+        (new Fase1Controller())->dadosFicha();
+        break;
     case 'fase1/tacf':
         (new Fase1Controller())->salvarTacf();
         break;

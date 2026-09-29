@@ -33,7 +33,7 @@ class Efetivo {
         $pdo = Database::getConnection();
         $sql = "
             SELECT e.*, 
-                   f.id as ficha_id, f.media_calculada, f.updated_at as avaliado_em,
+                   f.id as ficha_id, f.is_nob, f.media_calculada, f.updated_at as avaliado_em,
                    t.nota_tacf,
                    del.id as delegacao_id, del.oficial_delegado_id, del.motivo as delegacao_motivo,
                    del_of.posto as delegado_posto, del_of.nome_guerra as delegado_guerra,
@@ -47,7 +47,7 @@ class Efetivo {
             LEFT JOIN avaliacoes_tacf t ON t.candidato_id = e.id AND t.pleito_id = :p
             WHERE (e.chefe_direto_id = :chefe OR del.oficial_delegado_id = :chefe) 
               AND e.ativo = 1 
-              AND e.categoria IN ('graduado', 'praca')
+              AND e.categoria IN ('graduado', 'praca', 'sppf', 'sptf')
             ORDER BY sou_o_delegado ASC, e.categoria, e.posto, e.nome
         ";
         $stmt = $pdo->prepare($sql);
@@ -179,6 +179,7 @@ class Efetivo {
                    MAX(t.nota_tacf) as nota_tacf,
                    COALESCE(AVG(f.media_calculada), 0) as media_fase1,
                    COUNT(DISTINCT f.id) as qtd_fichas,
+                   MAX(COALESCE(f.is_nob, 0)) as foi_nob,
                    MAX(IF(s.id IS NOT NULL, 1, 0)) as selecionado_pelo_orgao
             FROM efetivo e
             LEFT JOIN avaliacoes_tacf t ON t.candidato_id = e.id AND t.pleito_id = :p
