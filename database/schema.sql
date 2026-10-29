@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS `efetivo` (
     `tipo_vinculo` ENUM('MILITAR_CARREIRA', 'MILITAR_TEMPORARIO', 'CIVIL_PERMANENTE', 'CIVIL_TEMPORARIO') NOT NULL,
     `chefe_direto_id` INT NULL,
     `data_admissao_comara` DATE NULL, -- Critério de desempate 2: Mais antigo na COMARA
+    `data_inicio_servico` DATE NULL, -- Início do serviço militar ou civil
     `data_vinculo_om` DATE NULL,      -- Critério de desempate 3: Maior tempo de OM atual
     `indicacoes_anteriores_qtd` INT NOT NULL DEFAULT 0, -- Critério 1: Nunca indicado antes
     `foto_custom` VARCHAR(255) NULL,  -- Upload manual de foto pelo administrador
@@ -139,7 +140,7 @@ CREATE TABLE IF NOT EXISTS `avaliacoes_tacf` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 7. TABELA DE SELEÇÃO POR DIVISÃO / ASSESSORIA (FASE 2)
--- Cada chefe deve escolher EXATAMENTE 6 por categoria
+-- Cada chefe deve escolher um por categoria com concorrentes disponíveis
 CREATE TABLE IF NOT EXISTS `selecao_fase2` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `pleito_id` INT NOT NULL,
@@ -286,6 +287,17 @@ CREATE TABLE IF NOT EXISTS `historico_fases_pleito` (
     CONSTRAINT `fk_hist_pleito` FOREIGN KEY (`pleito_id`) REFERENCES `pleitos` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_hist_user` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`),
     INDEX `idx_hist_pleito` (`pleito_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS historico_vencedores (
+    ano INT NOT NULL,
+    categoria ENUM('graduado','praca','sppf','sptf') NOT NULL,
+    candidato_id INT NOT NULL,
+    atualizado_por INT NOT NULL,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (ano, categoria),
+    FOREIGN KEY (candidato_id) REFERENCES efetivo(id),
+    FOREIGN KEY (atualizado_por) REFERENCES usuarios(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

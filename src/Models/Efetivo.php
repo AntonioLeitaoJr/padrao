@@ -8,6 +8,21 @@ require_once __DIR__ . '/../../config/database.php';
  * Modelo de Acesso aos Dados do Efetivo e Candidatos da COMARA
  */
 class Efetivo {
+    public static function orgaoSelecaoUsuario(int $usuarioId): ?string {
+        $pdo = Database::getConnection();
+        $divisoes = "'" . implode("','", array_keys(ORGAOS_SELECAO_FASE2['DIVISOES'])) . "'";
+        $stmt = $pdo->prepare("SELECT d.sigla FROM divisoes_assessorias d
+            JOIN usuarios u ON u.id = d.chefe_usuario_id
+            JOIN efetivo e ON e.id = u.efetivo_id
+            WHERE d.ativo = 1 AND u.ativo = 1 AND e.ativo = 1
+              AND d.sigla IN ($divisoes) AND u.id = :u ORDER BY d.sigla LIMIT 1");
+        $stmt->execute([':u' => $usuarioId]);
+        $divisao = $stmt->fetchColumn();
+        if ($divisao) return $divisao;
+        $representante = self::getMilitarMaisAntigoAssessorias();
+        return $representante && (int)$representante['usuario_id'] === $usuarioId ? 'ASSESSORIAS' : null;
+    }
+
 
     public static function getPorId(int $id): ?array {
         $pdo = Database::getConnection();
@@ -177,10 +192,17 @@ class Efetivo {
         $pdo = Database::getConnection();
         $assessorias = SIGLAS_ASSESSORIAS;
         $in = "'" . implode("','", $assessorias) . "'";
+        $divisoes = "'" . implode("','", array_keys(ORGAOS_SELECAO_FASE2['DIVISOES'])) . "'";
+        $oficiais = "'" . implode("','", POSTOS_OFICIAIS) . "'";
         $sql = "
-            SELECT e.* 
-            FROM efetivo e
-            WHERE e.ativo = 1 AND e.divisao_sigla IN ($in)
+            SELECT DISTINCT e.*, u.id AS usuario_id
+            FROM divisoes_assessorias d
+            JOIN usuarios u ON u.id = d.chefe_usuario_id AND u.ativo = 1
+            JOIN efetivo e ON e.id = u.efetivo_id
+            WHERE d.ativo = 1 AND e.ativo = 1 AND d.sigla IN ($in)
+              AND e.posto IN ($oficiais)
+              AND NOT EXISTS (SELECT 1 FROM divisoes_assessorias dv
+                  WHERE dv.ativo = 1 AND dv.sigla IN ($divisoes) AND dv.chefe_usuario_id = u.id)
             ORDER BY 
                 CASE e.posto
                     WHEN 'Ten-Brig' THEN 1
@@ -209,7 +231,7 @@ class Efetivo {
                     WHEN 'S2' THEN 17
                     ELSE 99
                 END,
-                e.data_admissao_comara ASC,
+                (e.data_admissao_comara IS NULL) ASC, e.data_admissao_comara ASC,
                 e.id ASC
             LIMIT 1
         ";
@@ -248,45 +270,21 @@ class Efetivo {
             FROM efetivo e
             LEFT JOIN avaliacoes_tacf t ON t.candidato_id = e.id AND t.pleito_id = :p
             LEFT JOIN fichas_indicacao f ON f.candidato_id = e.id AND f.pleito_id = :p
+                AND f.status = 'concluido' AND f.is_nob = 0
             LEFT JOIN selecao_fase2 s ON s.candidato_id = e.id AND s.pleito_id = :p AND s.orgao_sigla = :orgao
             WHERE e.ativo = 1 AND e.categoria = :cat {$whereOrgao}
             GROUP BY e.id
-            ORDER BY media_fase1 DESC, nota_tacf DESC, e.indicacoes_anteriores_qtd ASC, e.nome_guerra ASC
+            ORDER BY e.id
         ";
 
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         $todos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        if (empty($todos)) {
-            return [];
-        }
-
-        // Filtra candidatos avaliados com nota válida (não NOB e média > 0)
-        $avaliadosComNota = array_values(array_filter($todos, function($c) {
-            return (float)$c['media_fase1'] > 0 && (int)$c['foi_nob'] === 0;
-        }));
-
-        $candidatosFinais = [];
-        if (!empty($avaliadosComNota)) {
-            // Regra dos 20% das melhores notas da fase anterior (mínimo de 1 candidato)
-            $qtdTop20 = max(1, (int)ceil(count($avaliadosComNota) * 0.20));
-            $candidatosFinais = array_slice($avaliadosComNota, 0, $qtdTop20);
-        } else {
-            // Caso nenhum candidato do órgão tenha sido avaliado ainda, lista os disponíveis
-            $candidatosFinais = $todos;
-        }
-
-        // Exibe a lista final em ordem alfabética por Nome de Guerra
-        usort($candidatosFinais, function($a, $b) {
-            $cmp = strcasecmp((string)$a['nome_guerra'], (string)$b['nome_guerra']);
-            if ($cmp === 0) {
-                return strcasecmp((string)$a['nome'], (string)$b['nome']);
-            }
-            return $cmp;
-        });
-
-        return $candidatosFinais;
+        require_once __DIR__ . '/../Services/DesempateService.php';
+        require_once __DIR__ . '/HistoricoVencedores.php';
+        $todos = HistoricoVencedores::enriquecer($todos, $pleitoId);
+        return DesempateService::classificarFase2($todos);
     }
 
     /**
@@ -560,6 +558,23 @@ class Efetivo {
         $funcao = trim($dados['funcao'] ?? ($posto . ' - ' . $setor));
         $ativo = isset($dados['ativo']) ? (int)$dados['ativo'] : 1;
 
+        $datas = [];
+        foreach (['data_admissao_comara', 'data_inicio_servico'] as $campo) {
+            if (!array_key_exists($campo, $dados)) continue;
+            $valor = trim((string)$dados[$campo]);
+            $dt = $valor !== '' ? DateTimeImmutable::createFromFormat('!Y-m-d', $valor) : null;
+            if ($valor !== '' && (!$dt || $dt->format('Y-m-d') !== $valor || $valor > date('Y-m-d'))) {
+                throw new InvalidArgumentException('Data de apresentação ou início do serviço inválida.');
+            }
+            $datas[$campo] = $valor !== '' ? $valor : null;
+        }
+        $sqlDatas = '';
+        $paramsDatas = [];
+        foreach ($datas as $campo => $valor) {
+            $sqlDatas .= ", $campo = :$campo";
+            $paramsDatas[":$campo"] = $valor;
+        }
+
         if ($id) {
             // Update
             $sql = "
@@ -569,7 +584,7 @@ class Efetivo {
                     posto = :posto, quadro = :quadro, especialidade = :esp,
                     setor = :setor, divisao_sigla = :div, funcao = :funcao,
                     categoria = :cat, tipo_vinculo = :vinculo,
-                    chefe_direto_id = :chefe, telefone = :tel, ativo = :ativo
+                    chefe_direto_id = :chefe, telefone = :tel, ativo = :ativo {$sqlDatas}
                     " . ($fotoCustom ? ", foto_custom = :foto" : "") . "
                 WHERE id = :id
             ";
@@ -599,7 +614,7 @@ class Efetivo {
             }
 
             $stmt = $pdo->prepare($sql);
-            $stmt->execute($params);
+            $stmt->execute(array_merge($params, $paramsDatas));
 
             // Atualiza usuário vinculado se existir
             $loginEsperado = $saram ?: $cpf;
@@ -649,6 +664,10 @@ class Efetivo {
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
             $novoId = (int)$pdo->lastInsertId();
+            if ($sqlDatas !== '') {
+                $pdo->prepare('UPDATE efetivo SET ' . substr($sqlDatas, 2) . ' WHERE id = :id')
+                    ->execute(array_merge($paramsDatas, [':id' => $novoId]));
+            }
 
             // Cria conta de acesso
             $login = $saram ?: ($cpf ?: 'user_' . $novoId);

@@ -1,0 +1,40 @@
+name: Regras da Fase 2
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  fase2:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test
+          MYSQL_DATABASE: comara_fase2_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -ptest"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DB_HOST: 127.0.0.1
+      DB_NAME: comara_fase2_test
+      DB_USER: root
+      DB_PASS: test
+      FASE2_TEST_DB: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP e MySQL
+        run: sudo apt-get update -qq && sudo apt-get install -y php-cli php-mysql
+      - name: Sintaxe PHP e JavaScript
+        run: |
+          find src views config public database tests -name '*.php' -print0 | xargs -0 -n1 php -l
+          node --check public/assets/js/main.js
+      - name: Regras de classificação e desempate
+        run: php tests/teste_fase2_regras_unitarias.php
+      - name: Persistência, permissões e passagem à urna
+        run: php tests/teste_fase2_integracao.php

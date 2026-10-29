@@ -21,63 +21,33 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // 2. CONTADOR E VALIDAÇÃO RIGOROSA DA FASE 2 (EXATAMENTE 6 POR CATEGORIA)
+    // Fase 2: um selecionado por grupo com candidatos; zero em grupos vazios.
     const formFase2 = document.getElementById('formFase2');
     if (formFase2) {
-        const categorias = ['graduado', 'praca', 'sppf', 'sptf'];
-        const btnSalvar = document.getElementById('btnSalvarFase2');
-
-        function atualizarContadores() {
-            let todosValidos = true;
-
-            categorias.forEach(cat => {
-                const checks = formFase2.querySelectorAll(`input[name="selecao[${cat}][]"]:checked`);
-                const total = checks.length;
+        const atualizar = () => {
+            let valido = true;
+            ['graduado', 'praca', 'sppf', 'sptf'].forEach(cat => {
+                const radios = formFase2.querySelectorAll(`input[name="selecao[${cat}]"]`);
+                const total = Array.from(radios).filter(r => r.checked).length;
+                const esperado = radios.length ? 1 : 0;
                 const badge = document.getElementById(`badge-count-${cat}`);
-
-                if (badge) {
-                    badge.textContent = `${total} / 6 selecionados`;
-                    if (total === 6) {
-                        badge.className = 'badge bg-success fs-6';
-                    } else if (total < 6) {
-                        badge.className = 'badge bg-warning text-dark fs-6';
-                        todosValidos = false;
-                    } else {
-                        badge.className = 'badge bg-danger fs-6';
-                        todosValidos = false;
-                    }
-                }
+                badge.textContent = esperado ? `${total} / 1 selecionado` : 'Sem candidatos';
+                badge.className = total === esperado ? 'badge bg-success fs-6' : 'badge bg-warning text-dark fs-6';
+                if (total !== esperado) valido = false;
             });
-
-            if (btnSalvar) {
-                btnSalvar.disabled = !todosValidos;
-                if (todosValidos) {
-                    btnSalvar.classList.remove('btn-secondary');
-                    btnSalvar.classList.add('btn-primary');
-                } else {
-                    btnSalvar.classList.remove('btn-primary');
-                    btnSalvar.classList.add('btn-secondary');
-                }
-            }
-        }
-
-        formFase2.addEventListener('change', function (e) {
-            if (e.target.type === 'checkbox' && e.target.name.startsWith('selecao[')) {
-                const catMatch = e.target.name.match(/selecao\[(.*?)\]/);
-                if (catMatch) {
-                    const cat = catMatch[1];
-                    const checks = formFase2.querySelectorAll(`input[name="selecao[${cat}][]"]:checked`);
-                    if (checks.length > 6) {
-                        e.target.checked = false;
-                        alert('Atenção: O regulamento permite selecionar EXATAMENTE 6 candidatos por categoria. Desmarque um candidato antes de selecionar outro.');
-                    }
-                }
-                atualizarContadores();
-            }
-        });
-
-        atualizarContadores();
+            document.getElementById('btnSalvarFase2').disabled = !valido || formFase2.dataset.editavel !== '1';
+        };
+        formFase2.addEventListener('change', atualizar);
+        atualizar();
     }
+    const fichaFase2 = document.getElementById('fichaFase2');
+    if (fichaFase2) fichaFase2.addEventListener('show.bs.modal', event => {
+        const botao = event.relatedTarget;
+        document.getElementById('fichaFase2Nome').textContent = botao.dataset.nome;
+        document.getElementById('fichaFase2Posto').textContent = botao.dataset.posto;
+        document.getElementById('fichaFase2Setor').textContent = botao.dataset.setor;
+        document.getElementById('fichaFase2Foto').src = botao.dataset.foto;
+    });
 
     // 3. SELEÇÃO VISUAL NA URNA (FASE 3)
     const urnaForm = document.getElementById('formUrna');

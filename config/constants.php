@@ -46,7 +46,7 @@ const CATEGORIAS_PADRAO = [
 
 // Fases Regimentais
 define('FASE_1', 1); // Avaliação pelos Chefes Diretos
-define('FASE_2', 2); // Seleção pelos Chefes de Divisão e Assessoria (Exatamente 6 por categoria)
+define('FASE_2', 2); // Seleção pelos Chefes de Divisão e Assessoria (Um por categoria disponível em cada órgão)
 define('FASE_3', 3); // Votação Geral do Efetivo
 define('FASE_4', 4); // Estado-Maior (Apreciação por Oficiais Superiores)
 define('FASE_5', 5); // Homologação dos Resultados e Voto de Minerva
@@ -60,7 +60,7 @@ const FASES_PROCESSO = [
     FASE_2 => [
         'numero'    => 2,
         'nome'      => 'Seleção por Divisões e Assessorias',
-        'descricao' => 'Seleção de 1 candidato por categoria por cada Divisão e pelas Assessorias unificadas (total de 6 indicados por categoria para a Fase 3).'
+        'descricao' => 'Seleção de 1 candidato por categoria por cada Divisão e pelas Assessorias unificadas (até 6 indicados por categoria para a Fase 3).'
     ],
     FASE_3 => [
         'numero'    => 3,
