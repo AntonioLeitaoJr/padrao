@@ -23,6 +23,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
         <a href="/index.php?r=admin/baixar_modelo_csv" class="btn btn-outline-secondary" title="Baixar modelo em branco formatado para Excel">
             <i class="bi bi-download me-1"></i> Modelo CSV
         </a>
+        <a href="/index.php?r=admin/vencedores" class="btn btn-outline-primary">Vencedores anteriores</a>
         <a href="/index.php?r=admin/baixar_efetivo_csv" class="btn btn-outline-primary" title="Exportar todos os registros cadastrados">
             <i class="bi bi-cloud-arrow-down me-1"></i> Exportar Atual
         </a>
@@ -313,6 +314,14 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                 <div class="modal-body p-4">
                     <div class="row g-3">
                         <div class="col-md-6">
+                            <label for="campo_data_admissao_comara" class="form-label">Apresentação / admissão na COMARA</label>
+                            <input type="date" class="form-control" name="data_admissao_comara" id="campo_data_admissao_comara" max="<?= date('Y-m-d') ?>">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="campo_data_inicio_servico" class="form-label">Início do serviço militar ou civil</label>
+                            <input type="date" class="form-control" name="data_inicio_servico" id="campo_data_inicio_servico" max="<?= date('Y-m-d') ?>">
+                        </div>
+                        <div class="col-md-6">
                             <label class="form-label fw-semibold">Nome Completo *</label>
                             <input type="text" name="nome" id="campo_nome" class="form-control" required placeholder="EX: JOÃO CARLOS DA SILVA">
                         </div>
@@ -526,6 +535,8 @@ require_once ROOT_PATH . '/views/layouts/header.php';
 <script>
 function abrirModalCadastro() {
     document.getElementById('modalCadastrarEfetivoLabel').innerHTML = '<i class="bi bi-person-plus-fill me-2"></i> Cadastrar Integrante do Efetivo';
+    document.getElementById('campo_data_admissao_comara').value = '';
+    document.getElementById('campo_data_inicio_servico').value = '';
     document.getElementById('campo_id').value = '';
     document.getElementById('campo_nome').value = '';
     document.getElementById('campo_nome_guerra').value = '';
@@ -547,6 +558,8 @@ function abrirModalCadastro() {
 
 function abrirModalEdicao(item) {
     document.getElementById('modalCadastrarEfetivoLabel').innerHTML = '<i class="bi bi-pencil-square me-2"></i> Editar Integrante: ' + item.posto + ' ' + item.nome_guerra;
+    document.getElementById('campo_data_admissao_comara').value = item.data_admissao_comara || '';
+    document.getElementById('campo_data_inicio_servico').value = item.data_inicio_servico || '';
     document.getElementById('campo_id').value = item.id || '';
     document.getElementById('campo_nome').value = item.nome || '';
     document.getElementById('campo_nome_guerra').value = item.nome_guerra || '';

@@ -111,6 +111,11 @@ class Pleito {
 
         // SE SAIR DA FASE 2: Consolida automaticamente os indicados
         if ($faseAtual === FASE_2) {
+            require_once __DIR__ . '/SelecaoFase2.php';
+            foreach (SelecaoFase2::relatorioProgressoOrgaos($pleitoId) as $progresso) {
+                if (!$progresso['concluido']) return ['sucesso' => false,
+                    'mensagem' => 'Conclua a seleção de um candidato por grupo disponível em todos os órgãos antes de avançar.'];
+            }
             self::consolidarFase2($pleitoId);
         }
 
@@ -259,7 +264,7 @@ class Pleito {
 
         // Agrupa votos/seleções de cada divisão e assessoria na Fase 2
         $sql = "
-            SELECT s.candidato_id, s.categoria, COUNT(s.id) as total_indicacoes,
+            SELECT s.candidato_id, s.categoria, COUNT(DISTINCT s.id) as total_indicacoes,
                    COALESCE(AVG(f.media_calculada), 0) as media_fase1
             FROM selecao_fase2 s
             LEFT JOIN fichas_indicacao f ON f.candidato_id = s.candidato_id AND f.pleito_id = s.pleito_id

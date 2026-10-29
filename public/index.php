@@ -127,6 +127,9 @@ switch ($rota) {
     case 'admin/reiniciar_pleito':
         (new AdminController())->reiniciarPleito();
         break;
+    case 'admin/vencedores':
+        (new AdminController())->vencedores();
+        break;
     case 'admin/efetivo':
         (new AdminController())->efetivo();
         break;

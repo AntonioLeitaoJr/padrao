@@ -34,16 +34,7 @@ class Fase2Controller {
         if (AuthManager::hasRole(PERFIL_ADMIN)) {
             $orgaoSigla = $_POST['orgao'] ?? ($_GET['orgao'] ?? 'DPC');
         } else {
-            // Verifica se é de alguma das assessorias ou representante das assessorias
-            $maisAntigoAss = Efetivo::getMilitarMaisAntigoAssessorias();
-            $userDiv = (string)($user['divisao_sigla'] ?? ($user['orgao_chefe_sigla'] ?? ''));
-            $isAss = in_array($userDiv, SIGLAS_ASSESSORIAS, true) || ($maisAntigoAss && (int)$maisAntigoAss['id'] === (int)($user['efetivo_id'] ?? 0));
-
-            if ($isAss) {
-                $orgaoSigla = 'ASSESSORIAS';
-            } else {
-                $orgaoSigla = $user['orgao_chefe_sigla'] ?? ($user['divisao_sigla'] ?? 'DPC');
-            }
+            $orgaoSigla = Efetivo::orgaoSelecaoUsuario((int)$user['id']);
         }
 
         if (!in_array($orgaoSigla, $orgaosValidos, true)) {

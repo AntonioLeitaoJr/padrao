@@ -33,7 +33,7 @@ class Homologacao {
             $sql = "
                 SELECT e.id as candidato_id, e.nome, e.nome_guerra, e.posto, e.quadro, e.especialidade,
                        e.setor, e.divisao_sigla, e.funcao, e.saram, e.foto_custom,
-                       e.data_admissao_comara, e.data_vinculo_om, e.indicacoes_anteriores_qtd,
+                       e.data_admissao_comara, e.data_inicio_servico,
                        COALESCE(MAX(t.nota_tacf), 0) as nota_tacf,
                        COUNT(u.id) as total_votos
                 FROM indicados_consolidados i
@@ -49,6 +49,9 @@ class Homologacao {
             $stmt = $pdo->prepare($sql);
             $stmt->execute([':p' => $pleitoId, ':cat' => $cat]);
             $candidatos = $stmt->fetchAll();
+
+            require_once __DIR__ . '/HistoricoVencedores.php';
+            $candidatos = HistoricoVencedores::enriquecer($candidatos, $pleitoId);
 
             // Aplica ordenação e desempate automatizado
             $apuracao = DesempateService::ordenarCandidatos($candidatos, 'total_votos');

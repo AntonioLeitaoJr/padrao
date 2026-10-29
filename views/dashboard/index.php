@@ -107,7 +107,7 @@ $faseAtual = $pleito ? (int)$pleito['fase_atual'] : 1;
         <div>
             <h5 class="alert-heading fw-bold mb-1"><i class="bi bi-diagram-3-fill text-primary me-2"></i>Seleção de Candidatos pela sua Chefia (Fase 2)</h5>
             <p class="mb-0 small">
-                Seu órgão (<strong><?= sanitize_output($userLogado['orgao_chefe_sigla']) ?></strong>) ainda não concluiu a indicação obrigatória de exatamente 6 candidatos em cada uma das 4 categorias.
+                Seu órgão (<strong><?= sanitize_output($dados['orgao_fase2']) ?></strong>) ainda não concluiu a indicação obrigatória de um candidato por categoria com concorrentes disponíveis.
             </p>
         </div>
         <a href="/index.php?r=fase2" class="btn btn-primary fw-bold text-nowrap ms-3">
@@ -210,11 +210,10 @@ $faseAtual = $pleito ? (int)$pleito['fase_atual'] : 1;
             </div>
             <div class="card-body">
                 <ol class="small text-muted ps-3 mb-0">
-                    <li class="mb-2"><strong>1º Critério:</strong> Candidatos que nunca foram indicados em pleitos anteriores possuem prioridade sobre candidatos já indicados.</li>
+                    <li class="mb-2"><strong>1º Critério:</strong> Candidatos que não venceram nos dois anos anteriores ao pleito possuem prioridade sobre os vencedores desse período.</li>
                     <li class="mb-2"><strong>2º Critério:</strong> Em caso de persistência, prevalece o candidato mais antigo na instituição COMARA (data de apresentação/admissão).</li>
-                    <li class="mb-2"><strong>3º Critério:</strong> Persistindo o empate, prevalece o candidato com maior tempo de vínculo à OM (Organização Militar) atual.</li>
+                    <li class="mb-2"><strong>3º Critério:</strong> Persistindo o empate, prevalece o candidato com maior tempo de serviço militar ou civil.</li>
                     <li class="mb-2"><strong>4º Critério:</strong> Maior nota na Avaliação do TACF lançada pelo setor de Educação Física.</li>
-                    <li><strong>Voto de Minerva (Fase 5):</strong> Se ainda assim persistir empate em 1º lugar na apuração final, o Sr. Presidente da COMARA proferirá o voto de minerva oficial.</li>
                 </ol>
             </div>
         </div>

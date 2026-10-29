@@ -13,7 +13,7 @@ $nomeOrgaoAtual = $todosOrgaosFase2[$orgaoSigla] ?? $orgaoSigla;
     <div>
         <h2 class="h4 fw-bold text-primary mb-1">Fase 2: Seleção por Divisões e Assessorias</h2>
         <div class="text-muted small">
-            Seleção regimental de <strong>1 candidato por categoria</strong> (entre os 20% com melhores notas da Fase 1) por cada Divisão e pelas Assessorias unificadas, formando os 6 selecionados para a Urna da Fase 3.
+            Seleção regimental de <strong>1 candidato por categoria</strong> (entre os 20% com melhores notas da Fase 1) por cada Divisão e pelas Assessorias unificadas, formando até 6 selecionados para a Urna da Fase 3.
         </div>
     </div>
     <div class="d-flex align-items-center gap-2">
@@ -40,7 +40,10 @@ $nomeOrgaoAtual = $todosOrgaosFase2[$orgaoSigla] ?? $orgaoSigla;
     </div>
 </div>
 
-<form id="formFase2" method="POST" action="/index.php?r=fase2">
+<?php if (AuthManager::hasRole([PERFIL_ADMIN, PERFIL_RH])): ?>
+<p><a class="btn btn-outline-primary" href="/index.php?r=admin/vencedores">Cadastrar vencedores anteriores</a></p>
+<?php endif; ?>
+<form data-editavel="<?= (int)$pleito['fase_atual'] === FASE_2 && $pleito['status'] === 'em_andamento' ? '1' : '0' ?>" id="formFase2" method="POST" action="/index.php?r=fase2">
     <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
     <input type="hidden" name="orgao" value="<?= sanitize_output($orgaoSigla) ?>">
 
@@ -49,7 +52,7 @@ $nomeOrgaoAtual = $todosOrgaosFase2[$orgaoSigla] ?? $orgaoSigla;
         <div>
             <i class="bi bi-info-circle-fill fs-5 me-2 text-primary"></i>
             <strong>Regra Regimental Obrigatória:</strong> Escolha <strong>exatamente 1 candidato</strong> em cada categoria para representar <strong><?= sanitize_output($nomeOrgaoAtual) ?></strong> na votação geral da Fase 3.
-            <div class="small text-muted mt-1">Estão listados apenas os <strong>20% com melhores notas da Fase 1</strong> de sua unidade, exibidos em ordem alfabética.</div>
+            <div class="small text-muted mt-1">Estão listados apenas os <strong>20% com melhores notas da Fase 1</strong> de sua unidade, com mínimo de dois (ou o único disponível), incluindo empates persistentes após os quatro critérios. Exibição em ordem alfabética.</div>
         </div>
         <div class="text-end">
             <button type="submit" id="btnSalvarFase2" class="btn btn-primary fw-bold px-4 shadow-sm">
@@ -123,6 +126,7 @@ $nomeOrgaoAtual = $todosOrgaosFase2[$orgaoSigla] ?? $orgaoSigla;
                                     <?php else: ?>
                                         <?php foreach ($cands as $c): ?>
                                             <?php 
+                                            $postoResumo = in_array($catKey, [CAT_SPPF, CAT_SPTF], true) ? 'CIVIL ' . strtoupper($catKey) : $c['posto'];
                                             $isNob = ((int)($c['foi_nob'] ?? 0) === 1 && (float)$c['media_fase1'] == 0);
                                             $isSelected = in_array((int)$c['id'], array_map('intval', $selecionadosAtuais[$catKey] ?? []), true); 
                                             ?>
@@ -136,18 +140,22 @@ $nomeOrgaoAtual = $todosOrgaosFase2[$orgaoSigla] ?? $orgaoSigla;
                                                         <input type="radio" class="form-check-input fs-4 cursor-pointer radio-cand-<?= $catKey ?>"
                                                                name="selecao[<?= $catKey ?>]" value="<?= $c['id'] ?>"
                                                                <?= $isSelected ? 'checked' : '' ?>
-                                                               onchange="atualizarContagemFase2('<?= $catKey ?>')">
+                                                               <?= (int)$pleito['fase_atual'] !== FASE_2 || $pleito['status'] !== 'em_andamento' ? 'disabled' : '' ?>>
                                                     <?php endif; ?>
                                                 </td>
                                                 <td>
                                                     <img src="/index.php?r=foto&saram=<?= $c['saram'] ?>&id=<?= $c['id'] ?>" class="cand-photo-sm" alt="Foto">
                                                 </td>
                                                 <td>
-                                                    <strong><?= sanitize_output($c['nome_guerra']) ?></strong><br>
+                                                    <button type="button" class="btn btn-link p-0 fw-bold" data-bs-toggle="modal" data-bs-target="#fichaFase2"
+                                                        data-nome="<?= sanitize_output($c['nome_guerra']) ?>"
+                                                        data-posto="<?= sanitize_output($postoResumo) ?>"
+                                                        data-setor="<?= sanitize_output($c['setor']) ?>"
+                                                        data-foto="<?= sanitize_output('/index.php?r=foto&saram=' . urlencode((string)$c['saram']) . '&id=' . (int)$c['id']) ?>"><?= sanitize_output($c['nome_guerra']) ?></button><br>
                                                     <small class="text-muted"><?= sanitize_output($c['nome']) ?></small>
                                                 </td>
                                                 <td>
-                                                    <span class="badge bg-light text-dark border"><?= sanitize_output($c['posto']) ?></span>
+                                                    <span class="badge bg-light text-dark border"><?= sanitize_output($postoResumo) ?></span>
                                                     <small class="text-muted d-block"><?= sanitize_output($c['quadro']) ?> - <?= sanitize_output($c['especialidade']) ?></small>
                                                 </td>
                                                 <td><?= sanitize_output($c['setor']) ?> (<?= sanitize_output($c['divisao_sigla']) ?>)</td>
@@ -202,8 +210,10 @@ $nomeOrgaoAtual = $todosOrgaosFase2[$orgaoSigla] ?? $orgaoSigla;
                         </div>
                         <small class="text-muted d-block text-truncate mb-2" title="<?= $pInfo['nome'] ?>"><?= $pInfo['nome'] ?></small>
                         <div class="text-muted" style="font-size: 0.72rem;">
-                            Grad: <?= $pInfo['contagens'][CAT_GRADUADO] ?? 0 ?>/1 | 
-                            Praça: <?= $pInfo['contagens'][CAT_PRACA] ?? 0 ?>/1
+                            <?php foreach (CATEGORIAS_PADRAO as $cat => $info): ?>
+                                <div><?= sanitize_output($info['nome']) ?>:
+                                <?= $pInfo['esperados'][$cat] ? ($pInfo['contagens'][$cat] ?? 0) . '/1' : 'Sem candidatos' ?></div>
+                            <?php endforeach; ?>
                         </div>
                     </div>
                 </div>
@@ -212,25 +222,13 @@ $nomeOrgaoAtual = $todosOrgaosFase2[$orgaoSigla] ?? $orgaoSigla;
     </div>
 </div>
 
-<script>
-function atualizarContagemFase2(catKey) {
-    const radios = document.querySelectorAll('.radio-cand-' + catKey);
-    let marcado = false;
-    radios.forEach(r => {
-        if (r.checked) marcado = true;
-    });
-
-    const badge = document.getElementById('badge-count-' + catKey);
-    if (badge) {
-        if (marcado) {
-            badge.className = 'badge bg-success fs-6';
-            badge.innerText = '1 / 1 selecionado';
-        } else {
-            badge.className = 'badge bg-warning text-dark fs-6';
-            badge.innerText = '0 / 1 selecionado';
-        }
-    }
-}
-</script>
+<div class="modal fade" id="fichaFase2" tabindex="-1" aria-labelledby="fichaFase2Titulo" aria-hidden="true">
+<div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+<div class="modal-header"><h5 class="modal-title" id="fichaFase2Titulo">Ficha do candidato</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button></div>
+<div class="modal-body text-center">
+<img id="fichaFase2Foto" alt="Foto do candidato" class="rounded mb-3" style="width:180px;height:220px;object-fit:cover">
+<dl><dt>Nome de guerra</dt><dd id="fichaFase2Nome"></dd><dt>Posto / graduação</dt><dd id="fichaFase2Posto"></dd><dt>Setor</dt><dd id="fichaFase2Setor"></dd></dl>
+</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button></div>
+</div></div></div>
 
 <?php require_once ROOT_PATH . '/views/layouts/footer.php'; ?>

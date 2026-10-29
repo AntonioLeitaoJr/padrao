@@ -53,9 +53,11 @@ class DashboardController {
             }
 
             // Progresso do órgão na Fase 2
-            if (!empty($user['orgao_chefe_sigla'])) {
+            $orgaoFase2 = Efetivo::orgaoSelecaoUsuario((int)$user['id']);
+            $dados['orgao_fase2'] = $orgaoFase2;
+            if ($orgaoFase2) {
                 $prog = SelecaoFase2::relatorioProgressoOrgaos((int)$pleito['id']);
-                $dados['progresso_fase2'] = $prog[$user['orgao_chefe_sigla']] ?? null;
+                $dados['progresso_fase2'] = $prog[$orgaoFase2] ?? null;
             }
 
             // Verifica se o usuário já votou na Fase 3

@@ -136,22 +136,9 @@ class AuthManager {
             return false;
         }
 
-        if (in_array(($user['perfil'] ?? ''), [PERFIL_ADMIN, PERFIL_PRESIDENTE, PERFIL_CHEFE_DIV_ASSESS], true)) {
-            return true;
-        }
-
-        if (!empty($user['orgao_chefe_sigla'])) {
-            return true;
-        }
-
-        // Verifica se é o militar mais antigo das assessorias reunidas
+        if (($user['perfil'] ?? '') === PERFIL_ADMIN) return true;
         require_once ROOT_PATH . '/src/Models/Efetivo.php';
-        $maisAntigo = Efetivo::getMilitarMaisAntigoAssessorias();
-        if ($maisAntigo && (int)$maisAntigo['id'] === (int)($user['efetivo_id'] ?? 0)) {
-            return true;
-        }
-
-        return false;
+        return Efetivo::orgaoSelecaoUsuario((int)($user['id'] ?? 0)) !== null;
     }
 
     public static function login(string $username, string $password): array {

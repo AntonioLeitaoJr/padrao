@@ -10,6 +10,28 @@ require_once __DIR__ . '/../Services/BackupService.php';
 require_once __DIR__ . '/../Services/AuditoriaService.php';
 
 class AdminController {
+    public function vencedores(): void {
+        AuthMiddleware::handle();
+        RoleMiddleware::handle([PERFIL_ADMIN, PERFIL_RH]);
+        require_once ROOT_PATH . '/src/Models/HistoricoVencedores.php';
+        $pleito = Pleito::getAtivo();
+        if (!$pleito) { flash_message('erro', 'Nenhum pleito ativo.', 'warning'); header('Location: /index.php?r=dashboard'); exit; }
+        $anoPleito = (int)$pleito['ano'];
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            try {
+                if (!verify_csrf_token($_POST['csrf_token'] ?? '')) throw new InvalidArgumentException('Token CSRF inválido.');
+                if (!in_array((int)$pleito['fase_atual'], [FASE_1, FASE_2], true)) throw new InvalidArgumentException('O histórico só pode ser editado antes da votação da Fase 3.');
+                HistoricoVencedores::salvar($anoPleito, $_POST['vencedores'] ?? [], (int)AuthManager::user()['id']);
+                flash_message('sucesso', 'Vencedores anteriores registrados. Confira novamente as seleções da Fase 2.', 'success');
+            } catch (InvalidArgumentException $e) { flash_message('erro', $e->getMessage(), 'danger'); }
+            header('Location: /index.php?r=admin/vencedores'); exit;
+        }
+        $historico = HistoricoVencedores::listar($anoPleito);
+        $pessoas = Database::getConnection()->query("SELECT id, nome_guerra, nome, posto, categoria, ativo FROM efetivo
+            WHERE categoria IN ('graduado','praca','sppf','sptf') ORDER BY nome_guerra, nome")->fetchAll();
+        require ROOT_PATH . '/views/admin/vencedores.php';
+    }
+
 
     public function pleito(): void {
         AuthMiddleware::handle();
@@ -375,7 +397,12 @@ class AdminController {
                 }
             }
 
-            $salvoId = Efetivo::salvarOuAtualizar($_POST, $fotoCustom);
+            try {
+                $salvoId = Efetivo::salvarOuAtualizar($_POST, $fotoCustom);
+            } catch (InvalidArgumentException $e) {
+                flash_message('erro', $e->getMessage(), 'danger');
+                header('Location: /index.php?r=admin/efetivo'); exit;
+            }
 
             // Atualiza papel de Administrador ou RH exclusivamente se a alteração for feita por um Administrador Geral
             if (AuthManager::hasRole(PERFIL_ADMIN)) {

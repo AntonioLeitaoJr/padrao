@@ -149,9 +149,9 @@ $dadosHomol = $apuracao['dados_homologacao'];
                             <th>Posto / Especialidade</th>
                             <th>Setor</th>
                             <th class="text-center">Votos na Urna</th>
-                            <th>Critério 1 (Indicações)</th>
+                            <th>Critério 1 (Vitórias nos 2 anos anteriores)</th>
                             <th>Critério 2 (COMARA)</th>
-                            <th>Critério 3 (OM)</th>
+                            <th>Critério 3 (Serviço)</th>
                             <th>Critério 4 (TACF)</th>
                         </tr>
                     </thead>
@@ -178,12 +178,12 @@ $dadosHomol = $apuracao['dados_homologacao'];
                                     <span class="badge bg-primary fs-5 px-3"><?= $cand['total_votos'] ?></span>
                                 </td>
                                 <td>
-                                    <small class="badge <?= (int)$cand['indicacoes_anteriores_qtd'] === 0 ? 'bg-success' : 'bg-secondary' ?>">
-                                        <?= (int)$cand['indicacoes_anteriores_qtd'] === 0 ? 'Nunca indicado' : $cand['indicacoes_anteriores_qtd'] . ' anterior(es)' ?>
+                                    <small class="badge <?= (int)$cand['vitorias_ultimos_dois_anos'] === 0 ? 'bg-success' : 'bg-secondary' ?>">
+                                        <?= (int)$cand['vitorias_ultimos_dois_anos'] === 0 ? 'Não venceu nos 2 anos anteriores' : $cand['vitorias_ultimos_dois_anos'] . ' vitória(s) nos 2 anos anteriores' ?>
                                     </small>
                                 </td>
                                 <td><small class="text-muted"><?= $cand['data_admissao_comara'] ? date('d/m/Y', strtotime($cand['data_admissao_comara'])) : '--' ?></small></td>
-                                <td><small class="text-muted"><?= $cand['data_vinculo_om'] ? date('d/m/Y', strtotime($cand['data_vinculo_om'])) : '--' ?></small></td>
+                                <td><small class="text-muted"><?= $cand['data_inicio_servico'] ? date('d/m/Y', strtotime($cand['data_inicio_servico'])) : '--' ?></small></td>
                                 <td>
                                     <?php if ($cand['nota_tacf']): ?>
                                         <span class="badge bg-info text-dark"><?= number_format((float)$cand['nota_tacf'], 2, ',', '.') ?></span>
