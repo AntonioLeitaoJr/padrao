@@ -5,7 +5,7 @@
 ---
 
 # NORMA PADRÃO DE AÇÃO — NPA Nº 01/COMARA/2026
-**Aprovada em Boletim Interno da COMARA**
+**Minuta de atualização — aprovação e publicação desta revisão não confirmadas.**
 
 **ASSUNTO:** Procedimentos Operacionais, Atribuições Funcionais e Rito Eleitoral Informatizado do Sistema de Eleição dos Militares e Servidores Civis Padrão da COMARA.
 
@@ -93,26 +93,26 @@ O processo seletivo desenvolve-se obrigatoriamente através de cinco fases suces
 
 #### Procedimentos na Votação da Fase 3 (Urna Eletrônica):
 1. Quando a **Fase 3** for aberta pela Administração, acesse o menu **"Urna de Votação"**.
-2. A tela apresentará as 4 categorias oficiais em abas ou blocos ordenados.
-3. Para cada categoria, você visualizará a fotografia oficial (extraída do SIGPES ou atualizada pela OM), o posto/graduação, nome de guerra e setor dos 6 candidatos selecionados na Fase 2.
+2. A tela apresentará as quatro categorias oficiais. Dentro de cada categoria, os candidatos serão exibidos em ordem alfabética do nome de guerra, inclusive civis, sem distinção de maiúsculas, minúsculas ou acentos.
+3. Para cada categoria, você visualizará a fotografia oficial (extraída do SIGPES ou atualizada pela OM), o posto/graduação, nome de guerra e setor dos candidatos selecionados na Fase 2 (até seis por categoria: um por divisão e um pela representação conjunta, quando houver candidatos).
 4. Selecione **um candidato** em cada uma das categorias:
    - Graduado Padrão;
    - Praça Padrão;
    - Servidor Civil Permanente (SPPF);
    - Servidor Civil Temporário (SPTF).
-5. O sistema também disponibiliza as opções de **"Voto em Branco"** ou **"Voto Nulo"**, caso o eleitor opte por não sufragar nenhum dos candidatos indicados.
-6. Confira cuidadosamente suas escolhas no resumo da cédula.
+5. A implementação atual exige um candidato nas quatro categorias e não oferece branco ou nulo. Esta revisão não cria essas opções. Havendo categoria totalmente vazia, o envio permanece bloqueado, com orientação ao eleitor, até definição expressa sobre o tratamento dessa ausência.
+6. Confira cuidadosamente as escolhas marcadas na cédula. Os cartões apresentam somente foto, posto/graduação, nome de guerra e setor. Para civis, o posto/graduação é **CIVIL SPPF** ou **CIVIL SPTF**; não são exibidos notas, classificação ou histórico de vitórias.
 7. Clique em **"CONFIRMAR VOTO"**.
-8. O sistema efetuará a gravação anônima através de **Assinatura Cega SHA-256** (*Blind Token Signature*), dissociando a identidade do votante da cédula gravada na urna.
+8. O sistema grava as cédulas em tabela separada do controle de participação, sem CPF, usuário ou comprovante na cédula. O controle de unicidade por CPF e pleito permanece. A implementação examinada não contém assinatura cega criptográfica.
 9. **Emissão do Comprovante de Votação:**
-   - O sistema emitirá imediatamente o seu **Comprovante de Votação Eletrônica**, contendo código hash criptográfico antifraude e data/hora oficial do registro.
+   - O sistema emitirá imediatamente o seu **Comprovante de Votação Eletrônica**, contendo código aleatório de participação e data/hora do registro. O selo HMAC não consta na versão examinada e não é introduzido nesta revisão.
    - Clique em **"Imprimir / Salvar Comprovante"** para manter sua garantia de participação no pleito.
 
 ---
 
 ### 6.2. DO CHEFE IMEDIATO / CHEFE DIRETO (OFICIAIS AVALIADORES — FASE 1)
 
-**Público-alvo:** Exclusivamente Oficiais da FAB (Tenentes a Coronéis) designados como chefes de setor ou chefes diretos de militares e servidores.
+**Público-alvo:** Exclusivamente Tenentes e Capitães da FAB designados como chefes de setor ou chefes diretos de militares e servidores.
 
 *Nota Regimental:* Praças, sargentos, suboficiais e servidores civis **não têm acesso à tela de avaliação da Fase 1**, sendo essa prerrogativa restrita aos Oficiais da OM.
 
@@ -165,26 +165,36 @@ O processo seletivo desenvolve-se obrigatoriamente através de cinco fases suces
 
 ---
 
-### 6.4. DOS CHEFES DE DIVISÃO E ASSESSORIA (`CHEFE_DIV_ASSESS` — FASE 2)
+### 6.4. DOS CHEFES DE DIVISÃO E DA REPRESENTAÇÃO CONJUNTA (FASE 2)
 
-**Público-alvo:** Chefes das 5 Divisões (DPC, DA, DL, DE, DS) e Chefes das Assessorias e Seções Independentes (AINT, ACI, AGOV, APOG, SCS, AJUR, SIJ).
+**Público-alvo:** Chefes das cinco divisões (DPC, DA, DL, DE e DS) e o representante conjunto das assessorias e seções ACI, AGOV, AINT, AJUR, APOG, SCS e SIJ, subordinadas ao Presidente. Apenas essas sete unidades integram o grupo conjunto, tratado como uma divisão para a seleção.
 
-#### Procedimentos na Fase 2:
-1. Ao início da Fase 2, acesse o menu **"Fase 2: Seleção pelas Chefias"**.
-2. O sistema identificará automaticamente a sua Divisão ou Assessoria de chefia.
-3. O painel apresenta 4 abas, correspondentes às 4 categorias oficiais:
-   - **Aba 1:** Graduado Padrão
-   - **Aba 2:** Praça Padrão
-   - **Aba 3:** Servidor Civil Permanente (SPPF)
-   - **Aba 4:** Servidor Civil Temporário (SPTF)
-4. Os candidatos são listados em ordem decrescente com base na pontuação obtida na Fase 1.
-5. **Regra Regimental Obrigatória:**
-   - Cada Chefe de Divisão ou Assessoria **deve marcar obrigatoriamente e exatamente 6 candidatos** em cada uma das categorias.
-   - O sistema bloqueia a seleção de mais de 6 candidatos em uma mesma categoria.
-   - O indicador de progresso exibirá a contagem: `6 / 6 selecionados` (em verde quando satisfeita).
-6. O botão **"Confirmar Seleção dos 24 Indicados"** permanecerá desabilitado até que todas as 4 abas contenham exatamente 6 indicados marcados ($4 \times 6 = 24$ indicações oficiais).
-7. Estando as 4 categorias completas, revise suas escolhas e clique em **"Confirmar Seleção dos 24 Indicados"**.
-8. Os 6 candidatos mais votados no cômputo de todos os órgãos em cada categoria serão os habilitados para a cédula da Urna Eletrônica na Fase 3.
+#### Representação das assessorias e seções
+
+A seleção cabe ao chefe militar mais antigo entre essas unidades que não seja também chefe de uma divisão. Se o primeiro ou o segundo acumular chefia de divisão, continua-se até encontrar o primeiro elegível. Com as chefias informadas para este ajuste, Cel Levy é excluído por chefiar a DPC, cabendo a representação ao TCel Thiago. O resultado é calculado a partir das chefias cadastradas, sem fixar nomes no código. A simples lotação em uma assessoria não torna o militar seu chefe.
+
+#### Classificação e desempates
+
+Por unidade de seleção e categoria (Graduado, Praça, SPPF e SPTF), ficam disponíveis os 20% mais bem pontuados na Fase 1, arredondados para cima. O mínimo é de dois candidatos quando houver pelo menos dois; havendo apenas um, ele fica disponível; nenhum candidato significa grupo sem representante. Somente fichas concluídas e observadas compõem a classificação.
+
+Em igualdade de pontuação, aplicam-se sucessivamente:
+
+1. Preferência ao candidato que não foi vencedor em nenhum dos dois anos anteriores ao pleito. Para 2026, consideram-se os vencedores de 2024 e 2025.
+2. Maior antiguidade na COMARA, pela data de apresentação/admissão.
+3. Maior tempo de serviço militar ou civil, pela data de início do serviço.
+4. Maior nota na avaliação do TACF lançada pelo Setor de Educação Física.
+
+Persistindo empate na última vaga após os quatro critérios, todos os empatados no corte ficam disponíveis. A relação classificada é exibida por nome de guerra. O histórico considera os vencedores finais, um por grupo em cada ano, e não as indicações intermediárias.
+
+#### Procedimentos na Fase 2
+
+1. Acesse a Fase 2. O sistema identifica a unidade pela chefia cadastrada ou pela representação conjunta.
+2. Consulte os classificados das quatro categorias. Clique no nome para visualizar somente foto, nome de guerra, setor e posto/graduação. Para civis, aparece **CIVIL SPPF** ou **CIVIL SPTF**.
+3. Use os controles de seleção existentes para escolher **exatamente um candidato em cada grupo disponível**. O pop-up é apenas de visualização.
+4. Confirme a seleção. Grupos sem candidatos não exigem escolha e não enviam representante.
+5. O avanço à Fase 3 depende de seleções válidas de todas as unidades e grupos disponíveis. Cada divisão e a representação conjunta encaminham um candidato por categoria, totalizando até seis por categoria na urna.
+
+O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, a tela fica somente para consulta. Veja também [o guia de atualização e migração](ATUALIZACAO_FASE2.md).
 
 ---
 
@@ -192,20 +202,17 @@ O processo seletivo desenvolve-se obrigatoriamente através de cinco fases suces
 
 **Público-alvo:** Vice-Presidente da COMARA, Oficiais Superiores (Coronéis, Tenentes-Coronéis, Majores) e membros da Comissão Julgadora designados em Boletim Interno.
 
-#### Procedimentos na Fase 4:
-1. Concluída a votação geral da Fase 3, acesse o menu **"Fase 4: Validação pela Direção Superior"**.
-2. A tela exibirá a relação dos militares e servidores mais votados na urna.
-3. A Comissão deve analisar a conformidade regulamentar dos candidatos, verificando:
-   - Comportamento militar (no mínimo "BOM", nos termos do RDAER);
-   - Inexistência de punições disciplinares recentes impeditivas;
-   - Regularidade de prestação de contas (para funções de gestão);
-   - Ausência de condenações na Justiça Militar ou Comum.
-4. **Em caso de Inabilitação Regimental:**
-   - Clique no botão **"Inabilitar Candidato"**.
-   - É **mandatório** registrar a justificativa circunstanciada legal e o número do documento/boletim motivador.
-   - Clique em **"Confirmar Inabilitação"**.
-   - O ato será irrevogavelmente registrado com carimbo de tempo no Log de Auditoria.
-5. O sistema reclassificará a ordem da categoria, convocando o suplente imediatamente subsequente.
+#### Procedimentos atuais e revisão da Fase 4:
+1. A versão existente mantém a validação, a exclusão e a reabilitação dos candidatos. A apresentação passa a ser alfabética pelo nome de guerra, sem utilizar a votação anterior como ordem de apresentação.
+2. A substituição desse procedimento por ordenação individual do Estado-Maior está em desenvolvimento e ainda não foi ativada nesta revisão.
+3. Para o novo procedimento, estão definidos os seguintes requisitos:
+   - Encaminhamento dos três mais bem classificados por categoria na votação do efetivo;
+   - Ordenação completa individual, sem repetir candidato ou posição;
+   - Justificativa obrigatória para cada candidato, limitada a 150 caracteres, com validação na interface e no servidor;
+   - Persistência, recuperação e confirmação somente após gravação efetiva.
+4. Permanecem sujeitos a decisão expressa o empate na terceira vaga, as categorias com menos de três candidatos ou vazias, o método de consolidação para a Fase 5 e o prazo para edição das avaliações.
+5. O validador técnico preparado nesta revisão não registra avaliações nem modifica os resultados. Os procedimentos de gravação, contador na interface, migração e transição serão concluídos após as decisões do item anterior.
+6. O acesso atual reconhece os perfis ADMIN, PRESIDENTE e DIRECAO_SUPERIOR, além dos postos previstos para o Estado-Maior. Essa autorização existente é preservada nesta entrega parcial.
 
 ---
 
@@ -215,12 +222,15 @@ O processo seletivo desenvolve-se obrigatoriamente através de cinco fases suces
 
 #### Procedimentos na Fase 5:
 1. Acesse o menu **"Fase 5: Apuração e Homologação"**.
-2. O sistema processa automaticamente a apuração dos votos da urna, consolidando a classificação.
+2. A implementação atual apura os votos da urna. A integração das futuras ordenações individuais do Estado-Maior depende da definição do método de consolidação; esta entrega parcial não altera a apuração, a homologação nem o voto de minerva.
 3. **Tratamento Automático de Empate:**
    - Em caso de empate em qualquer categoria, o sistema aplica previamente os critérios estatutários:
-     - Militar: Maior antiguidade hierárquica (conforme Almanaque do COMAER);
-     - Civil: Maior tempo de serviço público efetivo na COMARA e maior idade.
+     - Preferência a quem não venceu nos dois anos anteriores ao pleito;
+     - Maior antiguidade na COMARA (apresentação/admissão);
+     - Maior tempo de serviço militar ou civil;
+     - Maior nota do TACF.
 4. **Voto de Minerva:**
+   - A retirada do quinto item do painel geral não elimina esta funcionalidade da Fase 5.
    - Persistindo rigorosamente o empate ou em situações excepcionais regimentais, o Presidente/Vice-Presidente exercerá o **Voto de Minerva**.
    - Selecione o candidato vencedor na tela, insira a justificativa institucional e clique em **"Registrar Voto de Minerva"**.
 5. **Homologação e Publicação Oficial:**
@@ -247,6 +257,8 @@ O processo seletivo desenvolve-se obrigatoriamente através de cinco fases suces
 2. **Gerenciamento do Efetivo (`admin/efetivo`):**
    - Mantém a base com os **443 integrantes da COMARA**.
    - Cadastra novos militares/servidores por formulário individual ou importação em lote de planilha CSV oficial.
+   - Atualiza a data de apresentação/admissão na COMARA e a data de início do serviço militar ou civil, usadas nos desempates.
+   - Em **Vencedores anteriores** (`admin/vencedores`), Administrador e RH registram um vencedor por grupo em cada um dos dois anos anteriores ao pleito, durante as Fases 1 e 2. Para 2026, são oito registros: quatro de 2024 e quatro de 2025. Homologações existentes são consultadas; correções manuais prevalecem.
    - Faz upload manual de fotos nos casos de inconsistência de fotografias na base do SIGPES.
    - **Botão "Resetar Senha":** Permite redefinir a senha de qualquer integrante para `padrao@2026` mediante solicitação formal por perda ou bloqueio de acesso.
 
@@ -292,9 +304,9 @@ O processo seletivo desenvolve-se obrigatoriamente através de cinco fases suces
 | :--- | :--- | :--- | :--- |
 | **Preparação** | Atualização do efetivo, fotos e senhas | Administrador / STI | Semana 1 |
 | **Fase 1** | Avaliação de Atributos e notas de TACF | Oficiais Chefes Diretos e Ed. Física | Semana 2 e 3 |
-| **Fase 2** | Indicação de 6 candidatos por categoria | Chefes de Divisão e Assessoria | Semana 4 |
+| **Fase 2** | Escolha de um candidato por categoria disponível em cada unidade | Chefes de Divisão e representante conjunto | Semana 4 |
 | **Fase 3** | Votação Geral Secreta na Urna Eletrônica | Todo o Efetivo da COMARA | Semana 5 |
-| **Fase 4** | Análise disciplinar e validação dos votos | Direção Superior | Início da Semana 6 |
+| **Fase 4** | Validação atual; ordenação individual pendente das definições do item 6.5 | Estado-Maior | Início da Semana 6, condicionado à conclusão da revisão |
 | **Fase 5** | Minerva, Homologação e Emissão de Ata | Chefe / Vice-Chefe da COMARA | Fim da Semana 6 |
 | **Publicação**| Veiculação em Boletim e Placa de Homenagem | Seção de Comunicação Social (SCS) | Solenidade de Aniversário |
 
@@ -302,7 +314,7 @@ O processo seletivo desenvolve-se obrigatoriamente através de cinco fases suces
 
 ## 8. PRESCRIÇÕES DIVERSAS
 
-1. **Inviolabilidade e Sigilo do Voto:** O sistema utiliza criptografia de chave pública e assinatura cega para garantir que nenhum voto possa ser associado ao militar que o proferiu, nem mesmo pelos administradores de TI ou chefia da OM.
+1. **Sigilo do Voto:** O sistema separa o registro de participação das cédulas e não registra as escolhas no log de participação. Não se declara garantia criptográfica de assinatura cega ou impossibilidade absoluta de correlação, funcionalidades não demonstradas no código examinado.
 2. **Proibição de Coação Eleitoral:** É terminantemente vedado a qualquer superior hierárquico induzir, constranger ou fiscalizar o voto de subordinados, constituindo tal conduta transgressão da disciplina e crime militar previsto no Código Penal Militar.
 3. **Tentativas de Invasão ou Fraude:** Qualquer tentativa de acesso indevido, uso de credenciais de terceiros, injeção de parâmetros ou alteração fraudulenta de código acarretará apuração imediata por meio de Inquérito Policial Militar (IPM).
 
@@ -311,7 +323,7 @@ O processo seletivo desenvolve-se obrigatoriamente através de cinco fases suces
 ## 9. DISPOSIÇÕES FINAIS
 
 1. Esta Norma Padrão de Ação entra em vigor na data de sua publicação em Boletim Interno da COMARA.
-2. Os casos omissos serão submetidos à apreciação do Presidente da COMARA, ouvido o Administrador do Sistema e a Assessoria Jurídica (ASJUR).
+2. Os casos omissos serão submetidos à apreciação do Presidente da COMARA, ouvido o Administrador do Sistema e a Assessoria Jurídica (AJUR).
 
 ---
 

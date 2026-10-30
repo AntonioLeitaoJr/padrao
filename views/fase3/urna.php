@@ -37,6 +37,8 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                     </div>
                 </div>
             </div>
+        <?php elseif (!empty($erroUrna)): ?>
+            <div class="alert alert-warning" role="alert"><?= sanitize_output($erroUrna) ?></div>
         <?php elseif (!$faseAberta): ?>
             <!-- Votação Não Aberta -->
             <div class="card card-comara text-center py-5 shadow-sm">
@@ -117,7 +119,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                                                     <?= sanitize_output($cand['posto']) ?> <?= sanitize_output($cand['nome_guerra']) ?>
                                                 </h6>
                                                 <div class="small text-secondary mb-1">
-                                                    <?= sanitize_output($cand['setor']) ?><?= !empty($cand['divisao_sigla']) ? ' (' . sanitize_output($cand['divisao_sigla']) . ')' : '' ?>
+                                                    <?= sanitize_output($cand['setor']) ?>
                                                 </div>
                                             </div>
                                         </div>

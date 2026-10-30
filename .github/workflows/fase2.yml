@@ -38,3 +38,12 @@ jobs:
         run: php tests/teste_fase2_regras_unitarias.php
       - name: Persistência, permissões e passagem à urna
         run: php tests/teste_fase2_integracao.php
+      - name: Validação independente das ordenações
+        run: php tests/teste_ordenacao_estado_maior.php
+      - name: Urna em banco descartável separado
+        env:
+          DB_NAME: comara_fase34_test
+          FASE34_TEST_DB: '1'
+        run: |
+          mysql -h127.0.0.1 -uroot -ptest -e 'CREATE DATABASE comara_fase34_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
+          php tests/teste_fase3_integracao.php

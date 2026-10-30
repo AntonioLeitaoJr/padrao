@@ -22,7 +22,7 @@ class Fase3Controller {
 
         // Verifica se a Fase 3 está aberta
         $faseAtual = (int)$pleito['fase_atual'];
-        $faseAberta = ($faseAtual === FASE_3);
+        $faseAberta = ($faseAtual === FASE_3 && $pleito['status'] === 'em_andamento');
 
         // Verifica se o usuário atual já votou (por CPF)
         $jaVotou = false;
@@ -36,12 +36,19 @@ class Fase3Controller {
         }
 
         // Busca candidatos indicados da Fase 2 (consolidados) para compor a cédula
-        $candidatosUrna = [
-            CAT_GRADUADO => Efetivo::listarParaUrna((int)$pleito['id'], CAT_GRADUADO),
-            CAT_PRACA    => Efetivo::listarParaUrna((int)$pleito['id'], CAT_PRACA),
-            CAT_SPPF     => Efetivo::listarParaUrna((int)$pleito['id'], CAT_SPPF),
-            CAT_SPTF     => Efetivo::listarParaUrna((int)$pleito['id'], CAT_SPTF),
-        ];
+        $candidatosUrna = [];
+        $erroUrna = null;
+        try {
+            foreach ([CAT_GRADUADO, CAT_PRACA, CAT_SPPF, CAT_SPTF] as $cat) {
+                $candidatosUrna[$cat] = Efetivo::listarParaUrna((int)$pleito['id'], $cat);
+                if ($faseAberta && !$candidatosUrna[$cat]) {
+                    $erroUrna = 'Há categoria sem candidatos. A votação exige uma escolha nas quatro categorias; aguarde orientação da Administração.';
+                }
+            }
+        } catch (RuntimeException $e) {
+            $erroUrna = 'Não foi possível carregar os representantes. Solicite à Administração a conferência das seleções da Fase 2 e da consolidação.';
+            error_log($e->getMessage());
+        }
 
         require_once ROOT_PATH . '/views/fase3/urna.php';
     }

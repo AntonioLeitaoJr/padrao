@@ -2,6 +2,26 @@
 
 Este guia orienta a implantação oficial do **Sistema de Eleição dos Padrões COMARA** em servidor Linux **Debian 13** utilizando o painel de controle **aaPanel** com **PHP 8.3** e **MySQL 8.0+ / MariaDB 10.11+**.
 
+## Atualização da Fase 2 em banco existente
+
+Antes de liberar esta versão, faça backup do banco e dos arquivos, publique a versão que contém os ajustes e execute na raiz do projeto, usando as credenciais do banco configuradas:
+
+```bash
+php database/migrate_fase2.php
+```
+
+Em Docker, o comando equivalente é:
+
+```bash
+docker exec -it votacao_comara_app php /var/www/html/database/migrate_fase2.php
+```
+
+A migração pode ser repetida: cria `historico_vencedores` e adiciona `efetivo.data_inicio_servico` quando necessário. Não reexecute instaladores ou cargas iniciais em banco em uso. Para instalações novas, execute a migração após a carga inicial, pois o instalador pode usar um dump anterior a esta alteração.
+
+Antes de abrir a seleção, Administrador/RH deve cadastrar os vencedores dos dois anos anteriores ao pleito (2024 e 2025 em 2026), conferir as datas de apresentação/admissão e início do serviço e manter as chefias das divisões e das sete assessorias/seções. Não converta antigas indicações em vitórias nem tempo na OM em tempo total de serviço.
+
+Confira na Fase 2 o corte de 20%, o mínimo de dois quando disponíveis, os empates e a escolha de um por grupo. A Fase 5 mantém o voto de minerva. Procedimentos completos: [Atualização da Fase 2](../docs/ATUALIZACAO_FASE2.md). Os testes de integração usam exclusivamente banco vazio e descartável terminado em `_test`.
+
 ---
 
 ## 1. Pré-Requisitos no Servidor Debian 13
@@ -100,6 +120,7 @@ No terminal do servidor, execute o script de migração oficial:
 ```bash
 cd /www/wwwroot/votacao.comara.intraer
 php database/import_efetivo.php
+php database/migrate_fase2.php
 ```
 
 A saída confirmará:
@@ -139,3 +160,11 @@ No menu **Website -> Site Monitor** do aaPanel, cadastre um monitor HTTP:
 - **URL**: `http://votacao.comara.intraer/scripts/healthcheck.php`
 - **Frequency**: A cada 5 minutos
 - **Expected Return**: HTTP `200` e JSON com `"status": "HEALTHY"`
+
+## Revisão parcial das Fases 3 e 4
+
+Esta entrega está destinada à revisão, sem merge ou deploy autorizado. Não há mudança de estrutura nem nova migração. A ordenação individual da Fase 4 não está ativada; não se deve considerar este PR como conclusão das Fases 3 e 4.
+
+Quando houver autorização de implantação: faça backup, mantenha o sistema indisponível durante a atualização, publique a versão aprovada e execute `php database/migrate_fase2.php` na raiz antes da liberação. A execução anterior não foi confirmada; confira a tabela `historico_vencedores` e a coluna `efetivo.data_inicio_servico`. Não use instalador, reinstalação ou carga inicial em banco em uso. Preserve vencedores, datas, chefias e seleções já cadastrados.
+
+Confira a lista de representantes, a ordenação alfabética e as quatro informações dos cartões. Categoria totalmente vazia continua bloqueando o envio, até decisão eleitoral. Não execute testes destrutivos no servidor. Consulte [testes e pendências](../docs/ATUALIZACAO_FASES3_4.md).

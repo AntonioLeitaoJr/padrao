@@ -13,10 +13,23 @@ O sistema informatiza todo o rito regimental da COMARA para seleção dos destaq
 3. **Servidor Público Federal Permanente (SPPF)**
 4. **Servidor Público Temporário / Terceirizado (SPTF)**
 
-O processo obedece rigorosamente às 3 fases estatutárias:
-- **Fase 1 — Avaliação Qualitativa pelos Oficiais e TACF**: Oficiais avaliam atributos regulamentares e a Comissão de Educação Física lança as notas do Teste de Aptidão e Condicionamento Físico.
-- **Fase 2 — Indicação das Chefias**: Chefes das 5 Divisões (DPC, DIVOP, DIENG, DIAF, DLOG) e 3 Assessorias (ASJUR, ACI, ASCOM) indicam obrigatoriamente 6 candidatos por categoria com base nas médias da Fase 1.
-- **Fase 3 — Votação Geral Secreta e Direta**: Todo o efetivo habilitado (oficiais, graduados, praças e civis) vota anonimamente através de cédula eletrônica protegida por Criptografia Cega (*Blind Token Signature*). Em caso de empate, o Vice-Presidente da COMARA exerce o voto de minerva.
+O processo é organizado em cinco fases:
+
+- **Fase 1 — Avaliação e TACF:** Tenentes e Capitães avaliam os candidatos; o Setor de Educação Física lança o TACF.
+- **Fase 2 — Seleção pelas chefias:** cada uma das cinco divisões (DPC, DA, DL, DE e DS) e a representação conjunta de ACI, AGOV, AINT, AJUR, APOG, SCS e SIJ escolhe **um candidato por categoria disponível** entre os 20% mais bem pontuados de sua unidade.
+- **Fase 3 — Votação geral:** o efetivo vota nos selecionados da Fase 2, com até seis candidatos por categoria, conforme a disponibilidade de cada unidade.
+- **Fase 4 — Apreciação pela Direção Superior.**
+- **Fase 5 — Homologação e voto de minerva do Presidente**, quando necessário.
+
+### Regras da Fase 2
+
+O corte de 20% é arredondado para cima e inclui pelo menos dois candidatos quando disponíveis. Havendo apenas um, ele fica disponível; sem candidatos, o grupo fica sem representante. Empates no corte são resolvidos, nesta ordem, pela preferência a quem não venceu nos dois anos anteriores ao pleito, maior antiguidade na COMARA, maior tempo de serviço militar ou civil e maior nota do TACF. Persistindo o empate após os quatro critérios, todos os empatados na última vaga entram.
+
+O representante das sete assessorias e seções é o chefe militar mais antigo entre elas que não acumule chefia de divisão. Se necessário, a busca continua pelos seguintes na antiguidade. A escolha depende do cadastro de chefias, não apenas da lotação.
+
+O clique no nome exibe foto, nome de guerra, setor e posto/graduação; para civis, **CIVIL SPPF** ou **CIVIL SPTF**. A seleção permanece nos controles existentes. O painel geral apresenta quatro critérios; a funcionalidade de minerva da Fase 5 permanece.
+
+Administrador e RH registram em **Vencedores anteriores** um vencedor por categoria e ano dos dois anos anteriores ao pleito ativo (2024 e 2025 para 2026). São vencedores finais, não todos os indicados. Consulte as regras completas, os dados necessários e a migração em [Atualização da Fase 2](docs/ATUALIZACAO_FASE2.md).
 
 ---
 
@@ -67,6 +80,7 @@ Se você utiliza Docker no Windows, Linux ou macOS:
 3. Execute o instalador automático do banco de dados:
    ```bash
    docker exec -it votacao_comara_app php /var/www/html/database/instalar.php
+   docker exec -it votacao_comara_app php /var/www/html/database/migrate_fase2.php
    ```
 
 4. Acesse no navegador:
@@ -90,9 +104,12 @@ cd /www/wwwroot/padrao
 cp .env.example .env
 # Edite as credenciais do banco no .env:
 nano .env
-# Instale a base de dados em 1 comando:
+# Em instalação nova, carregue a base e aplique a migração:
 php database/instalar.php
+php database/migrate_fase2.php
 ```
+
+Em uma instalação existente, faça backup e execute somente a migração da Fase 2 após publicar a versão. Não reexecute a carga inicial para atualizar um banco em uso. Antes de liberar a seleção, confira os vencedores anteriores, as datas de apresentação/admissão e início de serviço e o cadastro de chefias.
 
 ---
 
@@ -140,3 +157,22 @@ padrao/
 ## 📜 Licença e Propriedade
 
 Desenvolvido para uso exclusivo da **Comissão de Aeroportos da Região Amazônica (COMARA)** — Comando da Aeronáutica — Ministério da Defesa do Brasil.
+
+## Manutenção da documentação
+
+Toda alteração de comportamento, regra, configuração ou instalação deve incluir a revisão de todos os arquivos README e Markdown do repositório, inclusive todos os documentos em `docs/`. Atualize os documentos afetados na mesma entrega do código, mantendo coerência entre visão geral, manual operacional e guias de implantação. Arquivos sem impacto devem ser revisados, sem mudanças artificiais.
+
+Documentos de referência:
+
+- [Guia de implantação](DEPLOY_TUTORIAL.md)
+- [Instalação no aaPanel](scripts/deploy_aapanel.md)
+- [Manual operacional / NPA](docs/NPA_ELEICAO_PADROES_COMARA.md)
+- [Regras, migração e testes da Fase 2](docs/ATUALIZACAO_FASE2.md)
+
+## Revisão das Fases 3 e 4 — entrega parcial
+
+A urna valida os representantes selecionados da Fase 2, apresenta somente os quatro dados solicitados e ordena por nome de guerra com tratamento de caixa e acentos. Civis aparecem como CIVIL SPPF/SPTF. Candidatos não selecionados, categoria incorreta e votos fora da fase são rejeitados no servidor.
+
+A Fase 4 atual permanece de validação/exclusão, agora em ordem alfabética. O validador de ordenação e justificativas foi preparado, mas ainda não está conectado a uma tela ou gravação. Corte dos três finalistas, ausências, consolidação e edição dependem de decisão expressa. A Fase 5 permanece sem alteração. Consulte [escopo, testes e pendências](docs/ATUALIZACAO_FASES3_4.md).
+
+Não há nova migração nesta entrega parcial. A execução de `php database/migrate_fase2.php` no servidor continua sem confirmação. As issues do fork estão desabilitadas (GitHub HTTP 410); os requisitos estão registrados no documento acima e no PR, sem alegação de abertura de issues.
