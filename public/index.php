@@ -20,6 +20,7 @@ require_once __DIR__ . '/../src/Controllers/FotoController.php';
 
 $rota = $_GET['r'] ?? (AuthManager::check() ? 'dashboard' : 'login');
 
+try {
 switch ($rota) {
     // Autenticação
     case 'login':
@@ -82,14 +83,11 @@ switch ($rota) {
     case 'fase4':
         (new Fase4Controller())->index();
         break;
-    case 'fase4/resumo_ficha':
-        (new Fase4Controller())->resumoFicha();
+    case 'fase4/confirmar':
+        (new Fase4Controller())->confirmar();
         break;
-    case 'fase4/excluir':
-        (new Fase4Controller())->excluir();
-        break;
-    case 'fase4/reverter':
-        (new Fase4Controller())->reverter();
+    case 'fase4/decidir_corte':
+        (new Fase4Controller())->decidirCorte();
         break;
 
     // Fase 5: Apuração, Minerva e Homologação
@@ -181,4 +179,13 @@ switch ($rota) {
         echo '<div class="alert alert-danger text-center my-5 p-5"><h4>Erro 404 - Página Não Encontrada</h4><p>O recurso solicitado não existe no Sistema de Votação da COMARA.</p><a href="/index.php?r=dashboard" class="btn btn-primary">Voltar ao Painel</a></div>';
         require_once ROOT_PATH . '/views/layouts/footer.php';
         break;
+}
+
+} catch (Throwable $e) {
+    error_log('[ELEICAO] '.$e->getMessage());
+    http_response_code(503);
+    $mensagem = $e instanceof PDOException
+        ? 'Não foi possível acessar os dados. STI: confira o banco e execute php database/migrate_fase2.php e php database/migrate_fases3_4.php. Nenhum resultado será presumido.'
+        : ($e instanceof RuntimeException ? $e->getMessage() : 'Operação não concluída. Solicite suporte ao STI.');
+    echo '<div role="alert" style="padding:2rem"><h2>Operação indisponível</h2><p>'.sanitize_output($mensagem).'</p><a href="/index.php?r=dashboard">Voltar ao painel</a></div>';
 }

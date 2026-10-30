@@ -22,7 +22,7 @@ class Fase3Controller {
 
         // Verifica se a Fase 3 está aberta
         $faseAtual = (int)$pleito['fase_atual'];
-        $faseAberta = ($faseAtual === FASE_3);
+        $faseAberta = ($faseAtual === FASE_3 && $pleito['status'] === 'em_andamento');
 
         // Verifica se o usuário atual já votou (por CPF)
         $jaVotou = false;
@@ -36,12 +36,18 @@ class Fase3Controller {
         }
 
         // Busca candidatos indicados da Fase 2 (consolidados) para compor a cédula
-        $candidatosUrna = [
-            CAT_GRADUADO => Efetivo::listarParaUrna((int)$pleito['id'], CAT_GRADUADO),
-            CAT_PRACA    => Efetivo::listarParaUrna((int)$pleito['id'], CAT_PRACA),
-            CAT_SPPF     => Efetivo::listarParaUrna((int)$pleito['id'], CAT_SPPF),
-            CAT_SPTF     => Efetivo::listarParaUrna((int)$pleito['id'], CAT_SPTF),
-        ];
+        $candidatosUrna = [];
+        $erroUrna = null;
+        try {
+            if (EstadoMaior::ciclo((int)$pleito['id'])) $faseAberta = false;
+            foreach ([CAT_GRADUADO, CAT_PRACA, CAT_SPPF, CAT_SPTF] as $cat) {
+                $candidatosUrna[$cat] = Efetivo::listarParaUrna((int)$pleito['id'], $cat);
+
+            }
+        } catch (RuntimeException $e) {
+            $erroUrna = 'Não foi possível carregar a urna. STI: confira as seleções e execute as migrações migrate_fase2.php e migrate_fases3_4.php.';
+            error_log($e->getMessage());
+        }
 
         require_once ROOT_PATH . '/views/fase3/urna.php';
     }

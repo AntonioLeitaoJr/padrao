@@ -71,7 +71,11 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                                     <?= sanitize_output($v['setor']) ?> • <?= sanitize_output($v['divisao_sigla']) ?>
                                 </div>
                                 <div class="small text-muted" style="font-size: 0.72rem;">
-                                    Eleito com <?= $v['total_votos'] ?> votos populares
+                                    <?php if (isset($v['pontos_fase4'])): ?>
+                                        <?= (int)$v['pontos_fase4'] ?> pontos no Estado-Maior • <?= (int)$v['total_votos'] ?> votos do efetivo
+                                    <?php else: ?>
+                                        Eleito com <?= (int)$v['total_votos'] ?> votos populares
+                                    <?php endif; ?>
                                 </div>
                             <?php endif; ?>
                         </div>

@@ -1,21 +1,77 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__ . '/EstadoMaior.php';
 
-require_once __DIR__ . '/../../config/config.php';
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../Services/DesempateService.php';
-require_once __DIR__ . '/../Services/AuditoriaService.php';
-
-/**
- * Modelo de Apuração, Voto de Minerva e Homologação Oficial (Fase 5)
- */
 class Homologacao {
-
-    /**
-     * Apura o resultado geral dos votos da urna eletrônica para todas as 4 categorias,
-     * aplicando os 4 critérios automatizados de desempate e verificando minerva.
-     */
-    public static function apurarResultados(int $pleitoId): array {
+    public static function apurarResultados(int $p): array {
+        $pdo=Database::getConnection();
+        $s=$pdo->prepare('SELECT * FROM pleitos WHERE id=?'); $s->execute([$p]); $pleito=$s->fetch();
+        if (!$pleito || (int)$pleito['fase_atual']!==5) throw new RuntimeException('A apuração final estará disponível na Fase 5.');
+        // Homologações legadas permanecem consultáveis; nunca converter resultados antigos.
+        if ($pleito['status']==='homologado') {
+            $existe=$pdo->query("SHOW TABLES LIKE 'fase4_ciclos'")->fetch();
+            $ciclo=null;
+            if ($existe) { $s=$pdo->prepare('SELECT pleito_id FROM fase4_ciclos WHERE pleito_id=?'); $s->execute([$p]); $ciclo=$s->fetch(); }
+            if (!$ciclo) return self::apurarLegado($p);
+        }
+        $resultados=EstadoMaior::resultados($p);
+        $s=$pdo->prepare('SELECT * FROM voto_minerva_presidente WHERE pleito_id=?'); $s->execute([$p]); $min=[];
+        foreach ($s->fetchAll() as $m) $min[$m['categoria']]=$m;
+        foreach ($resultados as $cat=>&$r) {
+            $r['categoria']=CATEGORIAS_PADRAO[$cat]; $r['minerva_registrado']=$min[$cat]??null;
+            if (isset($min[$cat])) {
+                $id=(int)$min[$cat]['candidato_vencedor_id']; $escolhido=null;
+                foreach ($r['candidatos_empatados'] as $c) if ((int)$c['candidato_id']===$id) $escolhido=$c;
+                if (!$escolhido) throw new RuntimeException('Decisão presidencial incompatível com os candidatos habilitados. Solicite conferência administrativa.');
+                $escolhido['pontos_fase4']=$escolhido['pontos_fase4']??0;
+                $r['vencedor']=$escolhido; $r['requer_voto_de_minerva']=false;
+                $r['ranking']=array_values(array_filter($r['ranking'],fn($c)=>(int)$c['candidato_id']!==$id));
+                array_unshift($r['ranking'],$escolhido);
+            }
+        }
+        unset($r);
+        $s=$pdo->prepare('SELECT * FROM homologacao_pleito WHERE pleito_id=?'); $s->execute([$p]); $homol=$s->fetch();
+        return ['categorias'=>$resultados,'homologado'=>(bool)$homol,'dados_homologacao'=>$homol?:null];
+    }
+    public static function registrarVotoMinerva(int $pleitoId,string $categoria,int $candidatoId,string $justificativa,int $presidenteUsuarioId): array {
+        $pdo=Database::getConnection(); $pdo->beginTransaction();
+        try {
+            EstadoMaior::bloquearPleito($pleitoId,5); EstadoMaior::exigirPresidencia($presidenteUsuarioId);
+            $r=EstadoMaior::resultados($pleitoId)[$categoria]??null;
+            if (!$r || !$r['requer_voto_de_minerva'] || !in_array($candidatoId,array_map('intval',array_column($r['candidatos_empatados'],'candidato_id')),true)) {
+                throw new RuntimeException('Escolha não autorizada: somente empatados finais ou o efetivo da categoria comprovadamente sem finalistas.');
+            }
+            $justificativa=trim($justificativa);
+            if ($justificativa==='') throw new InvalidArgumentException('A decisão presidencial exige justificativa fundamentada.');
+            $pdo->prepare('INSERT INTO voto_minerva_presidente(pleito_id,categoria,candidato_vencedor_id,justificativa,presidente_usuario_id,registrado_em)
+                VALUES(?,?,?,?,?,NOW()) ON DUPLICATE KEY UPDATE candidato_vencedor_id=VALUES(candidato_vencedor_id),justificativa=VALUES(justificativa),presidente_usuario_id=VALUES(presidente_usuario_id),registrado_em=NOW()')
+                ->execute([$pleitoId,$categoria,$candidatoId,$justificativa,$presidenteUsuarioId]);
+            $pdo->commit();
+            AuditoriaService::log($r['excepcional']?'ESCOLHA_EXCEPCIONAL_CATEGORIA_VAZIA':'VOTO_MINERVA_REGISTRADO',
+                ['pleito_id'=>$pleitoId,'categoria'=>$categoria,'candidato_id'=>$candidatoId,'justificativa'=>$justificativa],$presidenteUsuarioId);
+            return ['sucesso'=>true,'mensagem'=>'Decisão presidencial gravada com fundamentação.'];
+        } catch (Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); return ['sucesso'=>false,'mensagem'=>$e->getMessage()]; }
+    }
+    public static function homologarResultados(int $pleitoId,int $presidenteUsuarioId,string $ata): array {
+        $pdo=Database::getConnection(); $pdo->beginTransaction();
+        try {
+            EstadoMaior::bloquearPleito($pleitoId,5); EstadoMaior::exigirPresidencia($presidenteUsuarioId);
+            if (mb_strlen(trim($ata))<20) throw new InvalidArgumentException('A ata deve conter pelo menos 20 caracteres.');
+            $apuracao=self::apurarResultados($pleitoId); $ids=[];
+            foreach (EstadoMaior::CATEGORIAS as $cat) {
+                $r=$apuracao['categorias'][$cat];
+                if (!$r['vencedor']) throw new RuntimeException('Homologação bloqueada: falta definir o vencedor de '.CATEGORIAS_PADRAO[$cat]['nome'].'.');
+                $ids[]=(int)$r['vencedor']['candidato_id'];
+            }
+            $pdo->prepare('INSERT INTO homologacao_pleito(pleito_id,presidente_usuario_id,vencedor_graduado_id,vencedor_praca_id,vencedor_sppf_id,vencedor_sptf_id,ata_homologacao,data_homologacao,bloqueado) VALUES(?,?,?,?,?,?,?,NOW(),1)')
+                ->execute(array_merge([$pleitoId,$presidenteUsuarioId],$ids,[$ata]));
+            $pdo->prepare('UPDATE pleitos SET status="homologado",homologado_em=NOW(),homologado_por=? WHERE id=?')->execute([$presidenteUsuarioId,$pleitoId]);
+            $pdo->prepare('UPDATE efetivo SET indicacoes_anteriores_qtd=indicacoes_anteriores_qtd+1 WHERE id IN (?,?,?,?)')->execute($ids);
+            $pdo->commit(); AuditoriaService::log('HOMOLOGACAO_OFICIAL_CONCLUIDA',['pleito_id'=>$pleitoId,'vencedores'=>$ids],$presidenteUsuarioId);
+            return ['sucesso'=>true,'mensagem'=>'Pleito homologado com quatro vencedores e resultados bloqueados.'];
+        } catch (Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); return ['sucesso'=>false,'mensagem'=>$e->getMessage()]; }
+    }
+    private static function apurarLegado(int $pleitoId): array {
         $pdo = Database::getConnection();
         $categorias = [CAT_GRADUADO, CAT_PRACA, CAT_SPPF, CAT_SPTF];
         $resultados = [];
@@ -98,134 +154,5 @@ class Homologacao {
         ];
     }
 
-    /**
-     * Registra o Voto de Minerva do Presidente da COMARA
-     */
-    public static function registrarVotoMinerva(
-        int $pleitoId,
-        string $categoria,
-        int $candidatoId,
-        string $justificativa,
-        int $presidenteUsuarioId
-    ): array {
-        $justificativa = trim($justificativa);
-        if (mb_strlen($justificativa) < 10) {
-            return ['sucesso' => false, 'mensagem' => 'A fundamentação do Voto de Minerva é obrigatória.'];
-        }
 
-        $pdo = Database::getConnection();
-
-        $stmt = $pdo->prepare('
-            INSERT INTO `voto_minerva_presidente` (
-                `pleito_id`, `categoria`, `candidato_vencedor_id`, `justificativa`, `presidente_usuario_id`, `registrado_em`
-            ) VALUES (
-                :pleito, :cat, :cand, :justif, :pres, NOW()
-            ) ON DUPLICATE KEY UPDATE
-                `candidato_vencedor_id` = VALUES(`candidato_vencedor_id`),
-                `justificativa`         = VALUES(`justificativa`),
-                `registrado_em`         = NOW()
-        ');
-
-        $stmt->execute([
-            ':pleito' => $pleitoId,
-            ':cat'    => $categoria,
-            ':cand'   => $candidatoId,
-            ':justif' => $justificativa,
-            ':pres'   => $presidenteUsuarioId
-        ]);
-
-        AuditoriaService::log('VOTO_MINERVA_REGISTRADO', [
-            'pleito_id'     => $pleitoId,
-            'categoria'     => $categoria,
-            'candidato_id'  => $candidatoId,
-            'justificativa' => $justificativa
-        ], $presidenteUsuarioId);
-
-        return ['sucesso' => true, 'mensagem' => 'Voto de Minerva registrado com sucesso pelo Sr. Presidente.'];
-    }
-
-    /**
-     * Homologação Oficial Definitiva dos Padrões Eleitos
-     */
-    public static function homologarResultados(
-        int $pleitoId,
-        int $presidenteUsuarioId,
-        string $ata
-    ): array {
-        $apuracao = self::apurarResultados($pleitoId);
-
-        // Verifica se há alguma categoria ainda sem vencedor ou com empate não resolvido
-        foreach ($apuracao['categorias'] as $catKey => $dadosCat) {
-            if (empty($dadosCat['vencedor'])) {
-                return [
-                    'sucesso' => false,
-                    'mensagem' => "Não é possível homologar: A categoria '{$dadosCat['categoria']['nome']}' ainda requer resolução de empate via Voto de Minerva."
-                ];
-            }
-        }
-
-        $vGrad  = (int)$apuracao['categorias'][CAT_GRADUADO]['vencedor']['candidato_id'];
-        $vPraca = (int)$apuracao['categorias'][CAT_PRACA]['vencedor']['candidato_id'];
-        $vSppf  = (int)$apuracao['categorias'][CAT_SPPF]['vencedor']['candidato_id'];
-        $vSptf  = (int)$apuracao['categorias'][CAT_SPTF]['vencedor']['candidato_id'];
-
-        $pdo = Database::getConnection();
-        $pdo->beginTransaction();
-
-        try {
-            $stmt = $pdo->prepare('
-                INSERT INTO `homologacao_pleito` (
-                    `pleito_id`, `presidente_usuario_id`,
-                    `vencedor_graduado_id`, `vencedor_praca_id`, `vencedor_sppf_id`, `vencedor_sptf_id`,
-                    `ata_homologacao`, `data_homologacao`, `bloqueado`
-                ) VALUES (
-                    :pleito, :pres,
-                    :grad, :praca, :sppf, :sptf,
-                    :ata, NOW(), 1
-                )
-            ');
-
-            $stmt->execute([
-                ':pleito' => $pleitoId,
-                ':pres'   => $presidenteUsuarioId,
-                ':grad'   => $vGrad,
-                ':praca'  => $vPraca,
-                ':sppf'   => $vSppf,
-                ':sptf'   => $vSptf,
-                ':ata'    => $ata
-            ]);
-
-            // Atualiza status do pleito para 'homologado' e bloqueia edições
-            $stmtPleito = $pdo->prepare('
-                UPDATE pleitos 
-                SET status = "homologado", homologado_em = NOW(), homologado_por = :pres 
-                WHERE id = :p
-            ');
-            $stmtPleito->execute([':pres' => $presidenteUsuarioId, ':p' => $pleitoId]);
-
-            // Atualiza histórico de indicações dos eleitos
-            $stmtHist = $pdo->prepare('UPDATE efetivo SET indicacoes_anteriores_qtd = indicacoes_anteriores_qtd + 1 WHERE id IN (:g, :pr, :sp, :st)');
-            $stmtHist->execute([':g' => $vGrad, ':pr' => $vPraca, ':sp' => $vSppf, ':st' => $vSptf]);
-
-            $pdo->commit();
-
-            AuditoriaService::log('HOMOLOGACAO_OFICIAL_CONCLUIDA', [
-                'pleito_id'        => $pleitoId,
-                'vencedor_grad'    => $vGrad,
-                'vencedor_praca'   => $vPraca,
-                'vencedor_sppf'    => $vSppf,
-                'vencedor_sptf'    => $vSptf
-            ], $presidenteUsuarioId);
-
-            return [
-                'sucesso'  => true,
-                'mensagem' => 'Pleito homologado com sucesso! Os vencedores oficiais foram proclamados e os resultados foram bloqueados para auditoria.'
-            ];
-        } catch (\Throwable $e) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
-            throw $e;
-        }
-    }
 }

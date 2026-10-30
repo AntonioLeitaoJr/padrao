@@ -37,12 +37,14 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                     </div>
                 </div>
             </div>
+        <?php elseif (!empty($erroUrna)): ?>
+            <div class="alert alert-warning" role="alert"><?= sanitize_output($erroUrna) ?></div>
         <?php elseif (!$faseAberta): ?>
             <!-- Votação Não Aberta -->
             <div class="card card-comara text-center py-5 shadow-sm">
                 <div class="card-body">
                     <i class="bi bi-clock-history text-warning" style="font-size: 3.5rem;"></i>
-                    <h3 class="fw-bold mt-3 text-dark">A Urna Geral ainda não está aberta para votação</h3>
+                    <h3 class="fw-bold mt-3 text-dark">A Urna Geral não está aberta para votação</h3>
                     <p class="text-muted max-w-600 mx-auto">
                         A Fase 3 (Votação Geral do Efetivo) será liberada após a conclusão da seleção pelas Divisões e Assessorias (Fase 2).
                         Acompanhe o cronograma regimental no Painel Geral.
@@ -52,7 +54,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
             </div>
         <?php else: ?>
             <!-- Cédula da Urna Eletrônica -->
-            <form id="formUrna" method="POST" action="/index.php?r=fase3/votar">
+            <form id="formUrna" onsubmit="return confirm('Confirmar definitivamente? Depois da gravação, suas escolhas não poderão ser alteradas.')" method="POST" action="/index.php?r=fase3/votar">
                 <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
 
                 <!-- Caixa de Identificação e Validação de CPF -->
@@ -100,7 +102,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                         </div>
                         <div class="card-body p-4">
                             <?php if (empty($cands)): ?>
-                                <div class="alert alert-warning mb-0">Nenhum candidato indicado disponível nesta categoria.</div>
+                                <div class="alert alert-warning mb-0">Categoria sem representantes. Não há voto nesta categoria; a escolha excepcional caberá à Presidência na Fase 5, com justificativa.</div>
                             <?php else: ?>
                                 <div class="row g-3">
                                     <?php foreach ($cands as $cand): ?>
@@ -117,7 +119,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                                                     <?= sanitize_output($cand['posto']) ?> <?= sanitize_output($cand['nome_guerra']) ?>
                                                 </h6>
                                                 <div class="small text-secondary mb-1">
-                                                    <?= sanitize_output($cand['setor']) ?><?= !empty($cand['divisao_sigla']) ? ' (' . sanitize_output($cand['divisao_sigla']) . ')' : '' ?>
+                                                    <?= sanitize_output($cand['setor']) ?>
                                                 </div>
                                             </div>
                                         </div>
