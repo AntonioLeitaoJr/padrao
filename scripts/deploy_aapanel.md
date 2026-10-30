@@ -2,21 +2,23 @@
 
 Este guia orienta a implantação oficial do **Sistema de Eleição dos Padrões COMARA** em servidor Linux **Debian 13** utilizando o painel de controle **aaPanel** com **PHP 8.3** e **MySQL 8.0+ / MariaDB 10.11+**.
 
-## Atualização da Fase 2 em banco existente
+## Atualização das Fases 2, 3 e 4 em banco existente
 
 Antes de liberar esta versão, faça backup do banco e dos arquivos, publique a versão que contém os ajustes e execute na raiz do projeto, usando as credenciais do banco configuradas:
 
 ```bash
 php database/migrate_fase2.php
+php database/migrate_fases3_4.php
 ```
 
 Em Docker, o comando equivalente é:
 
 ```bash
 docker exec -it votacao_comara_app php /var/www/html/database/migrate_fase2.php
+docker exec -it votacao_comara_app php /var/www/html/database/migrate_fases3_4.php
 ```
 
-A migração pode ser repetida: cria `historico_vencedores` e adiciona `efetivo.data_inicio_servico` quando necessário. Não reexecute instaladores ou cargas iniciais em banco em uso. Para instalações novas, execute a migração após a carga inicial, pois o instalador pode usar um dump anterior a esta alteração.
+As duas migrações podem ser repetidas. A primeira cria `historico_vencedores` e adiciona `efetivo.data_inicio_servico` quando necessário; a segunda cria as estruturas de corte, avaliadores, confirmações e ordenações das Fases 3–4, preservando os registros existentes. Não reexecute instaladores ou cargas iniciais em banco em uso. Para instalações novas, execute a migração após a carga inicial, pois o instalador pode usar um dump anterior a esta alteração.
 
 Antes de abrir a seleção, Administrador/RH deve cadastrar os vencedores dos dois anos anteriores ao pleito (2024 e 2025 em 2026), conferir as datas de apresentação/admissão e início do serviço e manter as chefias das divisões e das sete assessorias/seções. Não converta antigas indicações em vitórias nem tempo na OM em tempo total de serviço.
 
@@ -121,6 +123,7 @@ No terminal do servidor, execute o script de migração oficial:
 cd /www/wwwroot/votacao.comara.intraer
 php database/import_efetivo.php
 php database/migrate_fase2.php
+php database/migrate_fases3_4.php
 ```
 
 A saída confirmará:

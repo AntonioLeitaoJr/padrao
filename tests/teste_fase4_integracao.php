@@ -7,6 +7,16 @@ require_once __DIR__.'/../src/Models/Pleito.php';
 require_once __DIR__.'/../src/Models/Homologacao.php';
 require __DIR__.'/../database/migrate_fases3_4.php';
 require __DIR__.'/../database/migrate_fases3_4.php';
+require_once __DIR__.'/../src/Auth/AuthManager.php';
+function renderizarOrdenacaoTeste(bool $confirmado): string {
+    $_SESSION['user']=EstadoMaior::usuario(1);
+    $erro=null; $ciclo=EstadoMaior::ciclo(1); $situacao=EstadoMaior::situacao(1);
+    $candidatos=EstadoMaior::candidatos(1); $avaliacao=EstadoMaior::avaliacao(1,1);
+    $progresso=EstadoMaior::progresso(1); $podeConfirmar=!$confirmado; $rascunho=[];
+    ob_start();
+    try { require ROOT_PATH.'/views/fase4/index.php'; return ob_get_contents(); }
+    finally { ob_end_clean(); }
+}
 function criarUsuarioTeste(string $posto,string $perfil,string $nome): int {
     $pdo=Database::getConnection();
     $pdo->prepare("INSERT INTO efetivo(nome,nome_guerra,posto,categoria,tipo_vinculo) VALUES(?,?,?,'ineligivel','MILITAR_CARREIRA')")->execute([$nome,$nome,$posto]);
@@ -44,6 +54,9 @@ check(array_map('count',$grupos)===['graduado'=>3,'praca'=>2,'sppf'=>1,'sptf'=>0
 check(count(EstadoMaior::progresso(1))===2,'avaliadores somente Cel/Maj ativos, incluindo oficial com perfil ELEITOR');
 $nomes=array_column($grupos['graduado'],'nome_guerra');
 check($nomes===['Álvaro','bruno','célia'],'apresentação alfabética independente do corte');
+$html=renderizarOrdenacaoTeste(false);
+check(substr_count($html,'class="form-control justificativa-fase4"')===6,'interface apresenta justificativa individual para os seis finalistas disponíveis');
+check(str_contains($html,'id="confirmarOrdenacao"') && substr_count($html,'0/150 caracteres')===6,'interface apresenta confirmação expressa e contadores');
 $ordenacoes=[];
 foreach ($grupos as $cat=>$cs) foreach ($cs as $i=>$c) $ordenacoes[$cat][]=['candidato_id'=>$c['candidato_id'],'posicao'=>$i+1,'justificativa'=>'Dedicação à missão.'];
 rejeita(fn()=>EstadoMaior::confirmar(1,$cap,$ordenacoes),'perfil DIRECAO_SUPERIOR sem posto superior não ordena');
@@ -53,10 +66,18 @@ rejeita(fn()=>EstadoMaior::confirmar(1,1,$x),'posição repetida rejeitada no se
 check((int)$pdo->query('SELECT COUNT(*) FROM fase4_confirmacoes')->fetchColumn()===0,'erro não confirma parcialmente');
 $x=$ordenacoes;$x['praca'][0]['justificativa']=str_repeat('á',151);
 rejeita(fn()=>EstadoMaior::confirmar(1,1,$x),'151 caracteres rejeitados sem gravar');
+$pdo->exec("CREATE TRIGGER teste_falha_gravacao BEFORE INSERT ON fase4_ordenacoes FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Falha de teste'");
+rejeita(fn()=>EstadoMaior::confirmar(1,1,$ordenacoes),'falha real de gravação não retorna sucesso');
+check((int)$pdo->query('SELECT COUNT(*) FROM fase4_confirmacoes')->fetchColumn()===0,'falha de gravação reverte confirmação');
+check((int)$pdo->query('SELECT COUNT(*) FROM fase4_ordenacoes')->fetchColumn()===0,'falha de gravação reverte itens');
+$pdo->exec('DROP TRIGGER teste_falha_gravacao');
 $ordenacoes['graduado'][0]['justificativa']=str_repeat("a\u{0301}",150);
 EstadoMaior::confirmar(1,1,$ordenacoes);
 check(count(EstadoMaior::avaliacao(1,1)['graduado'])===3,'recupera todas as posições e justificativas');
 check(EstadoMaior::avaliacao(1,1)['graduado'][$ordenacoes['graduado'][0]['candidato_id']]['justificativa']===$ordenacoes['graduado'][0]['justificativa'],'preserva justificativa Unicode de 150 grafemas');
+$html=renderizarOrdenacaoTeste(true);
+check(!str_contains($html,'id="confirmarOrdenacao"') && substr_count($html,'readonly')===6,'consulta confirmada bloqueia edição e não oferece reconfirmação');
+check(str_contains($html,$ordenacoes['graduado'][0]['justificativa']),'consulta exibe justificativa efetivamente recuperada do banco');
 rejeita(fn()=>EstadoMaior::confirmar(1,1,$ordenacoes),'reenvio não altera avaliação confirmada');
 check(!Pleito::avancarFase(1,$admin)['sucesso'],'aguarda todos os avaliadores');
 $segunda=$ordenacoes;$segunda['graduado'][0]['posicao']=2;$segunda['graduado'][1]['posicao']=1;

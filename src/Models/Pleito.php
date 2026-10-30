@@ -116,14 +116,14 @@ class Pleito {
         try {
             $atual = EstadoMaior::bloquearPleito($pleitoId, $faseAtual);
             if (EstadoMaior::usuario((int)$usuarioId)['perfil'] !== PERFIL_ADMIN) throw new RuntimeException('Avanço restrito ao Administrador.');
-        // SE SAIR DA FASE 2: Consolida automaticamente os indicados
-        if ($faseAtual === FASE_2) {
-            require_once __DIR__ . '/SelecaoFase2.php';
-            foreach (SelecaoFase2::relatorioProgressoOrgaos($pleitoId) as $progresso) {
-                if (!$progresso['concluido']) throw new RuntimeException('Conclua a seleção de um candidato por grupo disponível em todos os órgãos antes de avançar.');
+            // SE SAIR DA FASE 2: Consolida automaticamente os indicados
+            if ($faseAtual === FASE_2) {
+                require_once __DIR__ . '/SelecaoFase2.php';
+                foreach (SelecaoFase2::relatorioProgressoOrgaos($pleitoId) as $progresso) {
+                    if (!$progresso['concluido']) throw new RuntimeException('Conclua a seleção de um candidato por grupo disponível em todos os órgãos antes de avançar.');
+                }
+                self::consolidarFase2($pleitoId);
             }
-            self::consolidarFase2($pleitoId);
-        }
 
 
             if ($faseAtual === FASE_3) {

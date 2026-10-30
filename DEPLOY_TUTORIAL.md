@@ -2,21 +2,23 @@
 
 Este guia detalha o passo a passo completo para realizar o deploy do **Sistema de Eleição dos Padrões da COMARA** tanto no painel **aaPanel (Debian 12/13)** quanto em qualquer servidor Linux convencional ou ambiente **Docker**.
 
-## Atualização da Fase 2 em banco existente
+## Atualização das Fases 2, 3 e 4 em banco existente
 
 Antes de liberar esta versão, faça backup do banco e dos arquivos, publique a versão que contém os ajustes e execute na raiz do projeto, usando as credenciais do banco configuradas:
 
 ```bash
 php database/migrate_fase2.php
+php database/migrate_fases3_4.php
 ```
 
 Em Docker, o comando equivalente é:
 
 ```bash
 docker exec -it votacao_comara_app php /var/www/html/database/migrate_fase2.php
+docker exec -it votacao_comara_app php /var/www/html/database/migrate_fases3_4.php
 ```
 
-A migração pode ser repetida: cria `historico_vencedores` e adiciona `efetivo.data_inicio_servico` quando necessário. Não reexecute instaladores ou cargas iniciais em banco em uso. Para instalações novas, execute a migração após a carga inicial, pois o instalador pode usar um dump anterior a esta alteração.
+As duas migrações podem ser repetidas. A primeira cria `historico_vencedores` e adiciona `efetivo.data_inicio_servico` quando necessário; a segunda cria as estruturas de corte, avaliadores, confirmações e ordenações das Fases 3–4, preservando os registros existentes. Não reexecute instaladores ou cargas iniciais em banco em uso. Para instalações novas, execute a migração após a carga inicial, pois o instalador pode usar um dump anterior a esta alteração.
 
 Antes de abrir a seleção, Administrador/RH deve cadastrar os vencedores dos dois anos anteriores ao pleito (2024 e 2025 em 2026), conferir as datas de apresentação/admissão e início do serviço e manter as chefias das divisões e das sete assessorias/seções. Não converta antigas indicações em vitórias nem tempo na OM em tempo total de serviço.
 
@@ -131,6 +133,7 @@ Execute o instalador oficial automatizado em linha de comando:
 ```bash
 php database/instalar.php
 php database/migrate_fase2.php
+php database/migrate_fases3_4.php
 ```
 
 O instalador criará todas as tabelas, importará os **443 militares e civis**, criará as contas de acesso e configurará o administrador geral `admin` com a senha padrão `padrao@2026`.
@@ -240,6 +243,7 @@ Se preferir rodar em contêineres Docker isolados:
    ```bash
    docker exec -it votacao_comara_app php /var/www/html/database/instalar.php
    docker exec -it votacao_comara_app php /var/www/html/database/migrate_fase2.php
+   docker exec -it votacao_comara_app php /var/www/html/database/migrate_fases3_4.php
    ```
 
 5. O sistema estará acessível em: `http://SEU_IP:8080`.

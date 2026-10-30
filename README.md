@@ -81,6 +81,7 @@ Se você utiliza Docker no Windows, Linux ou macOS:
    ```bash
    docker exec -it votacao_comara_app php /var/www/html/database/instalar.php
    docker exec -it votacao_comara_app php /var/www/html/database/migrate_fase2.php
+   docker exec -it votacao_comara_app php /var/www/html/database/migrate_fases3_4.php
    ```
 
 4. Acesse no navegador:
@@ -107,9 +108,10 @@ nano .env
 # Em instalação nova, carregue a base e aplique a migração:
 php database/instalar.php
 php database/migrate_fase2.php
+php database/migrate_fases3_4.php
 ```
 
-Em uma instalação existente, faça backup e execute somente a migração da Fase 2 após publicar a versão. Não reexecute a carga inicial para atualizar um banco em uso. Antes de liberar a seleção, confira os vencedores anteriores, as datas de apresentação/admissão e início de serviço e o cadastro de chefias.
+Em uma instalação existente, faça backup e execute as migrações da Fase 2 e das Fases 3–4, nessa ordem após publicar a versão. Não reexecute a carga inicial para atualizar um banco em uso. Antes de liberar a seleção, confira os vencedores anteriores, as datas de apresentação/admissão e início de serviço e o cadastro de chefias.
 
 ---
 
