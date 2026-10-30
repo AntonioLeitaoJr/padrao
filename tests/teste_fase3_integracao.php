@@ -35,6 +35,17 @@ foreach (['graduado','praca','sppf','sptf'] as $cat) {
     check(!isset($lista[0]['media_fase1']) && !isset($lista[0]['nome']),"sem pontuação/nome completo em $cat");
     if(in_array($cat,['sppf','sptf'])) check($lista[0]['posto']==='CIVIL '.strtoupper($cat),"identificação civil $cat");
 }
+// Dados inconsistentes não podem ampliar a representação de uma unidade.
+$pdo->exec("INSERT INTO efetivo(nome,nome_guerra,posto,categoria,tipo_vinculo,divisao_sigla,setor) VALUES('Extra','Extra','1S','graduado','MILITAR_CARREIRA','DPC','Setor')");
+$extra=(int)$pdo->lastInsertId();
+$pdo->prepare("INSERT INTO selecao_fase2(pleito_id,orgao_sigla,chefe_usuario_id,categoria,candidato_id) VALUES(1,'DPC',1,'graduado',?)")->execute([$extra]);
+$pdo->prepare("INSERT INTO indicados_consolidados(pleito_id,categoria,candidato_id) VALUES(1,'graduado',?)")->execute([$extra]);
+rejeita(fn()=>Efetivo::listarParaUrna(1,'graduado'),'bloqueia dois representantes da mesma unidade');
+$pdo->prepare('DELETE FROM selecao_fase2 WHERE candidato_id=?')->execute([$extra]);
+$pdo->prepare('DELETE FROM indicados_consolidados WHERE candidato_id=?')->execute([$extra]);
+$pdo->exec("UPDATE selecao_fase2 SET orgao_sigla='INVALIDA' WHERE categoria='graduado' AND orgao_sigla='DPC'");
+rejeita(fn()=>Efetivo::listarParaUrna(1,'graduado'),'bloqueia unidade inválida');
+$pdo->exec("UPDATE selecao_fase2 SET orgao_sigla='DPC' WHERE orgao_sigla='INVALIDA'");
 $lista=ValidacaoSuperior::listarCandidatos(1);
 check(array_column(array_slice($lista,0,6),'nome_guerra')===['Álvaro','bruno','célia','dora','Érica','zélia'],'Fase 4 alfabética');
 $pdo->prepare('DELETE FROM selecao_fase2 WHERE candidato_id=?')->execute([$votos['sptf']]);
