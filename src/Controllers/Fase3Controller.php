@@ -39,14 +39,13 @@ class Fase3Controller {
         $candidatosUrna = [];
         $erroUrna = null;
         try {
+            if (EstadoMaior::ciclo((int)$pleito['id'])) $faseAberta = false;
             foreach ([CAT_GRADUADO, CAT_PRACA, CAT_SPPF, CAT_SPTF] as $cat) {
                 $candidatosUrna[$cat] = Efetivo::listarParaUrna((int)$pleito['id'], $cat);
-                if ($faseAberta && !$candidatosUrna[$cat]) {
-                    $erroUrna = 'Há categoria sem candidatos. A votação exige uma escolha nas quatro categorias; aguarde orientação da Administração.';
-                }
+
             }
         } catch (RuntimeException $e) {
-            $erroUrna = 'Não foi possível carregar os representantes. Solicite à Administração a conferência das seleções da Fase 2 e da consolidação.';
+            $erroUrna = 'Não foi possível carregar a urna. STI: confira as seleções e execute as migrações migrate_fase2.php e migrate_fases3_4.php.';
             error_log($e->getMessage());
         }
 

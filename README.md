@@ -18,7 +18,7 @@ O processo é organizado em cinco fases:
 - **Fase 1 — Avaliação e TACF:** Tenentes e Capitães avaliam os candidatos; o Setor de Educação Física lança o TACF.
 - **Fase 2 — Seleção pelas chefias:** cada uma das cinco divisões (DPC, DA, DL, DE e DS) e a representação conjunta de ACI, AGOV, AINT, AJUR, APOG, SCS e SIJ escolhe **um candidato por categoria disponível** entre os 20% mais bem pontuados de sua unidade.
 - **Fase 3 — Votação geral:** o efetivo vota nos selecionados da Fase 2, com até seis candidatos por categoria, conforme a disponibilidade de cada unidade.
-- **Fase 4 — Apreciação pela Direção Superior.**
+- **Fase 4 — Ordenação individual pelo Estado-Maior:** Coronéis, Tenentes-Coronéis e Majores ordenam até três finalistas por categoria, com justificativas e pesos 5–3–1.
 - **Fase 5 — Homologação e voto de minerva do Presidente**, quando necessário.
 
 ### Regras da Fase 2
@@ -169,10 +169,23 @@ Documentos de referência:
 - [Manual operacional / NPA](docs/NPA_ELEICAO_PADROES_COMARA.md)
 - [Regras, migração e testes da Fase 2](docs/ATUALIZACAO_FASE2.md)
 
-## Revisão das Fases 3 e 4 — entrega parcial
+## Fases 3 e 4 — ordenação do Estado-Maior
 
-A urna valida os representantes selecionados da Fase 2, apresenta somente os quatro dados solicitados e ordena por nome de guerra com tratamento de caixa e acentos. Civis aparecem como CIVIL SPPF/SPTF. Candidatos não selecionados, categoria incorreta e votos fora da fase são rejeitados no servidor.
+A urna recebe somente os representantes escolhidos na Fase 2, até seis por categoria, em ordem alfabética do nome de guerra, sem distinção de caixa e acentos. Os cartões exibem somente foto, posto/graduação (CIVIL SPPF/SPTF), nome de guerra e setor. O voto pode ser revisto antes da confirmação; depois da gravação, é definitivo. Categoria sem representantes não recebe cédula: sua escolha excepcional fica para a Presidência na Fase 5.
 
-A Fase 4 atual permanece de validação/exclusão, agora em ordem alfabética. O validador de ordenação e justificativas foi preparado, mas ainda não está conectado a uma tela ou gravação. Corte dos três finalistas, ausências, consolidação e edição dependem de decisão expressa. A Fase 5 permanece sem alteração. Consulte [escopo, testes e pendências](docs/ATUALIZACAO_FASES3_4.md).
+Ao encerrar a Fase 3, o sistema fixa votos e dados de classificação. Avançam até três por categoria, aplicando os quatro critérios de desempate da Fase 2. Se houver empate persistente no corte, a urna é encerrada e a Fase 4 fica bloqueada: a Presidência decide, com justificativa, somente entre os empatados pelas vagas restantes. A Administração avança novamente depois dessas decisões.
 
-Não há nova migração nesta entrega parcial. A execução de `php database/migrate_fase2.php` no servidor continua sem confirmação. As issues do fork estão desabilitadas (GitHub HTTP 410); os requisitos estão registrados no documento acima e no PR, sem alegação de abertura de issues.
+Na Fase 4, todos os Coronéis, Tenentes-Coronéis e Majores com efetivo e conta ativos na abertura ordenam individualmente os finalistas e justificam cada posição em até 150 caracteres. Pesos: primeiro 5, segundo 3, terceiro 1. Com dois candidatos usam-se 5 e 3; com um, 5, sempre mediante confirmação expressa. Nenhuma avaliação confirmada pode ser editada. Somente depois de todas as confirmações a Administração pode avançar à Fase 5.
+
+Resultado: soma dos pontos → quatro critérios existentes → votos da Fase 3 → voto de minerva entre os empatados finais. Somente a categoria que ficou sem finalistas disponibiliza à Presidência seu próprio efetivo ativo, registrado no encerramento da urna. Essa exceção não amplia as listas das demais categorias. A homologação exige quatro vencedores.
+
+A migração de produção da Fase 2 continua sem confirmação. Após backup e apenas quando a implantação for autorizada, executar nesta ordem:
+
+```sh
+php database/migrate_fase2.php
+php database/migrate_fases3_4.php
+```
+
+As migrações são idempotentes e não convertem resultados antigos. Não reinstale nem execute carga inicial em banco em uso. Consulte [regras, transições, testes e implantação](docs/ATUALIZACAO_FASES3_4.md).
+
+As issues do fork estão desabilitadas (GitHub HTTP 410). Os requisitos e critérios de aceite estão registrados no guia e no PR #2; não se declara que issues tenham sido abertas. Sem merge ou deploy nesta entrega.

@@ -51,14 +51,13 @@ O processo seletivo escolhe anualmente os destaques profissionais e morais da Or
 
 O processo seletivo desenvolve-se obrigatoriamente através de cinco fases sucessivas e integradas:
 
-```
-  ┌───────────────┐      ┌───────────────┐      ┌───────────────┐      ┌───────────────┐      ┌───────────────┐
-  │    FASE 1     │ ───► │    FASE 2     │ ───► │    FASE 3     │ ───► │    FASE 4     │ ───► │    FASE 5     │
-  │ Avaliação dos │      │ Seleção pelas │      │ Votação Geral │      │ Validação da  │      │ Homologação e │
-  │   Chefes e    │      │  Chefias de   │      │  do Efetivo   │      │    Direção    │      │    Voto de    │
-  │     TACF      │      │ Divisão/Asses.│      │ (Urna Secreta)│      │   Superior    │      │    Minerva    │
-  └───────────────┘      └───────────────┘      └───────────────┘      └───────────────┘      └───────────────┘
-```
+| Fase | Procedimento |
+| :--- | :--- |
+| 1 | Avaliação dos chefes e TACF |
+| 2 | Escolha de um representante por unidade e categoria disponível |
+| 3 | Votação do efetivo e classificação de até três por categoria |
+| 4 | Ordenação individual pelos Oficiais Superiores, com pesos 5–3–1 |
+| 5 | Consolidação final, minerva ou escolha excepcional e homologação |
 
 ---
 
@@ -100,9 +99,9 @@ O processo seletivo desenvolve-se obrigatoriamente através de cinco fases suces
    - Praça Padrão;
    - Servidor Civil Permanente (SPPF);
    - Servidor Civil Temporário (SPTF).
-5. A implementação atual exige um candidato nas quatro categorias e não oferece branco ou nulo. Esta revisão não cria essas opções. Havendo categoria totalmente vazia, o envio permanece bloqueado, com orientação ao eleitor, até definição expressa sobre o tratamento dessa ausência.
+5. É obrigatória a escolha de um candidato em cada categoria com representantes. Categoria sem representantes não recebe voto e será objeto de escolha excepcional na Fase 5. Não foram instituídas opções de branco ou nulo.
 6. Confira cuidadosamente as escolhas marcadas na cédula. Os cartões apresentam somente foto, posto/graduação, nome de guerra e setor. Para civis, o posto/graduação é **CIVIL SPPF** ou **CIVIL SPTF**; não são exibidos notas, classificação ou histórico de vitórias.
-7. Clique em **"CONFIRMAR VOTO"**.
+7. Confirme o registro após revisar todas as escolhas. Antes da confirmação é possível alterá-las; após a gravação definitiva, nenhuma escolha poderá ser modificada.
 8. O sistema grava as cédulas em tabela separada do controle de participação, sem CPF, usuário ou comprovante na cédula. O controle de unicidade por CPF e pleito permanece. A implementação examinada não contém assinatura cega criptográfica.
 9. **Emissão do Comprovante de Votação:**
    - O sistema emitirá imediatamente o seu **Comprovante de Votação Eletrônica**, contendo código aleatório de participação e data/hora do registro. O selo HMAC não consta na versão examinada e não é introduzido nesta revisão.
@@ -198,21 +197,38 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
 
 ---
 
-### 6.5. DA DIREÇÃO SUPERIOR / COMISSÃO ESPECIAL (`DIRECAO_SUPERIOR` — FASE 4)
+### 6.5. DO ESTADO-MAIOR — FASE 4
 
-**Público-alvo:** Vice-Presidente da COMARA, Oficiais Superiores (Coronéis, Tenentes-Coronéis, Majores) e membros da Comissão Julgadora designados em Boletim Interno.
+**Público-alvo:** Coronéis, Tenentes-Coronéis e Majores do efetivo ativo, com contas ativas habilitadas na abertura da Fase 4. Cada Oficial Superior registra sua própria ordenação; não se limita a participação aos seis representantes da Fase 2. O perfil DIRECAO_SUPERIOR não substitui o requisito de posto. ADMIN mantém atribuições administrativas, mas somente participa da ordenação quando também for Oficial Superior habilitado.
 
-#### Procedimentos atuais e revisão da Fase 4:
-1. A versão existente mantém a validação, a exclusão e a reabilitação dos candidatos. A apresentação passa a ser alfabética pelo nome de guerra, sem utilizar a votação anterior como ordem de apresentação.
-2. A substituição desse procedimento por ordenação individual do Estado-Maior está em desenvolvimento e ainda não foi ativada nesta revisão.
-3. Para o novo procedimento, estão definidos os seguintes requisitos:
-   - Encaminhamento dos três mais bem classificados por categoria na votação do efetivo;
-   - Ordenação completa individual, sem repetir candidato ou posição;
-   - Justificativa obrigatória para cada candidato, limitada a 150 caracteres, com validação na interface e no servidor;
-   - Persistência, recuperação e confirmação somente após gravação efetiva.
-4. Permanecem sujeitos a decisão expressa o empate na terceira vaga, as categorias com menos de três candidatos ou vazias, o método de consolidação para a Fase 5 e o prazo para edição das avaliações.
-5. O validador técnico preparado nesta revisão não registra avaliações nem modifica os resultados. Os procedimentos de gravação, contador na interface, migração e transição serão concluídos após as decisões do item anterior.
-6. O acesso atual reconhece os perfis ADMIN, PRESIDENTE e DIRECAO_SUPERIOR, além dos postos previstos para o Estado-Maior. Essa autorização existente é preservada nesta entrega parcial.
+#### 6.5.1. Do Encerramento da Fase 3 e da Classificação:
+1. A Administração encerra a votação pelo comando de avanço da fase. O sistema registra os votos e os dados usados na classificação, preservando-os para as etapas seguintes.
+2. Classificam-se até três candidatos por categoria, pela votação do efetivo e pelos quatro critérios de desempate do item 6.4, na mesma ordem.
+3. Persistindo empate no limite das três vagas, a urna permanece encerrada e a abertura da Fase 4 fica bloqueada. Não serão incluídos todos os empatados.
+4. Na tela da Fase 4, a Presidência deverá selecionar somente entre os candidatos empatados no corte, preenchendo exatamente as vagas restantes e registrando fundamentação obrigatória. A decisão confirmada é definitiva e auditada.
+5. Após resolver todos os cortes pendentes, a Administração deverá comandar novamente o avanço. Os candidatos serão apresentados alfabeticamente pelo nome de guerra, sem utilizar a ordem de votação da Fase 3 como ordem de apresentação.
+
+#### 6.5.2. Da Ordenação Individual e Confirmação:
+1. Cada Oficial Superior habilitado ordenará integralmente os candidatos de cada categoria, sem repetir candidato ou posição.
+2. Atribuir-se-ão os seguintes pontos:
+
+| Posição | Pontos por avaliador |
+| :--- | :--- |
+| Primeiro colocado | 5 |
+| Segundo colocado | 3 |
+| Terceiro colocado | 1 |
+
+3. Havendo dois candidatos, serão atribuídos 5 e 3 pontos; havendo um, 5 pontos. A confirmação expressa é obrigatória mesmo na categoria com candidato único.
+4. Cada candidato ordenado receberá justificativa individual obrigatória de até 150 caracteres. A interface apresentará contador, e o servidor validará o mesmo limite, considerando letras acentuadas como caracteres, inclusive acentos decompostos.
+5. As posições e justificativas poderão ser revistas antes do comando **"Confirmar definitivamente as ordenações"**. Após a gravação, o sistema permitirá somente consulta da avaliação, vedada sua edição ou substituição.
+6. A confirmação abrangerá todas as categorias disponíveis em uma única gravação. Não haverá confirmação parcial em caso de erro.
+7. Categoria sem candidatos não receberá ordenação e será identificada para escolha excepcional pela Presidência na Fase 5.
+8. O avanço à Fase 5 dependerá da confirmação de todos os Oficiais Superiores registrados como avaliadores na abertura desta fase. O cadastro deverá ser conferido previamente pela Administração.
+
+#### 6.5.3. Da Consolidação:
+1. O resultado de cada categoria corresponderá à soma dos pontos atribuídos nas ordenações individuais.
+2. Em igualdade de pontos, aplicar-se-ão os quatro critérios do item 6.4. Persistindo a igualdade, prevalecerá a maior quantidade de votos recebidos na Fase 3.
+3. Persistindo o empate após essas etapas, a decisão caberá à Presidência na Fase 5, mediante voto de minerva restrito aos empatados finais e fundamentação registrada.
 
 ---
 
@@ -222,7 +238,7 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
 
 #### Procedimentos na Fase 5:
 1. Acesse o menu **"Fase 5: Apuração e Homologação"**.
-2. A implementação atual apura os votos da urna. A integração das futuras ordenações individuais do Estado-Maior depende da definição do método de consolidação; esta entrega parcial não altera a apuração, a homologação nem o voto de minerva.
+2. O sistema apresenta o resultado consolidado das ordenações do Estado-Maior, conforme o item 6.5.3, preservando a identificação dos votos da Fase 3 para desempate.
 3. **Tratamento Automático de Empate:**
    - Em caso de empate em qualquer categoria, o sistema aplica previamente os critérios estatutários:
      - Preferência a quem não venceu nos dois anos anteriores ao pleito;
@@ -231,9 +247,14 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
      - Maior nota do TACF.
 4. **Voto de Minerva:**
    - A retirada do quinto item do painel geral não elimina esta funcionalidade da Fase 5.
-   - Persistindo rigorosamente o empate ou em situações excepcionais regimentais, o Presidente/Vice-Presidente exercerá o **Voto de Minerva**.
+   - Após os quatro critérios, considerar-se-á a quantidade de votos da Fase 3. Persistindo o empate, a Presidência exercerá o **Voto de Minerva**, exclusivamente entre os empatados finais.
    - Selecione o candidato vencedor na tela, insira a justificativa institucional e clique em **"Registrar Voto de Minerva"**.
-5. **Homologação e Publicação Oficial:**
+5. **Categoria sem Finalistas:**
+   - Somente quando uma categoria não tiver nenhum representante, a Presidência escolherá, com fundamentação obrigatória, entre os integrantes ativos daquela categoria registrados no encerramento da urna.
+   - A exceção será identificada expressamente na tela e na auditoria. Não alcançará outra categoria nem ampliará lista que contenha um, dois ou três finalistas.
+   - Se não houver nenhum integrante elegível naquela categoria, a homologação permanecerá bloqueada; o sistema não criará vencedor fictício.
+6. **Homologação e Publicação Oficial:**
+   - A homologação exigirá um vencedor em cada uma das quatro categorias.
    - Com o resultado consolidado, clique no botão **"Homologar Pleito Oficialmente"**.
    - O sistema gera os relatórios oficiais finais:
      - **Ata da Eleição Oficial dos Padrões da COMARA** (pronta para assinatura digital e publicação em Boletim Interno ostensivo);
@@ -250,7 +271,7 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
 1. **Gerenciamento do Pleito e Transições de Fase (`admin/pleito`):**
    - Cria o pleito do ano corrente (ex.: *"Eleição dos Padrões COMARA 2026"*).
    - **Avanço Regimental de Fases:** Permite avançar as fases do processo. Na Fase 1, caso existam avaliações pendentes, o sistema exige do Administrador o **registro formal obrigatório de justificativa em texto** (gravada perenemente na tabela e no painel de auditoria de fases).
-   - **Retorno de Fase (Reversão):** Caso haja necessidade de correções administrativas ou reavaliações, o Administrador pode **retornar o pleito para a fase anterior** a qualquer momento com registro de motivo.
+   - **Retorno de Fase (Reversão):** Antes do encerramento da urna, o Administrador pode retornar à fase anterior com registro de motivo. Depois do encerramento para classificação, o retorno comum fica bloqueado para preservar votos, decisões e confirmações; eventual anulação observará o procedimento próprio de reinicialização.
    - **Histórico e Auditoria Perene de Fases:** Acompanhamento em tempo real de todas as transições realizadas (data, hora, avanço/retorno, pendências e responsável).
    - **Botão "Reiniciar Pleito":** Utilizado estritamente em caso de anulação formal autorizada pelo Chefe da COMARA. Exige dupla confirmação e registro detalhado da motivação administrativa.
 
@@ -306,7 +327,8 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
 | **Fase 1** | Avaliação de Atributos e notas de TACF | Oficiais Chefes Diretos e Ed. Física | Semana 2 e 3 |
 | **Fase 2** | Escolha de um candidato por categoria disponível em cada unidade | Chefes de Divisão e representante conjunto | Semana 4 |
 | **Fase 3** | Votação Geral Secreta na Urna Eletrônica | Todo o Efetivo da COMARA | Semana 5 |
-| **Fase 4** | Validação atual; ordenação individual pendente das definições do item 6.5 | Estado-Maior | Início da Semana 6, condicionado à conclusão da revisão |
+| **Corte Fase 3 → 4** | Encerramento da urna e resolução de eventual empate na terceira vaga | Administração / Presidência | Antes da abertura da Fase 4 |
+| **Fase 4** | Ordenações individuais, justificativas e consolidação 5–3–1 | Oficiais Superiores | Início da Semana 6 |
 | **Fase 5** | Minerva, Homologação e Emissão de Ata | Chefe / Vice-Chefe da COMARA | Fim da Semana 6 |
 | **Publicação**| Veiculação em Boletim e Placa de Homenagem | Seção de Comunicação Social (SCS) | Solenidade de Aniversário |
 

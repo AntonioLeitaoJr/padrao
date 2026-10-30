@@ -29,11 +29,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: PHP e MySQL
-        run: sudo apt-get update -qq && sudo apt-get install -y php-cli php-mysql
+        run: sudo apt-get update -qq && sudo apt-get install -y php-cli php-mysql php-mbstring
       - name: Sintaxe PHP e JavaScript
         run: |
           find src views config public database tests -name '*.php' -print0 | xargs -0 -n1 php -l
           node --check public/assets/js/main.js
+          node --check public/assets/js/fase4.js
       - name: Regras de classificação e desempate
         run: php tests/teste_fase2_regras_unitarias.php
       - name: Persistência, permissões e passagem à urna
@@ -46,4 +47,4 @@ jobs:
           FASE34_TEST_DB: '1'
         run: |
           mysql -h127.0.0.1 -uroot -ptest -e 'CREATE DATABASE comara_fase34_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
-          php tests/teste_fase3_integracao.php
+          php tests/teste_fase4_integracao.php

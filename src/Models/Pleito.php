@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../Services/AuditoriaService.php';
+require_once __DIR__ . '/EstadoMaior.php';
 
 /**
  * Modelo de Gestão de Ciclos Eleitorais e Fases Regimentais
@@ -109,20 +110,32 @@ class Pleito {
             }
         }
 
-        // SE SAIR DA FASE 2: Consolida automaticamente os indicados
-        if ($faseAtual === FASE_2) {
-            require_once __DIR__ . '/SelecaoFase2.php';
-            foreach (SelecaoFase2::relatorioProgressoOrgaos($pleitoId) as $progresso) {
-                if (!$progresso['concluido']) return ['sucesso' => false,
-                    'mensagem' => 'Conclua a seleção de um candidato por grupo disponível em todos os órgãos antes de avançar.'];
-            }
-            self::consolidarFase2($pleitoId);
-        }
-
         $pdo = Database::getConnection();
         $pdo->beginTransaction();
 
         try {
+            $atual = EstadoMaior::bloquearPleito($pleitoId, $faseAtual);
+            if (EstadoMaior::usuario((int)$usuarioId)['perfil'] !== PERFIL_ADMIN) throw new RuntimeException('Avanço restrito ao Administrador.');
+        // SE SAIR DA FASE 2: Consolida automaticamente os indicados
+        if ($faseAtual === FASE_2) {
+            require_once __DIR__ . '/SelecaoFase2.php';
+            foreach (SelecaoFase2::relatorioProgressoOrgaos($pleitoId) as $progresso) {
+                if (!$progresso['concluido']) throw new RuntimeException('Conclua a seleção de um candidato por grupo disponível em todos os órgãos antes de avançar.');
+            }
+            self::consolidarFase2($pleitoId);
+        }
+
+
+            if ($faseAtual === FASE_3) {
+                if (!EstadoMaior::preparar($pleitoId, (int)$usuarioId)) {
+                    $pdo->commit();
+                    AuditoriaService::log('URNA_ENCERRADA_CORTE_PENDENTE', ['pleito_id'=>$pleitoId], $usuarioId);
+                    return ['sucesso'=>false, 'mensagem'=>'Urna encerrada. Fase 4 bloqueada: a Presidência deve resolver o empate no corte em Fase 4 > Decisão da terceira vaga. Depois, avance novamente.'];
+                }
+                EstadoMaior::abrir($pleitoId);
+            }
+            if ($faseAtual === FASE_4) EstadoMaior::exigirConcluida($pleitoId);
+
             $stmt = $pdo->prepare('UPDATE pleitos SET fase_atual = :fase, status = "em_andamento" WHERE id = :id');
             $stmt->execute([':fase' => $proximaFase, ':id' => $pleitoId]);
 
@@ -194,6 +207,10 @@ class Pleito {
         $pdo->beginTransaction();
 
         try {
+            EstadoMaior::bloquearPleito($pleitoId, $faseAtual);
+            EstadoMaior::verificarEstrutura();
+            if (EstadoMaior::ciclo($pleitoId)) throw new RuntimeException('A urna já foi encerrada para o corte. Retorno bloqueado para preservar votos, decisões e confirmações.');
+
             $stmt = $pdo->prepare('UPDATE pleitos SET fase_atual = :fase, status = "em_andamento" WHERE id = :id');
             $stmt->execute([':fase' => $faseAnterior, ':id' => $pleitoId]);
 
@@ -316,6 +333,10 @@ class Pleito {
         $pdo->beginTransaction();
 
         try {
+            $pdo->prepare('SELECT id FROM pleitos WHERE id=? FOR UPDATE')->execute([$pleitoId]);
+            EstadoMaior::verificarEstrutura();
+            if (!$limparDados && EstadoMaior::ciclo($pleitoId)) throw new RuntimeException('Não é possível reiniciar mantendo dados de uma urna encerrada.');
+
             // 1. Reverte incremento de indicações anteriores de vencedores homologados (se houver)
             $stmtHomol = $pdo->prepare('SELECT vencedor_graduado_id, vencedor_praca_id, vencedor_sppf_id, vencedor_sptf_id FROM homologacao_pleito WHERE pleito_id = :p');
             $stmtHomol->execute([':p' => $pleitoId]);
@@ -335,6 +356,7 @@ class Pleito {
 
             // 2. Limpa registros das etapas regimentais
             if ($limparDados) {
+                $pdo->prepare('DELETE FROM fase4_ciclos WHERE pleito_id=?')->execute([$pleitoId]);
                 $pdo->prepare('DELETE FROM homologacao_pleito WHERE pleito_id = :p')->execute([':p' => $pleitoId]);
                 $pdo->prepare('DELETE FROM voto_minerva_presidente WHERE pleito_id = :p')->execute([':p' => $pleitoId]);
                 $pdo->prepare('DELETE FROM urna_votos WHERE pleito_id = :p')->execute([':p' => $pleitoId]);
@@ -373,6 +395,7 @@ class Pleito {
 
             $msg = 'Pleito reiniciado com sucesso para a Fase 1: Avaliações dos Chefes Diretos & TACF.';
             if ($limparDados) {
+                $pdo->prepare('DELETE FROM fase4_ciclos WHERE pleito_id=?')->execute([$pleitoId]);
                 $msg .= ' Todos os votos e avaliações do ciclo anterior foram zerados para um novo processo.';
             }
 

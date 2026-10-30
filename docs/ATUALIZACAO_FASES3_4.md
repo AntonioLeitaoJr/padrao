@@ -1,77 +1,81 @@
-# Revisão das Fases 3 e 4 — entrega parcial para revisão
+# Atualização das Fases 3 e 4
 
-## Base e rastreabilidade
+## Base e decisões confirmadas
 
-Base: `main` do fork AntonioLeitaoJr/padrao, commit `c4528ffa1e003b88554ee1b200037a9043d600da`, contendo o PR #1 da Fase 2. Foram consultadas as branches, issues e PRs dos dois repositórios. As atualizações posteriores dos cinco documentos Markdown do repositório original foram incorporadas, preservando os ajustes da Fase 2.
+Branch `ajustes-fases3-4`, PR #2 no fork AntonioLeitaoJr/padrao. A base contém o PR #1 da Fase 2 e as atualizações posteriores dos documentos do repositório original. Sem merge ou deploy autorizado.
 
-As tentativas de criar uma issue para cada fase foram recusadas pelo GitHub com HTTP 410: issues desabilitadas no fork. Não há issues publicadas por esta entrega. Este documento registra os requisitos para futura abertura, e o PR deve referenciá-lo. Sem merge ou deploy.
+Em 30/10/2026 foram confirmadas as regras: todos os Oficiais Superiores habilitados ordenam individualmente; pesos 5–3–1 (5–3 com dois e 5 com um); confirmação definitiva; corte empatado resolvido pela Presidência com bloqueio da Fase 4; consolidação por pontos, quatro critérios, votos anteriores e minerva; escolha excepcional restrita à categoria sem finalistas. Essa confirmação de requisitos não constitui aprovação institucional ou publicação da NPA em Boletim.
 
-## Fase 3 — requisitos e critérios de aceite
+As issues estão desabilitadas no fork; as duas tentativas retornaram HTTP 410. Nenhuma issue foi publicada. Os requisitos e critérios de aceite estão registrados neste documento e vinculados pelo PR.
 
-- [x] Até seis representantes por categoria: seleção explícita das cinco divisões e das assessorias/seções unificadas; grupos sem representante não geram candidato.
-- [x] Servidor rejeita candidato não selecionado, categoria incorreta, categoria adicional e seleção inconsistente ou duplicada por unidade.
-- [x] Ordem alfabética por nome de guerra com `utf8mb4_unicode_ci`, incluindo caixa e acentos.
-- [x] Cartão somente com foto, posto/graduação, nome de guerra e setor; civis identificados como CIVIL SPPF/SPTF.
-- [x] Consulta da urna não carrega pontuação, classificação, nome completo ou histórico.
-- [x] Preservados autenticação, CSRF, confirmação, comprovante e separação entre cédulas e controle de participação.
-- [x] Validação da fase/status no serviço de gravação, sob transação; voto duplicado bloqueado.
-- [x] Correção da ordem de atualização SQL para eleitor pré-cadastrado com `votou=0`.
-- [ ] Categoria totalmente vazia: definição eleitoral pendente. O comportamento atual exige quatro votos e continua bloqueado, agora com orientação antes do envio. Não foram criadas regras de branco/nulo.
+## Urna e encerramento
 
-O comprovante atual usa código aleatório; não foi encontrado selo HMAC nesta base nem nas alterações comparadas do original. Não se declara assinatura cega criptográfica ou sigilo absoluto com base apenas na separação de tabelas.
+Somente representantes explicitamente selecionados na Fase 2 entram na cédula, no máximo seis por categoria. Servidor confere unidade, categoria e consolidação; consolidados antigos sem seleção ficam fora. Apresentação por nome de guerra, ignorando caixa e acentos; cartões somente com foto, posto/graduação, nome de guerra e setor. Civis: CIVIL SPPF/SPTF.
 
-## Fase 4 — requisitos e critérios de aceite
+O eleitor pode revisar antes de confirmar; depois da gravação não pode editar ou votar novamente. Categoria sem representantes não aceita voto e não impede a participação nas demais; não se cria voto branco ou nulo. O comprovante e a separação entre participação e cédulas permanecem. O código examinado não contém selo HMAC nem assinatura cega criptográfica; esta entrega não declara essas garantias.
 
-- [x] Apresentação atual em ordem alfabética pelo nome de guerra.
-- [x] Validador independente de ordenação completa, candidatos/posições sem repetição e justificativa obrigatória de até 150 caracteres.
-- [x] Contagem por grafemas Unicode no validador: letras com acentos decompostos também contam como um caractere.
-- [ ] Corte dos três finalistas por categoria após a votação do efetivo.
-- [ ] Tela de ordenação individual e contador de caracteres correspondente ao servidor.
-- [ ] Persistência transacional, recuperação, exibição e confirmação após gravação.
-- [ ] Migração idempotente e schema para as novas avaliações.
-- [ ] Integração com a Fase 5 e testes do fluxo completo.
+Ao avançar a Fase 3, uma transação bloqueia o pleito, registra o retrato dos votos/dados usados no corte e encerra a urna. Até três classificados por categoria são definidos pela votação e pelos quatro critérios existentes. Se houver empate no corte, a fase permanece 3, mas a urna fica fechada e a Fase 4 bloqueada. A mensagem orienta a Presidência para `Fase 4 > decisão da terceira vaga`.
 
-O validador não está conectado às rotas e não define quantos candidatos classificam. A tela atual continua permitindo validação/exclusão/reabilitação. Não existe hoje uma gravação de ordenações individuais cuja correção possa ser simplesmente aplicada. `AuthManager::isEstadoMaior` autoriza ADMIN, PRESIDENTE e DIRECAO_SUPERIOR ou os postos constantes de POSTOS_ESTADO_MAIOR; não foi alterado nesta entrega.
+Se o empate abranger mais de uma vaga (por exemplo quatro candidatos empatados no primeiro lugar), a Presidência preenche exatamente as vagas restantes entre esses empatados, sem substituir candidatos já classificados acima do corte. Decisão com fundamentação, confirmação definitiva e auditoria. Depois, o Administrador avança novamente.
 
-### Decisões necessárias antes de ativar a nova Fase 4
+## Ordenação do Estado-Maior
 
-A. No empate pela terceira vaga, aplicam-se os quatro critérios? Persistindo, qual autoridade/procedimento decide a vaga? Não incluir automaticamente todos os empatados.
+- Abertura registra a lista dos avaliadores com conta e efetivo ativos, postos Cel, Ten Cel e Maj. Todos ordenam individualmente, independentemente da chefia da Fase 2.
+- DIRECAO_SUPERIOR não dispensa posto de Oficial Superior. ADMIN/PRESIDENTE conservam gestão e consulta, mas não ganham cédula de ordenação sem esse requisito.
+- Finalistas apresentados alfabeticamente, sem revelar a votação anterior como ordem inicial.
+- Cada avaliador atribui posições únicas e justificativa individual obrigatória de até 150 grafemas Unicode, com contador e validação no cliente/servidor. Acentos decompostos contam como uma letra. Navegadores atuais usam Intl.Segmenter; o servidor é sempre a validação definitiva.
+- Confirmação única abrange todas as categorias com finalistas. Com dois usa 5 e 3; com um usa 5, mediante escolha/justificativa/confirmacão expressas. Categoria vazia não recebe posição.
+- Confirmação e itens são gravados na mesma transação. Restrição única e bloqueio do pleito impedem duplicidade e edição após confirmar. O usuário pode consultar suas próprias posições e justificativas.
+- Todos os avaliadores registrados devem confirmar antes da Fase 5. A Administração deve conferir contas e postos antes da abertura. Não há dispensa automática por ausência ou troca de função.
 
-B. Com um ou dois candidatos, ordenar apenas os disponíveis? Categoria vazia deve seguir sem representante e sem vencedor na homologação?
+## Consolidação e Presidência
 
-C. Qual método consolida as ordenações individuais, e quais desempates, para produzir o resultado destinado à Presidência? O código atual apenas conta votos da urna; não contém pesos para as ordenações.
+Somam-se 5, 3 e 1 por posição. Empate: preferência a quem não venceu nos dois anos anteriores; antiguidade na COMARA; tempo de serviço; TACF; votos da Fase 3. Persistindo, minerva somente entre os empatados finais.
 
-D. A avaliação confirmada poderá ser editada? Até quando? Não há regra atual para essas avaliações.
+Categoria que chegou sem finalistas possui uma lista excepcional própria, registrada no encerramento da urna, contendo apenas seu efetivo ativo. Somente essa categoria pode ser decidida a partir dessa lista, com justificativa e auditoria específicas. Não há consulta genérica que amplie categorias com finalistas. A validação também ocorre no servidor, impedindo manipulação do formulário. Se nem o efetivo tiver integrante nessa categoria, a homologação fica bloqueada em vez de fabricar vencedor.
 
-As perguntas foram apresentadas, sem resposta recebida. Não foram presumidas decisões. A apuração e a homologação da Fase 5 permanecem inalteradas.
+Homologação exige quatro vencedores e bloqueia decisões posteriores. Votos populares continuam disponíveis como informação de desempate, enquanto pontos da Fase 4 são o resultado principal.
 
 ## Banco e implantação
 
-Não há alteração de estrutura nesta entrega parcial, portanto não há nova migração nem mudança do schema. A migração de produção da Fase 2 continua sem confirmação.
-
-Quando a implantação for autorizada, realizar backup, manter o sistema indisponível durante a atualização e executar na raiz da versão aprovada:
+Com backup e manutenção programada, somente após autorização de implantação, publique o código aprovado e execute:
 
 ```sh
 php database/migrate_fase2.php
+php database/migrate_fases3_4.php
 ```
 
-Verificar `historico_vencedores` e `efetivo.data_inicio_servico` e os dados de vencedores, datas e chefias antes de liberar o pleito. Nunca executar reinstalação, carga inicial ou testes de escrita para atualizar produção. Falhas ao carregar representantes bloqueiam a urna com orientação; não são substituídas silenciosamente por candidatos ou pontuações fictícias. Esta entrega não corrige globalmente todas as telas antigas em caso de migração ausente.
+A primeira execução em produção continua sem confirmação. A segunda exige os objetos da primeira e cria, de forma idempotente, `fase4_ciclos`, `fase4_decisoes_corte`, `fase4_avaliadores`, `fase4_confirmacoes` e `fase4_ordenacoes`. As chaves únicas impedem duplicidade de confirmação, candidato ou posição. Não se apagam nem se convertem seleções, votos, avaliações anteriores ou homologações. `database/schema.sql` também inclui as tabelas para instalações novas.
 
-## Testes
+Não use reinstalação/carga inicial em banco existente. Ausência das migrações bloqueia operações com orientação para o STI, sem presumir resultados. Dados cadastrais usados nos critérios mantêm o tratamento da Fase 2; conferir histórico de vencedores, datas e TACF antes de encerrar a urna. Campos desconhecidos não são inventados.
+
+Pleitos antigos em Fases 4/5 sem o novo registro de encerramento não são convertidos automaticamente: antes de liberar a versão, retornar administrativamente à Fase 3 e executar o encerramento pelo novo fluxo, após revisar eventuais exclusões legadas. Homologações antigas permanecem consultáveis pela apuração legada. Após o encerramento novo, retorno comum fica bloqueado. A reinicialização com limpeza, já existente e reservada à anulação formal, limpa também os novos registros; não deve ser usada para permitir edição de uma avaliação individual.
+
+Rollback de código após o novo encerramento exige planejamento: a versão antiga não reconhece os bloqueios nem as ordenações. Não recolocar a versão antiga em operação com o mesmo pleito aberto. Restaurar backup somente mediante procedimento autorizado, preservando previamente os registros posteriores para auditoria.
+
+## Critérios de aceite e testes
+
+- Representantes válidos, até seis, ausências, ordenação alfabética e quatro dados na cédula.
+- Rejeição de candidato/categoria/unidade inválidos, duplicidade e gravações fora da fase.
+- Corte de até três, decisão só entre empatados e urna encerrada enquanto aguarda.
+- Oficiais Superiores habilitados, ordenação completa, posições únicas e justificativas 150/151 com acentos.
+- Persistência, recuperação, confirmação imutável, ausência de gravação parcial e avanço só após todas as confirmações.
+- Soma 5–3–1, quatro critérios antes dos votos da Fase 3 e minerva restrita.
+- Categoria vazia excepcional sem ampliar demais listas; quatro vencedores para homologação.
+- Migração repetida e preservação de dados em banco descartável; ausência de estrutura com orientação.
 
 ```sh
 php tests/teste_fase2_regras_unitarias.php
 php tests/teste_ordenacao_estado_maior.php
-# Cada suíte de integração exige seu próprio banco vazio e descartável:
+# Bancos separados, vazios, descartáveis e terminados em _test:
 FASE2_TEST_DB=1 DB_NAME=comara_fase2_test php tests/teste_fase2_integracao.php
-FASE34_TEST_DB=1 DB_NAME=comara_fase34_test php tests/teste_fase3_integracao.php
+FASE34_TEST_DB=1 DB_NAME=comara_fase34_test php tests/teste_fase4_integracao.php
 node --check public/assets/js/main.js
+node --check public/assets/js/fase4.js
 ```
 
-O workflow `.github/workflows/fase2.yml` executa sintaxe PHP/JavaScript, regressão da Fase 2, validador da futura ordenação e integração da urna com MySQL 8.0 separado. As migrações da Fase 2 são repetidas em banco descartável. O ambiente local não disponibilizou PHP/MySQL; a execução PHP/banco é feita pelo GitHub Actions e o resultado deve ser informado no PR, sem presumir aprovação antes do término.
+O teste da Fase 4 inclui as fixtures e verificações da Fase 3. Não o execute sobre um banco que já tenha sido preenchido pelo teste isolado da Fase 3. O workflow usa MySQL 8.0 e executa também lint PHP. O resultado efetivamente observado da execução consta no PR; não confundir aprovação dos commits parciais anteriores com a versão final.
 
-Não há testes concluídos de persistência de ordenações, corte, consolidação ou novas migrações da Fase 4, pois essas funcionalidades continuam pendentes. Não foi feita verificação visual em navegador nem teste de concorrência em múltiplas conexões.
+## Documentação revisada
 
-## Revisão documental
-
-Todos os Markdown existentes foram revisados e atualizados: `README.md`, `docs/NPA_ELEICAO_PADROES_COMARA.md`, `docs/ATUALIZACAO_FASE2.md`, `DEPLOY_TUTORIAL.md` e `scripts/deploy_aapanel.md`. Este documento complementa a entrega. A NPA mantém títulos, numeração, listas e tabela de cronograma, identifica o que está pendente e não presume aprovação ou publicação em Boletim.
+Todos os Markdown existentes: README, esta atualização, atualização da Fase 2, NPA, DEPLOY_TUTORIAL e scripts/deploy_aapanel. A NPA mantém títulos, numeração, listas e tabelas; atualiza atribuições, transições e cronograma, sem presumir aprovação institucional.

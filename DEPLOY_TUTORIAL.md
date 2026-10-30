@@ -288,10 +288,24 @@ O administrador master pode delegar permissões de administrador para outros mem
   chmod -R 775 /www/wwwroot/padrao/public/uploads
   ```
 
-## Revisão parcial das Fases 3 e 4
+## Atualização das Fases 3 e 4
 
-Esta entrega está destinada à revisão, sem merge ou deploy autorizado. Não há mudança de estrutura nem nova migração. A ordenação individual da Fase 4 não está ativada; não se deve considerar este PR como conclusão das Fases 3 e 4.
+A entrega de código não autoriza merge ou deploy. Quando a implantação for autorizada:
 
-Quando houver autorização de implantação: faça backup, mantenha o sistema indisponível durante a atualização, publique a versão aprovada e execute `php database/migrate_fase2.php` na raiz antes da liberação. A execução anterior não foi confirmada; confira a tabela `historico_vencedores` e a coluna `efetivo.data_inicio_servico`. Não use instalador, reinstalação ou carga inicial em banco em uso. Preserve vencedores, datas, chefias e seleções já cadastrados.
+1. Faça backup do banco, código, `.env` e fotos; suspenda o acesso durante a atualização.
+2. Publique a versão aprovada sem substituir configurações ou dados locais.
+3. Na raiz do projeto execute, nesta ordem:
 
-Confira a lista de representantes, a ordenação alfabética e as quatro informações dos cartões. Categoria totalmente vazia continua bloqueando o envio, até decisão eleitoral. Não execute testes destrutivos no servidor. Consulte [testes e pendências](docs/ATUALIZACAO_FASES3_4.md).
+```sh
+php database/migrate_fase2.php
+php database/migrate_fases3_4.php
+```
+
+4. Verifique o sucesso dos dois comandos, as cinco tabelas `fase4_*`, o histórico de vencedores, as datas de serviço, as chefias e as contas dos Oficiais Superiores. Não se presume que a migração anterior tenha sido executada.
+5. Confira urna, corte, mensagem de bloqueio, decisão presidencial, ordem alfabética, confirmação imutável e restrição da exceção por categoria. Libere o acesso somente após as conferências.
+
+Não execute instaladores, carga inicial ou testes de escrita em produção. Para instalação nova, o schema já contém as tabelas; como o instalador pode usar dump antigo, execute também as duas migrações após a instalação. As migrações são idempotentes, preservam dados e não fabricam avaliações para pleitos já em andamento.
+
+Pleito antigo em Fase 4 ou 5, ainda não homologado e sem `fase4_ciclos`, não pode ser automaticamente apurado pela regra nova: antes de liberar a versão, retorne administrativamente até a Fase 3 e encerre a urna pelo novo fluxo. Reveja eventuais exclusões legadas. Homologações antigas permanecem consultáveis. Depois de registrado o encerramento no fluxo novo, retorno comum fica bloqueado; somente o procedimento existente de anulação/reinicialização com limpeza pode iniciar outro ciclo, mediante autorização institucional e backup.
+
+Detalhes, limitações e testes: [guia das Fases 3 e 4](docs/ATUALIZACAO_FASES3_4.md).

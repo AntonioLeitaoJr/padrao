@@ -26,4 +26,4 @@ $x=$itens; $x[0]['posicao']=4; rejeita($x,'rejeita posição fora do intervalo')
 $x=$itens; $x[0]['candidato_id']=44; rejeita($x,'rejeita candidato estranho');
 $x=$itens; array_pop($x); rejeita($x,'rejeita ordenação incompleta');
 $x=$itens; $x[0]['justificativa']="\xff"; rejeita($x,'rejeita UTF-8 inválido');
-echo "$n verificações aprovadas. Validador ainda não conectado à Fase 4.\n";
+echo "$n verificações aprovadas. Validador utilizado na confirmação da Fase 4.\n";
