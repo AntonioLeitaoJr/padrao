@@ -50,6 +50,8 @@ check((int)$pdo->query('SELECT COUNT(*) FROM voto_minerva_presidente WHERE pleit
 check(!Homologacao::registrarVotoMinerva(2,'graduado',$g1,'Fundamentação',$major)['sucesso'],'Direção Superior não decide na Fase 5');
 check(!Homologacao::homologarResultados(2,$major,$ata)['sucesso'],'Direção Superior não homologa');
 check(!Homologacao::registrarVotoMinerva(2,'graduado',$g1,'  ',$pres)['sucesso'],'fundamentação obrigatória');
+check(!Homologacao::registrarVotoMinerva(2,'graduado',$g1,str_repeat("\u{00a0}",25),$pres)['sucesso'],'espaços Unicode não são fundamentação');
+check(!Homologacao::homologarResultados(2,$pres,str_repeat("\u{00a0}",25))['sucesso'],'espaços Unicode não são ata');
 check(!Homologacao::registrarVotoMinerva(2,'praca',(int)$r['praca']['vencedor']['candidato_id'],'Indevida',$pres)['sucesso'],'vencedor regular não oferece escolha presidencial');
 check(!Homologacao::registrarVotoMinerva(2,'inexistente',$g1,'Indevida',$pres)['sucesso'],'categoria inválida rejeitada');
 $pdo->exec("UPDATE pleitos SET fase_atual=4 WHERE id=2");

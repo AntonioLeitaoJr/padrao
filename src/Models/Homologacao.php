@@ -4,6 +4,17 @@ require_once __DIR__ . '/EstadoMaior.php';
 
 class Homologacao {
     public static function apurarResultados(int $p): array {
+        $pdo=Database::getConnection(); $propria=!$pdo->inTransaction();
+        if ($propria) $pdo->beginTransaction();
+        try {
+            // Uma leitura não mistura decisão provisória com homologação concorrente.
+            $s=$pdo->prepare('SELECT id FROM pleitos WHERE id=? FOR UPDATE'); $s->execute([$p]);
+            $resultado=self::apurarInterno($p);
+            if ($propria) $pdo->commit();
+            return $resultado;
+        } catch (Throwable $e) { if ($propria && $pdo->inTransaction()) $pdo->rollBack(); throw $e; }
+    }
+    private static function apurarInterno(int $p): array {
         $pdo=Database::getConnection();
         $s=$pdo->prepare('SELECT * FROM pleitos WHERE id=?'); $s->execute([$p]); $pleito=$s->fetch();
         if (!$pleito || (int)$pleito['fase_atual']!==5) throw new RuntimeException('A apuração final estará disponível na Fase 5.');
@@ -43,8 +54,8 @@ class Homologacao {
             if (!$r || !$r['requer_voto_de_minerva'] || !in_array($candidatoId,array_map('intval',array_column($r['candidatos_empatados'],'candidato_id')),true)) {
                 throw new RuntimeException('Escolha não autorizada: somente empatados finais ou o efetivo da categoria comprovadamente sem finalistas.');
             }
-            $justificativa=trim($justificativa);
-            if ($justificativa==='') throw new InvalidArgumentException('A decisão presidencial exige justificativa fundamentada.');
+            $justificativa=preg_replace('/^\s+|\s+$/u','',$justificativa);
+            if ($justificativa===null || $justificativa==='') throw new InvalidArgumentException('A decisão presidencial exige justificativa fundamentada.');
             $s=$pdo->prepare('SELECT * FROM voto_minerva_presidente WHERE pleito_id=? AND categoria=?');
             $s->execute([$pleitoId,$categoria]); $anterior=$s->fetch() ?: null;
             if ($anterior && (int)$anterior['candidato_vencedor_id']===$candidatoId && $anterior['justificativa']===$justificativa) {
@@ -66,7 +77,8 @@ class Homologacao {
             EstadoMaior::bloquearPleito($pleitoId,5); EstadoMaior::exigirPresidencia($presidenteUsuarioId);
             self::verificarEstrutura();
             self::exigirSemHomologacao($pleitoId);
-            if (mb_strlen(trim($ata))<20) throw new InvalidArgumentException('A ata deve conter pelo menos 20 caracteres.');
+            $ata=preg_replace('/^\s+|\s+$/u','',$ata);
+            if ($ata===null || mb_strlen($ata)<20) throw new InvalidArgumentException('A ata deve conter pelo menos 20 caracteres.');
             $apuracao=self::apurarResultados($pleitoId); $ids=[];
             if ($versao!==null && !hash_equals(self::versaoApuracao($apuracao),$versao)) throw new RuntimeException('A apuração mudou. Recarregue e confira os quatro vencedores antes de homologar.');
             foreach (EstadoMaior::CATEGORIAS as $cat) {
