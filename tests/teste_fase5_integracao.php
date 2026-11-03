@@ -15,6 +15,38 @@ $g1=(int)$r['graduado']['candidatos_empatados'][0]['candidato_id'];
 $g2=(int)$r['graduado']['candidatos_empatados'][1]['candidato_id'];
 $e1=(int)$r['sptf']['candidatos_empatados'][0]['candidato_id'];
 $ata='Homologo os quatro vencedores após conferência institucional.';
+function renderizarFase5Teste(int $p,int $u): string {
+    $_SESSION['user']=EstadoMaior::usuario($u);
+    $pleito=Pleito::getPorId($p); $apuracao=Homologacao::apurarResultados($p); $historicos=Pleito::homologados();
+    $avaliacoes=AuthManager::hasRole([PERFIL_PRESIDENTE,PERFIL_ADMIN])?Homologacao::avaliacoesIndividuais($p,$u):[];
+    set_error_handler(function($severity,$message,$file,$line) { throw new ErrorException($message,0,$severity,$file,$line); });
+    ob_start();
+    try { require ROOT_PATH.'/views/fase5/index.php'; return ob_get_contents(); }
+    finally { ob_end_clean(); restore_error_handler(); }
+}
+function executarControllerTeste(string $classe,string $metodo,int $usuario,array $post=[],array $get=[]): string {
+    $script=tempnam(sys_get_temp_dir(),'comara-controller-');
+    $code='<?php require '.var_export(ROOT_PATH.'/src/Controllers/'.$classe.'.php',true).'; '
+        .'$_SESSION["user"]=EstadoMaior::usuario('.$usuario.'); $_POST='.var_export($post,true).'; $_GET='.var_export($get,true).'; '
+        .'$_SERVER["REQUEST_METHOD"]='.var_export($post?'POST':'GET',true).'; '
+        .'register_shutdown_function(function(){echo "FLASH:".json_encode($_SESSION["flash"]??[],JSON_UNESCAPED_UNICODE);}); '
+        .'(new '.$classe.'())->'.$metodo.'();';
+    file_put_contents($script,$code); $pipes=[];
+    $proc=proc_open([PHP_BINARY,$script],[1=>['pipe','w'],2=>['pipe','w']],$pipes);
+    $out=stream_get_contents($pipes[1]); $err=stream_get_contents($pipes[2]); fclose($pipes[1]); fclose($pipes[2]);
+    $exit=proc_close($proc); unlink($script); if ($exit!==0) throw new RuntimeException($err); return $out;
+}
+$html=renderizarFase5Teste(2,$pres);
+check(str_contains($html,'Resultado provisório') && str_contains($html,'Exceção: categoria sem finalistas'),'renderiza apuração e situação excepcional');
+check(str_contains($html,'Empate persistente') && str_contains($html,'disabled'),'interface bloqueia homologação pendente');
+check(substr_count($html,'name="categoria"')===2,'formulário de decisão somente para empate e exceção');
+check(!str_contains(renderizarFase5Teste(2,$major),'name="categoria"'),'Direção não recebe controles presidenciais');
+check(!str_contains(renderizarFase5Teste(2,$major),'Avaliações individuais da Fase 4 — consulta restrita'),'Direção não recebe justificativas identificadas');
+$out=executarControllerTeste('RelatorioController','siteOficial',1);
+check(!str_contains($out,'Nome completo') && str_contains($out,'somente após a homologação'),'rota de publicação não revela vencedores antes da homologação');
+$out=executarControllerTeste('Fase5Controller','votoMinerva',$pres,['pleito_id'=>2,'categoria'=>'graduado','candidato_id'=>$g1,'justificativa'=>'Tentativa CSRF','confirmar'=>'1','versao'=>Homologacao::versaoDecisao(null),'csrf_token'=>'invalido']);
+check((int)$pdo->query('SELECT COUNT(*) FROM voto_minerva_presidente WHERE pleito_id=2')->fetchColumn()===0,'rota rejeita CSRF inválido sem gravar');
+
 check(!Homologacao::registrarVotoMinerva(2,'graduado',$g1,'Fundamentação',$major)['sucesso'],'Direção Superior não decide na Fase 5');
 check(!Homologacao::homologarResultados(2,$major,$ata)['sucesso'],'Direção Superior não homologa');
 check(!Homologacao::registrarVotoMinerva(2,'graduado',$g1,'  ',$pres)['sucesso'],'fundamentação obrigatória');
@@ -30,6 +62,10 @@ $pdo->exec("CREATE TRIGGER teste_auditoria_fase5 BEFORE INSERT ON logs_auditoria
 check(!Homologacao::registrarVotoMinerva(2,'graduado',$g1,'Não pode persistir',$pres)['sucesso'],'falha de auditoria bloqueia sucesso da decisão');
 check((int)$pdo->query('SELECT COUNT(*) FROM voto_minerva_presidente WHERE pleito_id=2')->fetchColumn()===0,'auditoria e decisão atômicas');
 $pdo->exec('DROP TRIGGER teste_auditoria_fase5');
+$pdo->exec('RENAME TABLE fase5_resultados TO fase5_resultados_ausente');
+$semMigracao=Homologacao::registrarVotoMinerva(2,'graduado',$g1,'Não pode gravar',$pres);
+check(!$semMigracao['sucesso'] && str_contains($semMigracao['mensagem'],'migrate_fase5.php'),'estrutura ausente bloqueia com comando de migração');
+$pdo->exec('RENAME TABLE fase5_resultados_ausente TO fase5_resultados');
 $vazio=Homologacao::versaoDecisao(null);
 check(Homologacao::registrarVotoMinerva(2,'graduado',$g1,'Primeira decisão',$pres,$vazio)['sucesso'],'Presidente registra decisão expressa');
 $m=Homologacao::apurarResultados(2)['categorias']['graduado']['minerva_registrado'];
@@ -41,6 +77,8 @@ check(Homologacao::registrarVotoMinerva(2,'graduado',$g2,'Decisão revista e fun
 $log=$pdo->query("SELECT detalhes_json FROM logs_auditoria WHERE acao='VOTO_MINERVA_REGISTRADO' ORDER BY id DESC LIMIT 1")->fetchColumn();
 check(str_contains($log,'Primeira decisão') && str_contains($log,'Decisão revista'),'auditoria preserva fundamentação anterior e posterior');
 check(Homologacao::registrarVotoMinerva(2,'sptf',$e1,'Exceção fundamentada',$pres,$vazio)['sucesso'],'escolha excepcional registrada');
+$html=renderizarFase5Teste(2,$pres);
+check(substr_count($html,'Revisar decisão registrada')===2 && str_contains($html,'Decisão revista e fundamentada'),'interface permite revisão e recupera fundamento');
 check(!Homologacao::homologarResultados(2,$pres,'curta')['sucesso'],'ata insuficiente rejeitada');
 $antes=Homologacao::apurarResultados(2);
 check(!Homologacao::homologarResultados(2,$pres,$ata,'desatualizado')['sucesso'],'homologação exige a apuração efetivamente conferida');
@@ -93,6 +131,9 @@ rejeita(fn()=>AvaliacaoTacf::salvarNota(2,$g1,5,$admin),'TACF não pode mudar ap
 rejeita(fn()=>Efetivo::salvarDelegacao(2,$g1,1,$admin,'Missão'),'delegação não pode mudar após homologação');
 rejeita(fn()=>Efetivo::removerDelegacao(2,$g1),'delegação não pode ser removida após homologação');
 $salvo=Homologacao::apurarResultados(2);
+check(!str_contains(renderizarFase5Teste(2,$pres),'name="categoria"'),'interface homologada não oferece alteração');
+$out=executarControllerTeste('RelatorioController','siteOficial',1,[],['pleito_id'=>'2']);
+check(str_contains($out,'Nome completo'),'efetivo consulta publicação após homologação');
 $pdo->exec("UPDATE efetivo SET nome_guerra='Cadastro alterado' WHERE id=".$g2);
 $pdo->exec('DELETE FROM fase4_ordenacoes WHERE pleito_id=2');
 check(Homologacao::apurarResultados(2)===$salvo,'resultado homologado independente de alterações cadastrais e apuração atual');
@@ -103,6 +144,7 @@ $pdo->exec('DELETE FROM fase5_resultados WHERE pleito_id=1');
 $pdo->exec('DELETE FROM fase4_ciclos WHERE pleito_id=1');
 $legado=Homologacao::apurarResultados(1);
 check($legado['legado'] && $legado['homologado'],'homologação legada consultável sem ciclo novo');
+check(str_contains(renderizarFase5Teste(1,$pres),'pontuações históricas não são presumidas'),'renderiza legado sem avisos ou pontuação inventada');
 foreach (EstadoMaior::CATEGORIAS as $cat) check((int)$legado['categorias'][$cat]['vencedor']['candidato_id']===(int)$original['dados_homologacao']['vencedor_'.$cat.'_id'],'legado preserva vencedor '.$cat);
 $pdo->exec('RENAME TABLE historico_vencedores TO historico_vencedores_ausente');
 check(Homologacao::apurarResultados(1)['homologado'],'legado não depende de histórico novo');

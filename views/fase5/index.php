@@ -76,6 +76,7 @@ $podeHomologar = count(array_filter($apuracao['categorias'],fn($c)=>!empty($c['v
                         </div>
                     <?php endif; ?>
                     <div class="small mt-2"><?= sanitize_output($dadosCat['criterio_resultado'] ?? '') ?></div>
+                    <?php if (!empty($dadosCat['minerva_registrado'])): ?><div class="small text-start mt-2"><strong>Fundamentação registrada:</strong> <?= sanitize_output($dadosCat['minerva_registrado']['justificativa']) ?><br>Autor (usuário): <?= (int)$dadosCat['minerva_registrado']['presidente_usuario_id'] ?> · <?= sanitize_output($dadosCat['minerva_registrado']['registrado_em']) ?></div><?php endif; ?>
                     <?php if (!$homologado): ?><div class="small text-warning-emphasis">Resultado provisório — não homologado.</div><?php endif; ?>
                 </div>
             </div>

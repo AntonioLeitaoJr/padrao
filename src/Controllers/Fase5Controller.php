@@ -22,6 +22,10 @@ class Fase5Controller {
             exit;
         }
 
+        if ((int)$pleito['fase_atual']!==5) {
+            $historicos=Pleito::homologados(); $rotaHistorico='fase5';
+            require ROOT_PATH.'/views/relatorios/aguardando_homologacao.php'; return;
+        }
         $apuracao = Homologacao::apurarResultados((int)$pleito['id']);
 
         $historicos = Pleito::homologados();

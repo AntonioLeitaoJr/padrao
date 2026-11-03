@@ -89,7 +89,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
         <div class="mt-4">
             <label class="form-label fw-bold small text-muted">Código HTML para Incorporação no Portal Joomla / INTRAER:</label>
             <div class="input-group">
-                <textarea class="form-control font-monospace small bg-white" rows="2" readonly id="embedCode">&lt;iframe src="http://votacao.comara.intraer/index.php?r=relatorios/site" width="100%" height="450" frameborder="0" style="border:none; overflow:hidden;" scrolling="no"&gt;&lt;/iframe&gt;</textarea>
+                <textarea class="form-control font-monospace small bg-white" rows="2" readonly id="embedCode">&lt;iframe src="http://votacao.comara.intraer/index.php?r=relatorios/site&amp;pleito_id=<?= (int)$pleito['id'] ?>" width="100%" height="450" frameborder="0" style="border:none; overflow:hidden;" scrolling="no"&gt;&lt;/iframe&gt;</textarea>
                 <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText(document.getElementById('embedCode').value); alert('Código copiado para a área de transferência!');">
                     <i class="bi bi-clipboard"></i> Copiar Código
                 </button>

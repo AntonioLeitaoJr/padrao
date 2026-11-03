@@ -49,8 +49,8 @@ class RelatorioController {
         }
 
         if ($pleito['status']!=='homologado') {
-            flash_message('erro','Os vencedores serão divulgados somente após a homologação.','warning');
-            header('Location: /index.php?r=dashboard'); exit;
+            $historicos=Pleito::homologados(); $rotaHistorico='relatorios/site';
+            require ROOT_PATH.'/views/relatorios/aguardando_homologacao.php'; return;
         }
         $historicos = Pleito::homologados();
         $apuracao = Homologacao::apurarResultados((int)$pleito['id']);
