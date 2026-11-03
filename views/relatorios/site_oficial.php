@@ -15,6 +15,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
     </div>
 </div>
 
+<form method="GET" class="mb-3"><input type="hidden" name="r" value="relatorios/site"><label>Eleição homologada: <select name="pleito_id"><?php foreach ($historicos as $h): ?><option value="<?= (int)$h['id'] ?>" <?= (int)$h['id']===(int)$pleito['id']?'selected':'' ?>><?= (int)$h['ano'] ?></option><?php endforeach; ?></select></label> <button class="btn btn-outline-primary btn-sm">Consultar</button></form>
 <div class="card card-comara shadow-sm mb-4">
     <div class="card-comara-header">
         <span><i class="bi bi-code-slash me-2"></i>Módulo de Integração com o Portal Joomla da COMARA</span>
@@ -74,7 +75,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                                     <?php if (isset($v['pontos_fase4'])): ?>
                                         <?= (int)$v['pontos_fase4'] ?> pontos no Estado-Maior • <?= (int)$v['total_votos'] ?> votos do efetivo
                                     <?php else: ?>
-                                        Eleito com <?= (int)$v['total_votos'] ?> votos populares
+                                        Vencedor conforme ata original; pontuação histórica não reconstruída.
                                     <?php endif; ?>
                                 </div>
                             <?php endif; ?>
@@ -99,3 +100,4 @@ require_once ROOT_PATH . '/views/layouts/header.php';
 </div>
 
 <?php require_once ROOT_PATH . '/views/layouts/footer.php'; ?>
+

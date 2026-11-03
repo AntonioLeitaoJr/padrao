@@ -2,13 +2,14 @@
 
 Este guia orienta a implantação oficial do **Sistema de Eleição dos Padrões COMARA** em servidor Linux **Debian 13** utilizando o painel de controle **aaPanel** com **PHP 8.3** e **MySQL 8.0+ / MariaDB 10.11+**.
 
-## Atualização das Fases 2, 3 e 4 em banco existente
+## Atualização das Fases 2 a 5 em banco existente
 
 Antes de liberar esta versão, faça backup do banco e dos arquivos, publique a versão que contém os ajustes e execute na raiz do projeto, usando as credenciais do banco configuradas:
 
 ```bash
 php database/migrate_fase2.php
 php database/migrate_fases3_4.php
+php database/migrate_fase5.php
 ```
 
 Em Docker, o comando equivalente é:
@@ -16,9 +17,10 @@ Em Docker, o comando equivalente é:
 ```bash
 docker exec -it votacao_comara_app php /var/www/html/database/migrate_fase2.php
 docker exec -it votacao_comara_app php /var/www/html/database/migrate_fases3_4.php
+docker exec -it votacao_comara_app php /var/www/html/database/migrate_fase5.php
 ```
 
-As duas migrações podem ser repetidas. A primeira cria `historico_vencedores` e adiciona `efetivo.data_inicio_servico` quando necessário; a segunda cria as estruturas de corte, avaliadores, confirmações e ordenações das Fases 3–4, preservando os registros existentes. Não reexecute instaladores ou cargas iniciais em banco em uso. Para instalações novas, execute a migração após a carga inicial, pois o instalador pode usar um dump anterior a esta alteração.
+As três migrações podem ser repetidas. A primeira cria `historico_vencedores` e adiciona `efetivo.data_inicio_servico` quando necessário; a segunda cria as estruturas de corte, avaliadores, confirmações e ordenações das Fases 3–4, preservando os registros existentes; a terceira cria `fase5_resultados` para arquivar novas homologações. Não reexecute instaladores ou cargas iniciais em banco em uso. Para instalações novas, execute a migração após a carga inicial, pois o instalador pode usar um dump anterior a esta alteração.
 
 Antes de abrir a seleção, Administrador/RH deve cadastrar os vencedores dos dois anos anteriores ao pleito (2024 e 2025 em 2026), conferir as datas de apresentação/admissão e início do serviço e manter as chefias das divisões e das sete assessorias/seções. Não converta antigas indicações em vitórias nem tempo na OM em tempo total de serviço.
 
@@ -124,6 +126,7 @@ cd /www/wwwroot/votacao.comara.intraer
 php database/import_efetivo.php
 php database/migrate_fase2.php
 php database/migrate_fases3_4.php
+php database/migrate_fase5.php
 ```
 
 A saída confirmará:
@@ -175,13 +178,20 @@ A entrega de código não autoriza merge ou deploy. Quando a implantação for a
 ```sh
 php database/migrate_fase2.php
 php database/migrate_fases3_4.php
+php database/migrate_fase5.php
 ```
 
-4. Verifique o sucesso dos dois comandos, as cinco tabelas `fase4_*`, o histórico de vencedores, as datas de serviço, as chefias e as contas dos Oficiais Superiores. Não se presume que a migração anterior tenha sido executada.
+4. Verifique o sucesso dos três comandos, as cinco tabelas `fase4_*`, o histórico de vencedores, as datas de serviço, as chefias e as contas dos Oficiais Superiores. Não se presume que a migração anterior tenha sido executada.
 5. Confira urna, corte, mensagem de bloqueio, decisão presidencial, ordem alfabética, confirmação imutável e restrição da exceção por categoria. Libere o acesso somente após as conferências.
 
-Não execute instaladores, carga inicial ou testes de escrita em produção. Para instalação nova, o schema já contém as tabelas; como o instalador pode usar dump antigo, execute também as duas migrações após a instalação. As migrações são idempotentes, preservam dados e não fabricam avaliações para pleitos já em andamento.
+Não execute instaladores, carga inicial ou testes de escrita em produção. Para instalação nova, o schema já contém as tabelas; como o instalador pode usar dump antigo, execute também as três migrações após a instalação. As migrações são idempotentes, preservam dados e não fabricam avaliações para pleitos já em andamento.
 
-Pleito antigo em Fase 4 ou 5, ainda não homologado e sem `fase4_ciclos`, não pode ser automaticamente apurado pela regra nova: antes de liberar a versão, retorne administrativamente até a Fase 3 e encerre a urna pelo novo fluxo. Reveja eventuais exclusões legadas. Homologações antigas permanecem consultáveis. Depois de registrado o encerramento no fluxo novo, retorno comum fica bloqueado; somente o procedimento existente de anulação/reinicialização com limpeza pode iniciar outro ciclo, mediante autorização institucional e backup.
+Pleito antigo em Fase 4 ou 5, ainda não homologado e sem `fase4_ciclos`, não pode ser automaticamente apurado pela regra nova: antes de liberar a versão, retorne administrativamente até a Fase 3 e encerre a urna pelo novo fluxo. Reveja eventuais exclusões legadas. Homologações antigas permanecem consultáveis. Depois de registrado o encerramento no fluxo novo, retorno comum fica bloqueado; a reinicialização com limpeza permanece disponível somente em pleito não homologado, mediante autorização institucional e backup. Pleito homologado não pode ser apagado por essa função.
 
 Detalhes, limitações e testes: [guia das Fases 3 e 4](../docs/ATUALIZACAO_FASES3_4.md).
+
+## Complemento da Fase 5
+
+Execute a terceira migração também em instalações novas. `fase5_resultados` não preenche retrospectivamente homologações: preserva o retrato somente das novas. Decisões, ata, vencedores, retrato e auditoria da homologação têm gravação atômica. Homologações antigas utilizam exclusivamente os vencedores e a ata gravados, sem recálculo; identificações sem retrato histórico vêm do cadastro atual. Não restaurar código antigo em operação após homologar pela nova versão.
+
+Consulte [regras, permissões, testes e limitações da Fase 5](../docs/ATUALIZACAO_FASE5.md). Nenhuma migração em produção foi executada nesta entrega.

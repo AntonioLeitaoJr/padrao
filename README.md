@@ -82,6 +82,7 @@ Se você utiliza Docker no Windows, Linux ou macOS:
    docker exec -it votacao_comara_app php /var/www/html/database/instalar.php
    docker exec -it votacao_comara_app php /var/www/html/database/migrate_fase2.php
    docker exec -it votacao_comara_app php /var/www/html/database/migrate_fases3_4.php
+   docker exec -it votacao_comara_app php /var/www/html/database/migrate_fase5.php
    ```
 
 4. Acesse no navegador:
@@ -109,9 +110,10 @@ nano .env
 php database/instalar.php
 php database/migrate_fase2.php
 php database/migrate_fases3_4.php
+php database/migrate_fase5.php
 ```
 
-Em uma instalação existente, faça backup e execute as migrações da Fase 2 e das Fases 3–4, nessa ordem após publicar a versão. Não reexecute a carga inicial para atualizar um banco em uso. Antes de liberar a seleção, confira os vencedores anteriores, as datas de apresentação/admissão e início de serviço e o cadastro de chefias.
+Em uma instalação existente, faça backup e execute as migrações da Fase 2, das Fases 3–4 e da Fase 5, nessa ordem após publicar a versão. Não reexecute a carga inicial para atualizar um banco em uso. Antes de liberar a seleção, confira os vencedores anteriores, as datas de apresentação/admissão e início de serviço e o cadastro de chefias.
 
 ---
 
@@ -186,8 +188,17 @@ A migração de produção da Fase 2 continua sem confirmação. Após backup e 
 ```sh
 php database/migrate_fase2.php
 php database/migrate_fases3_4.php
+php database/migrate_fase5.php
 ```
 
 As migrações são idempotentes e não convertem resultados antigos. Não reinstale nem execute carga inicial em banco em uso. Consulte [regras, transições, testes e implantação](docs/ATUALIZACAO_FASES3_4.md).
 
 As issues do fork estão desabilitadas (GitHub HTTP 410). Os requisitos e critérios de aceite estão registrados no guia e no PR #2; não se declara que issues tenham sido abertas. Sem merge ou deploy nesta entrega.
+
+## Fase 5 — decisões e homologação
+
+A Presidência pode revisar minerva e escolha excepcional até a homologação, com justificativa e auditoria de cada alteração. A homologação exige confirmação expressa, ata e quatro vencedores; grava resultado e auditoria em uma única transação. Formulários desatualizados, duplicidade e alterações posteriores são bloqueados. O botão Reiniciar não apaga eleição homologada.
+
+Presidente e ADMIN consultam ordenações e justificativas individuais identificadas da Fase 4. DIRECAO_SUPERIOR mantém consulta da apuração consolidada, sem poderes presidenciais. O efetivo acessa vencedores apenas após homologação. Consulta histórica usa a ata original, sem reinterpretar resultados antigos.
+
+Consulte [o guia da Fase 5](docs/ATUALIZACAO_FASE5.md), inclusive limitações de registros antigos e implantação. As issues continuam desabilitadas (HTTP 410 confirmado em 02/11/2026); requisitos registrados no guia e no PR da Fase 5.

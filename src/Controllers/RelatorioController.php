@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../Middleware/AuthMiddleware.php';
+require_once __DIR__ . '/../Middleware/RoleMiddleware.php';
 require_once __DIR__ . '/../Models/Pleito.php';
 require_once __DIR__ . '/../Models/Homologacao.php';
 
@@ -14,7 +15,7 @@ class RelatorioController {
     public function placa(): void {
         AuthMiddleware::handle();
         RoleMiddleware::handle(PERFIL_ADMIN);
-        $pleito = Pleito::getAtivo();
+        $pleito = Pleito::paraConsulta();
 
         if (!$pleito) {
             flash_message('erro', 'Nenhum pleito ativo.', 'warning');
@@ -22,6 +23,11 @@ class RelatorioController {
             exit;
         }
 
+        if ($pleito['status']!=='homologado') {
+            flash_message('erro','Os vencedores serão divulgados somente após a homologação.','warning');
+            header('Location: /index.php?r=dashboard'); exit;
+        }
+        $historicos = Pleito::homologados();
         $apuracao = Homologacao::apurarResultados((int)$pleito['id']);
         $homologado = $apuracao['homologado'];
         $dadosHomol = $apuracao['dados_homologacao'];
@@ -34,7 +40,7 @@ class RelatorioController {
      */
     public function siteOficial(): void {
         AuthMiddleware::handle();
-        $pleito = Pleito::getAtivo();
+        $pleito = Pleito::paraConsulta();
 
         if (!$pleito) {
             flash_message('erro', 'Nenhum pleito ativo.', 'warning');
@@ -42,6 +48,11 @@ class RelatorioController {
             exit;
         }
 
+        if ($pleito['status']!=='homologado') {
+            flash_message('erro','Os vencedores serão divulgados somente após a homologação.','warning');
+            header('Location: /index.php?r=dashboard'); exit;
+        }
+        $historicos = Pleito::homologados();
         $apuracao = Homologacao::apurarResultados((int)$pleito['id']);
 
         require_once ROOT_PATH . '/views/relatorios/site_oficial.php';
@@ -67,3 +78,4 @@ class RelatorioController {
         require_once ROOT_PATH . '/views/relatorios/estatisticas.php';
     }
 }
+

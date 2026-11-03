@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__.'/../Services/ProtecaoHomologacao.php';
 
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../config/database.php';
@@ -11,7 +12,10 @@ require_once __DIR__ . '/../Services/AuditoriaService.php';
  */
 class AvaliacaoTacf {
 
-    public static function salvarNota(
+    public static function salvarNota(int $pleitoId,int $candidatoId,float $notaTacf,int $usuarioId,?string $obs=null,?string $dataRealizacao=null): array {
+        return ProtecaoHomologacao::executar($pleitoId,fn()=>self::salvarNotaInterna($pleitoId,$candidatoId,$notaTacf,$usuarioId,$obs,$dataRealizacao));
+    }
+    private static function salvarNotaInterna(
         int $pleitoId,
         int $candidatoId,
         float $notaTacf,
@@ -72,3 +76,4 @@ class AvaliacaoTacf {
         return $res ?: null;
     }
 }
+
