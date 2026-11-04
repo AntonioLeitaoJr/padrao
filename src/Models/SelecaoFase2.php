@@ -176,8 +176,8 @@ class SelecaoFase2 {
                 if (!empty($disponiveis)) $temElegiveis = true;
                 if (count($selecionados) !== $esperados[$cat] || array_diff($selecionados, $disponiveis)) $concluido = false;
             }
-            // Zero elegiveis nao e conclusao: 0/0 nunca significa selecao oficial realizada.
-            $concluido = $temElegiveis && $concluido;
+            // Para a transicao regimental, categorias sem classificados nao exigem indicacao.
+            // Para o painel, ausencia de candidatos NUNCA e exibida como "Pronto".
             $situacao = !$temElegiveis ? 'sem_candidatos' : ($concluido ? 'pronto' : 'pendente');
 
             $relatorio[$sigla] = [
