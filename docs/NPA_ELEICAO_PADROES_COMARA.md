@@ -324,6 +324,11 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
    - Garantir a operacionalidade do servidor Apache/Nginx, motor PHP 8.3 e base de dados MySQL 8.0 no painel aaPanel / Debian 13.
    - Verificar a correta permissão de escrita nas pastas `cache`, `backups` e `public/uploads/fotos`.
    - Monitorar a comunicação com os barramentos corporativos da INTRAER (LDAP e API SIGPES CCARJ).
+3. **Conferência após Atualização do Sistema:**
+   - A STI deverá conferir backup e execução das migrações antes de liberar as etapas afetadas; a publicação dos arquivos, isoladamente, não comprova atualização do banco.
+   - Mensagem de estrutura pendente deverá ser encaminhada à STI. Seleções inconsistentes deverão ser conferidas pela Administração, sem apagar votos ou decisões para liberar a tela.
+   - Ausência de ciclo preparado na Fase 4 não constitui empate. A decisão presidencial no corte somente será exigida quando houver candidatos empatados e vagas pendentes, conforme o item 6.5.1.
+   - Falhas técnicas tratadas nos formulários serão apresentadas com orientação de suporte; os detalhes deverão ser consultados pela STI no log interno. Os testes de escrita deverão ocorrer em ambiente descartável, separado da produção.
 
 ---
 

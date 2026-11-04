@@ -324,3 +324,9 @@ Detalhes, limitações e testes: [guia das Fases 3 e 4](docs/ATUALIZACAO_FASES3_
 Execute a terceira migração também em instalações novas. `fase5_resultados` não preenche retrospectivamente homologações: preserva o retrato somente das novas. Decisões, ata, vencedores, retrato e auditoria da homologação têm gravação atômica. Homologações antigas utilizam exclusivamente os vencedores e a ata gravados, sem recálculo; identificações sem retrato histórico vêm do cadastro atual. Não restaurar código antigo em operação após homologar pela nova versão.
 
 Consulte [regras, permissões, testes e limitações da Fase 5](docs/ATUALIZACAO_FASE5.md). Nenhuma migração em produção foi executada nesta entrega.
+
+## Diagnóstico pós-deploy das Fases 3 e 4
+
+Se a urna informar atualização do banco, confirme o sucesso das três migrações antes de liberar a votação. Se informar seleções inconsistentes, confira a Fase 2; não apague votos ou seleções. Ciclo ausente não significa empate no corte. Erros técnicos tratados nos formulários orientam a STI, que deve consultar o log do PHP.
+
+Consulte o [procedimento de correção pós-deploy](docs/CORRECAO_DEPLOY_FASES3_4.md). O comando Deploy latest atualiza arquivos, mas não comprova a execução das migrações. Os testes automatizados são exclusivos de bancos descartáveis.

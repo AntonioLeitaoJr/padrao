@@ -79,13 +79,13 @@ class Fase3Controller {
             exit;
         }
 
-        if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        if (!is_string($_POST['csrf_token'] ?? '') || !verify_csrf_token($_POST['csrf_token'] ?? '')) {
             flash_message('erro', 'Token de segurança expirado. Tente novamente.', 'danger');
             header('Location: /index.php?r=fase3');
             exit;
         }
 
-        $cpfDigitado = trim($_POST['cpf'] ?? '');
+        $cpfInformado = $_POST['cpf'] ?? '';
         $votos = [
             CAT_GRADUADO => (int)($_POST['voto_graduado'] ?? 0),
             CAT_PRACA    => (int)($_POST['voto_praca'] ?? 0),
@@ -94,6 +94,8 @@ class Fase3Controller {
         ];
 
         try {
+            if (!is_string($cpfInformado)) throw new InvalidArgumentException('Número de CPF inválido.');
+            $cpfDigitado = trim($cpfInformado);
             $resultado = UrnaService::registrarVotos(
                 (int)$pleito['id'],
                 $cpfDigitado,
@@ -112,7 +114,11 @@ class Fase3Controller {
             header('Location: /index.php?r=fase3/comprovante');
             exit;
         } catch (\Throwable $e) {
-            flash_message('erro', $e->getMessage(), 'danger');
+            error_log('[Fase 3 / votar] '.$e->getMessage());
+            $mensagem = ($e instanceof RuntimeException || $e instanceof InvalidArgumentException) && !($e instanceof PDOException)
+                ? $e->getMessage()
+                : 'Não foi possível concluir a votação. Solicite à STI a conferência do banco e do log de erros.';
+            flash_message('erro', $mensagem, 'danger');
             header('Location: /index.php?r=fase3');
             exit;
         }

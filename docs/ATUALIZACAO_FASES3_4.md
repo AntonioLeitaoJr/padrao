@@ -1,6 +1,6 @@
 # Atualização das Fases 3 e 4
 
-## Base e decisões confirmadas
+## Base histórica e decisões confirmadas
 
 Branch `ajustes-fases3-4`, PR #2 no fork AntonioLeitaoJr/padrao. A base contém o PR #1 da Fase 2 e as atualizações posteriores dos documentos do repositório original. Sem merge ou deploy autorizado.
 
@@ -70,7 +70,7 @@ php tests/teste_fase2_regras_unitarias.php
 php tests/teste_ordenacao_estado_maior.php
 # Bancos separados, vazios, descartáveis e terminados em _test:
 FASE2_TEST_DB=1 DB_NAME=comara_fase2_test php tests/teste_fase2_integracao.php
-FASE34_TEST_DB=1 DB_NAME=comara_fase34_test php tests/teste_fase5_integracao.php
+FASE34_TEST_DB=1 DB_NAME=comara_fase34_test php tests/teste_deploy_fases3_4.php
 node --check public/assets/js/main.js
 node --check public/assets/js/fase4.js
 ```
@@ -86,3 +86,7 @@ Todos os Markdown existentes: README, esta atualização, atualização da Fase 
 Execute a terceira migração também em instalações novas. `fase5_resultados` não preenche retrospectivamente homologações: preserva o retrato somente das novas. Decisões, ata, vencedores, retrato e auditoria da homologação têm gravação atômica. Homologações antigas utilizam exclusivamente os vencedores e a ata gravados, sem recálculo; identificações sem retrato histórico vêm do cadastro atual. Não restaurar código antigo em operação após homologar pela nova versão.
 
 Consulte [regras, permissões, testes e limitações da Fase 5](ATUALIZACAO_FASE5.md). Nenhuma migração em produção foi executada nesta entrega.
+
+## Revisão pós-deploy de 04/11/2026
+
+As referências de branches/PRs no início descrevem a entrega original. A correção `2f654b1` já integra a `main`; o PR complementar revisa erros dos formulários e documentação. A suíte de deploy inclui a suíte da Fase 5 e as anteriores, com regressões de ciclo ausente, mensagens flash, migrações e falhas SQL. Consulte [diagnóstico, implantação e critérios de aceite](CORRECAO_DEPLOY_FASES3_4.md). As regras eleitorais deste guia permanecem.
