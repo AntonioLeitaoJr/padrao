@@ -9,7 +9,7 @@ $dadosHomol = $apuracao['dados_homologacao'];
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2 class="h4 fw-bold text-primary mb-1">Fase 5: Apuração, Voto de Minerva e Homologação Oficial</h2>
-        <div class="text-muted small">Consolidação final dos votos da urna eletrônica, resolução automática de desempates e homologação presidencial.</div>
+        <div class="text-muted small">Soma das ordenações do Estado-Maior (5–3–1), quatro critérios, votos da Fase 3 e decisão presidencial quando necessária.</div>
     </div>
     <div>
         <?php if ($homologado): ?>
@@ -49,19 +49,19 @@ $dadosHomol = $apuracao['dados_homologacao'];
                         <div class="small text-secondary mb-2"><?= sanitize_output($vencedor['setor']) ?> (<?= sanitize_output($vencedor['divisao_sigla']) ?>)</div>
                         
                         <div class="p-2 bg-light rounded border">
-                            <div class="h4 fw-bold text-primary mb-0"><?= $vencedor['total_votos'] ?></div>
-                            <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Votos Populares</small>
+                            <div class="h4 fw-bold text-primary mb-0"><?= $vencedor['pontos_fase4'] ?? $vencedor['total_votos'] ?></div>
+                            <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Pontos do Estado-Maior</small>
                         </div>
 
                         <?php if ($dadosCat['minerva_registrado']): ?>
                             <span class="badge bg-warning text-dark mt-2 d-block py-1">
-                                <i class="bi bi-pen-fill me-1"></i> Decidido por Voto de Minerva
+                                <i class="bi bi-pen-fill me-1"></i> <?= !empty($dadosCat['excepcional']) ? 'Escolha excepcional fundamentada' : 'Decidido por Voto de Minerva' ?>
                             </span>
                         <?php endif; ?>
                     <?php else: ?>
                         <div class="py-4 text-warning">
                             <i class="bi bi-exclamation-triangle fs-1 d-block mb-2"></i>
-                            <strong>Empate Irresolúvel</strong>
+                            <strong>Decisão pendente</strong>
                             <div class="small text-muted">Aguardando Voto de Minerva do Sr. Presidente.</div>
                         </div>
                     <?php endif; ?>
@@ -81,7 +81,7 @@ $dadosHomol = $apuracao['dados_homologacao'];
     ?>
     <div class="card card-comara shadow-sm mb-4">
         <div class="card-comara-header">
-            <span class="fs-5 text-primary fw-bold">Ranking Geral de Votos — <?= $catInfo['nome'] ?></span>
+            <span class="fs-5 text-primary fw-bold">Resultado consolidado — <?= $catInfo['nome'] ?></span>
             <span class="badge bg-secondary"><?= count($ranking) ?> Candidatos Classificados</span>
         </div>
         <div class="card-body p-0">
@@ -92,13 +92,13 @@ $dadosHomol = $apuracao['dados_homologacao'];
                     <div class="d-flex align-items-center mb-2">
                         <i class="bi bi-exclamation-triangle-fill text-warning fs-3 me-2"></i>
                         <div>
-                            <strong class="text-dark fs-6">Empate Persistente em 1º Lugar Detectado!</strong>
-                            <div class="small text-muted">Após a aplicação rigorosa dos 4 critérios regimentais de desempate, persistiu o empate entre os candidatos abaixo. Requer o Voto de Minerva do Sr. Presidente.</div>
+                            <strong class="text-dark fs-6"><?= !empty($dadosCat['excepcional']) ? 'Exceção: categoria sem finalistas' : 'Empate persistente no resultado final' ?></strong>
+                            <div class="small text-muted"><?= !empty($dadosCat['excepcional']) ? 'Somente esta categoria ficou sem representantes. A Presidência pode escolher entre os integrantes ativos desta categoria registrados no encerramento da urna. Nenhuma outra categoria tem sua lista ampliada.' : 'Persistiu empate após pontos 5–3–1, os quatro critérios e os votos da Fase 3. Somente os empatados abaixo podem ser escolhidos.' ?></div>
                         </div>
                     </div>
 
                     <?php if (AuthManager::hasRole([PERFIL_PRESIDENTE, PERFIL_ADMIN])): ?>
-                        <form method="POST" action="/index.php?r=fase5/minerva" class="card p-3 bg-white border mt-2">
+                        <form onsubmit="return confirm('Confirmar esta decisão fundamentada?')" method="POST" action="/index.php?r=fase5/minerva" class="card p-3 bg-white border mt-2">
                             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                             <input type="hidden" name="categoria" value="<?= $catKey ?>">
 
@@ -148,7 +148,7 @@ $dadosHomol = $apuracao['dados_homologacao'];
                             <th>Candidato / SARAM</th>
                             <th>Posto / Especialidade</th>
                             <th>Setor</th>
-                            <th class="text-center">Votos na Urna</th>
+                            <th class="text-center">Pontos Fase 4 / Votos Fase 3</th>
                             <th>Critério 1 (Vitórias nos 2 anos anteriores)</th>
                             <th>Critério 2 (COMARA)</th>
                             <th>Critério 3 (Serviço)</th>
@@ -175,7 +175,7 @@ $dadosHomol = $apuracao['dados_homologacao'];
                                 <td><?= sanitize_output($cand['quadro']) ?> - <?= sanitize_output($cand['especialidade']) ?></td>
                                 <td><?= sanitize_output($cand['setor']) ?> (<?= sanitize_output($cand['divisao_sigla']) ?>)</td>
                                 <td class="text-center">
-                                    <span class="badge bg-primary fs-5 px-3"><?= $cand['total_votos'] ?></span>
+                                    <span class="badge bg-primary fs-5 px-3"><?= $cand['pontos_fase4'] ?? '—' ?> / <?= $cand['total_votos'] ?></span>
                                 </td>
                                 <td>
                                     <small class="badge <?= (int)$cand['vitorias_ultimos_dois_anos'] === 0 ? 'bg-success' : 'bg-secondary' ?>">

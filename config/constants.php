@@ -70,12 +70,12 @@ const FASES_PROCESSO = [
     FASE_4 => [
         'numero'    => 4,
         'nome'      => 'Estado-Maior',
-        'descricao' => 'Apreciação pelos Oficiais Superiores da COMARA (Majores, Tenentes-Coronéis e Coronéis) com consulta detalhada da ficha de indicação.'
+        'descricao' => 'Ordenação individual por Coronéis, Tenentes-Coronéis e Majores, com justificativas e pontos 5–3–1.'
     ],
     FASE_5 => [
         'numero'    => 5,
         'nome'      => 'Homologação e Desempate',
-        'descricao' => 'Consolidação final dos votos, critérios automáticos de desempate, voto de minerva e homologação.'
+        'descricao' => 'Consolidação das ordenações, desempates, decisão excepcional por categoria vazia e homologação.'
     ]
 ];
 

@@ -13,10 +13,23 @@ O sistema informatiza todo o rito regimental da COMARA para seleção dos destaq
 3. **Servidor Público Federal Permanente (SPPF)**
 4. **Servidor Público Temporário / Terceirizado (SPTF)**
 
-O processo obedece rigorosamente às 3 fases estatutárias:
-- **Fase 1 — Avaliação Qualitativa pelos Oficiais e TACF**: Oficiais avaliam atributos regulamentares e a Comissão de Educação Física lança as notas do Teste de Aptidão e Condicionamento Físico.
-- **Fase 2 — Indicação das Chefias**: Chefes das 5 Divisões (DPC, DIVOP, DIENG, DIAF, DLOG) e 3 Assessorias (ASJUR, ACI, ASCOM) indicam obrigatoriamente 6 candidatos por categoria com base nas médias da Fase 1.
-- **Fase 3 — Votação Geral Secreta e Direta**: Todo o efetivo habilitado (oficiais, graduados, praças e civis) vota anonimamente através de cédula eletrônica protegida por Criptografia Cega (*Blind Token Signature*). Em caso de empate, o Vice-Presidente da COMARA exerce o voto de minerva.
+O processo é organizado em cinco fases:
+
+- **Fase 1 — Avaliação e TACF:** Tenentes e Capitães avaliam os candidatos; o Setor de Educação Física lança o TACF.
+- **Fase 2 — Seleção pelas chefias:** cada uma das cinco divisões (DPC, DA, DL, DE e DS) e a representação conjunta de ACI, AGOV, AINT, AJUR, APOG, SCS e SIJ escolhe **um candidato por categoria disponível** entre os 20% mais bem pontuados de sua unidade.
+- **Fase 3 — Votação geral:** o efetivo vota nos selecionados da Fase 2, com até seis candidatos por categoria, conforme a disponibilidade de cada unidade.
+- **Fase 4 — Ordenação individual pelo Estado-Maior:** Coronéis, Tenentes-Coronéis e Majores ordenam até três finalistas por categoria, com justificativas e pesos 5–3–1.
+- **Fase 5 — Homologação e voto de minerva do Presidente**, quando necessário.
+
+### Regras da Fase 2
+
+O corte de 20% é arredondado para cima e inclui pelo menos dois candidatos quando disponíveis. Havendo apenas um, ele fica disponível; sem candidatos, o grupo fica sem representante. Empates no corte são resolvidos, nesta ordem, pela preferência a quem não venceu nos dois anos anteriores ao pleito, maior antiguidade na COMARA, maior tempo de serviço militar ou civil e maior nota do TACF. Persistindo o empate após os quatro critérios, todos os empatados na última vaga entram.
+
+O representante das sete assessorias e seções é o chefe militar mais antigo entre elas que não acumule chefia de divisão. Se necessário, a busca continua pelos seguintes na antiguidade. A escolha depende do cadastro de chefias, não apenas da lotação.
+
+O clique no nome exibe foto, nome de guerra, setor e posto/graduação; para civis, **CIVIL SPPF** ou **CIVIL SPTF**. A seleção permanece nos controles existentes. O painel geral apresenta quatro critérios; a funcionalidade de minerva da Fase 5 permanece.
+
+Administrador e RH registram em **Vencedores anteriores** um vencedor por categoria e ano dos dois anos anteriores ao pleito ativo (2024 e 2025 para 2026). São vencedores finais, não todos os indicados. Consulte as regras completas, os dados necessários e a migração em [Atualização da Fase 2](docs/ATUALIZACAO_FASE2.md).
 
 ---
 
@@ -67,6 +80,8 @@ Se você utiliza Docker no Windows, Linux ou macOS:
 3. Execute o instalador automático do banco de dados:
    ```bash
    docker exec -it votacao_comara_app php /var/www/html/database/instalar.php
+   docker exec -it votacao_comara_app php /var/www/html/database/migrate_fase2.php
+   docker exec -it votacao_comara_app php /var/www/html/database/migrate_fases3_4.php
    ```
 
 4. Acesse no navegador:
@@ -90,9 +105,13 @@ cd /www/wwwroot/padrao
 cp .env.example .env
 # Edite as credenciais do banco no .env:
 nano .env
-# Instale a base de dados em 1 comando:
+# Em instalação nova, carregue a base e aplique a migração:
 php database/instalar.php
+php database/migrate_fase2.php
+php database/migrate_fases3_4.php
 ```
+
+Em uma instalação existente, faça backup e execute as migrações da Fase 2 e das Fases 3–4, nessa ordem após publicar a versão. Não reexecute a carga inicial para atualizar um banco em uso. Antes de liberar a seleção, confira os vencedores anteriores, as datas de apresentação/admissão e início de serviço e o cadastro de chefias.
 
 ---
 
@@ -140,3 +159,35 @@ padrao/
 ## 📜 Licença e Propriedade
 
 Desenvolvido para uso exclusivo da **Comissão de Aeroportos da Região Amazônica (COMARA)** — Comando da Aeronáutica — Ministério da Defesa do Brasil.
+
+## Manutenção da documentação
+
+Toda alteração de comportamento, regra, configuração ou instalação deve incluir a revisão de todos os arquivos README e Markdown do repositório, inclusive todos os documentos em `docs/`. Atualize os documentos afetados na mesma entrega do código, mantendo coerência entre visão geral, manual operacional e guias de implantação. Arquivos sem impacto devem ser revisados, sem mudanças artificiais.
+
+Documentos de referência:
+
+- [Guia de implantação](DEPLOY_TUTORIAL.md)
+- [Instalação no aaPanel](scripts/deploy_aapanel.md)
+- [Manual operacional / NPA](docs/NPA_ELEICAO_PADROES_COMARA.md)
+- [Regras, migração e testes da Fase 2](docs/ATUALIZACAO_FASE2.md)
+
+## Fases 3 e 4 — ordenação do Estado-Maior
+
+A urna recebe somente os representantes escolhidos na Fase 2, até seis por categoria, em ordem alfabética do nome de guerra, sem distinção de caixa e acentos. Os cartões exibem somente foto, posto/graduação (CIVIL SPPF/SPTF), nome de guerra e setor. O voto pode ser revisto antes da confirmação; depois da gravação, é definitivo. Categoria sem representantes não recebe cédula: sua escolha excepcional fica para a Presidência na Fase 5.
+
+Ao encerrar a Fase 3, o sistema fixa votos e dados de classificação. Avançam até três por categoria, aplicando os quatro critérios de desempate da Fase 2. Se houver empate persistente no corte, a urna é encerrada e a Fase 4 fica bloqueada: a Presidência decide, com justificativa, somente entre os empatados pelas vagas restantes. A Administração avança novamente depois dessas decisões.
+
+Na Fase 4, todos os Coronéis, Tenentes-Coronéis e Majores com efetivo e conta ativos na abertura ordenam individualmente os finalistas e justificam cada posição em até 150 caracteres. Pesos: primeiro 5, segundo 3, terceiro 1. Com dois candidatos usam-se 5 e 3; com um, 5, sempre mediante confirmação expressa. Nenhuma avaliação confirmada pode ser editada. Somente depois de todas as confirmações a Administração pode avançar à Fase 5.
+
+Resultado: soma dos pontos → quatro critérios existentes → votos da Fase 3 → voto de minerva entre os empatados finais. Somente a categoria que ficou sem finalistas disponibiliza à Presidência seu próprio efetivo ativo, registrado no encerramento da urna. Essa exceção não amplia as listas das demais categorias. A homologação exige quatro vencedores.
+
+A migração de produção da Fase 2 continua sem confirmação. Após backup e apenas quando a implantação for autorizada, executar nesta ordem:
+
+```sh
+php database/migrate_fase2.php
+php database/migrate_fases3_4.php
+```
+
+As migrações são idempotentes e não convertem resultados antigos. Não reinstale nem execute carga inicial em banco em uso. Consulte [regras, transições, testes e implantação](docs/ATUALIZACAO_FASES3_4.md).
+
+As issues do fork estão desabilitadas (GitHub HTTP 410). Os requisitos e critérios de aceite estão registrados no guia e no PR #2; não se declara que issues tenham sido abertas. Sem merge ou deploy nesta entrega.

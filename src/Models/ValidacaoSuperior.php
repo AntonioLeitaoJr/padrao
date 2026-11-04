@@ -26,7 +26,7 @@ class ValidacaoSuperior {
             LEFT JOIN avaliacoes_tacf t ON t.candidato_id = e.id AND t.pleito_id = :p
             LEFT JOIN usuarios u ON u.id = i.excluido_por_usuario_id
             WHERE i.pleito_id = :p
-            ORDER BY i.categoria, i.total_indicacoes_orgaos DESC, i.media_fase1 DESC
+            ORDER BY i.categoria, e.nome_guerra COLLATE utf8mb4_unicode_ci, e.id
         ";
 
         $stmt = $pdo->prepare($sql);

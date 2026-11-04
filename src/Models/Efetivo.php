@@ -343,18 +343,39 @@ class Efetivo {
      */
     public static function listarParaUrna(int $pleitoId, string $categoria): array {
         $pdo = Database::getConnection();
-        $sql = "
-            SELECT e.*, i.media_fase1, i.total_indicacoes_orgaos
-            FROM indicados_consolidados i
-            INNER JOIN efetivo e ON e.id = i.candidato_id
-            WHERE i.pleito_id = :p 
-              AND i.categoria = :cat
-              AND i.status_validacao_superior = 'VALIDADO'
-            ORDER BY e.nome_guerra ASC, e.posto ASC, e.nome ASC
-        ";
-        $stmt = $pdo->prepare($sql);
+        // A cédula usa somente seleções explícitas, inclusive após retorno de fase.
+        $stmt = $pdo->prepare("SELECT e.id, e.saram, e.nome_guerra, e.posto, e.setor,
+                   e.categoria, e.divisao_sigla, s.orgao_sigla,
+                   i.status_validacao_superior
+            FROM selecao_fase2 s
+            JOIN efetivo e ON e.id = s.candidato_id
+            LEFT JOIN indicados_consolidados i ON i.pleito_id = s.pleito_id
+                AND i.candidato_id = s.candidato_id AND i.categoria = s.categoria
+            WHERE s.pleito_id = :p AND s.categoria = :cat
+            ORDER BY e.nome_guerra COLLATE utf8mb4_unicode_ci, e.id");
         $stmt->execute([':p' => $pleitoId, ':cat' => $categoria]);
-        return $stmt->fetchAll();
+        $candidatos = [];
+        $unidades = [];
+        $ids = [];
+        foreach ($stmt->fetchAll() as $c) {
+            $unidade = in_array($c['divisao_sigla'], SIGLAS_ASSESSORIAS, true)
+                ? 'ASSESSORIAS' : $c['divisao_sigla'];
+            $permitidas = array_merge(ORGAOS_SELECAO_FASE2['DIVISOES'], ORGAOS_SELECAO_FASE2['ASSESSORIAS']);
+            if (!isset($permitidas[$unidade]) || $unidade !== $c['orgao_sigla']
+                || $c['categoria'] !== $categoria || isset($unidades[$unidade])
+                || isset($ids[$c['id']]) || $c['status_validacao_superior'] === null) {
+                throw new RuntimeException('Seleções inconsistentes na Fase 2. Solicite à Administração a conferência dos representantes e da consolidação antes de votar.');
+            }
+            $unidades[$unidade] = true;
+            $ids[$c['id']] = true;
+            if ($c['status_validacao_superior'] !== 'VALIDADO') continue;
+            if (in_array($categoria, [CAT_SPPF, CAT_SPTF], true)) {
+                $c['posto'] = 'CIVIL ' . strtoupper($categoria);
+            }
+            // Não carregar notas, histórico, nome completo ou classificação na cédula.
+            $candidatos[] = array_intersect_key($c, array_flip(['id', 'saram', 'nome_guerra', 'posto', 'setor']));
+        }
+        return $candidatos;
     }
 
     /**

@@ -1,154 +1,63 @@
 <?php
 declare(strict_types=1);
-
-require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../Middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../Models/Pleito.php';
-require_once __DIR__ . '/../Models/Efetivo.php';
-require_once __DIR__ . '/../Models/ValidacaoSuperior.php';
+require_once __DIR__ . '/../Models/EstadoMaior.php';
 
 class Fase4Controller {
-
     public function index(): void {
         AuthMiddleware::handle();
-
-        if (!AuthManager::isEstadoMaior()) {
-            flash_message('erro', 'Acesso negado: A Fase 4 (Estado-Maior) é exclusiva para Oficiais Superiores (Majores, Tenentes-Coronéis e Coronéis).', 'danger');
-            header('Location: /index.php?r=dashboard');
-            exit;
-        }
-
-        $user = AuthManager::user();
-        $pleito = Pleito::getAtivo();
-
-        if (!$pleito) {
-            flash_message('erro', 'Nenhum pleito ativo.', 'warning');
-            header('Location: /index.php?r=dashboard');
-            exit;
-        }
-
-        $candidatos = ValidacaoSuperior::listarCandidatos((int)$pleito['id']);
-
-        // Agrupa por categoria
-        $porCategoria = [
-            CAT_GRADUADO => [],
-            CAT_PRACA    => [],
-            CAT_SPPF     => [],
-            CAT_SPTF     => [],
-        ];
-
-        foreach ($candidatos as $c) {
-            if (isset($porCategoria[$c['categoria']])) {
-                $porCategoria[$c['categoria']][] = $c;
+        if (!AuthManager::isEstadoMaior()) { http_response_code(403); exit('Acesso restrito ao Estado-Maior.'); }
+        $user=AuthManager::user(); $pleito=Pleito::getAtivo();
+        $erro=null; $ciclo=null; $situacao=[]; $candidatos=[]; $avaliacao=[]; $progresso=[]; $podeConfirmar=false; $confirmado=false;
+        try {
+            if (!$pleito) throw new RuntimeException('Nenhum pleito disponível.');
+            $p=(int)$pleito['id']; $u=(int)$user['id'];
+            $ciclo=EstadoMaior::ciclo($p);
+            if (!$ciclo) throw new RuntimeException('Aguarde o encerramento da Fase 3 pela Administração. Pleito antigo já na Fase 4 deve retornar à Fase 3 antes de preparar o novo fluxo.');
+            $situacao=EstadoMaior::situacao($p);
+            if ($ciclo['aberto_em']) {
+                $candidatos=EstadoMaior::candidatos($p);
+                $avaliacao=EstadoMaior::avaliacao($p,$u);
+                $progresso=EstadoMaior::progresso($p);
+                foreach ($progresso as $a) if ((int)$a['usuario_id']===$u) {
+                    $confirmado=!empty($a['confirmado_em']);
+                    $podeConfirmar=!$confirmado && (int)$pleito['fase_atual']===4 && $pleito['status']==='em_andamento'
+                        && in_array($user['posto']??'',POSTOS_ESTADO_MAIOR,true);
+                }
             }
-        }
-
-        require_once ROOT_PATH . '/views/fase4/index.php';
+        } catch (Throwable $e) { $erro=$e->getMessage(); }
+        $rascunho=$_SESSION['fase4_rascunho'][(int)($pleito['id']??0)]??[];
+        require ROOT_PATH.'/views/fase4/index.php';
     }
-
-    /**
-     * Retorna os dados detalhados da ficha de indicação e TACF do candidato para o popup da Fase 4
-     */
-    public function resumoFicha(): void {
-        AuthMiddleware::handle();
-
-        if (!AuthManager::isEstadoMaior()) {
-            header('Content-Type: application/json');
-            echo json_encode(['sucesso' => false, 'mensagem' => 'Acesso negado: Exclusivo para integrantes do Estado-Maior.']);
-            exit;
-        }
-
-        $pleito = Pleito::getAtivo();
-        $candidatoId = (int)($_GET['id'] ?? 0);
-
-        if (!$pleito || $candidatoId <= 0) {
-            header('Content-Type: application/json');
-            echo json_encode(['sucesso' => false, 'mensagem' => 'Parâmetros inválidos.']);
-            exit;
-        }
-
-        $resumo = Efetivo::getResumoFichaCandidato((int)$pleito['id'], $candidatoId);
-
-        header('Content-Type: application/json');
-        if (!$resumo) {
-            echo json_encode(['sucesso' => false, 'mensagem' => 'Ficha ou candidato não localizado.']);
-            exit;
-        }
-
-        echo json_encode(['sucesso' => true, 'dados' => $resumo]);
-        exit;
+    public function confirmar(): void {
+        $this->executar(function(int $p,int $u): string {
+            if (($_POST['confirmacao']??'')!=='1') throw new RuntimeException('Confirme expressamente a avaliação.');
+            $itens=$_POST['categorias']??[];
+            if (!is_array($itens)) throw new InvalidArgumentException('Ordenações inválidas.');
+            $_SESSION['fase4_rascunho'][$p]=$itens;
+            EstadoMaior::confirmar($p,$u,$itens);
+            unset($_SESSION['fase4_rascunho'][$p]);
+            return 'Ordenações e justificativas gravadas. Confirmação definitiva: não podem mais ser alteradas.';
+        });
     }
-
-    public function excluir(): void {
-        AuthMiddleware::handle();
-
-        if (!AuthManager::isEstadoMaior()) {
-            flash_message('erro', 'Acesso negado.', 'danger');
-            header('Location: /index.php?r=dashboard');
-            exit;
-        }
-
-        $user = AuthManager::user();
-        $pleito = Pleito::getAtivo();
-
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
-                flash_message('erro', 'Token CSRF inválido.', 'danger');
-                header('Location: /index.php?r=fase4');
-                exit;
-            }
-
-            $candidatoId = (int)($_POST['candidato_id'] ?? 0);
-            $justificativa = trim($_POST['justificativa'] ?? '');
-
-            $res = ValidacaoSuperior::excluirCandidato(
-                (int)$pleito['id'],
-                $candidatoId,
-                $justificativa,
-                (int)$user['id']
-            );
-
-            if ($res['sucesso']) {
-                flash_message('sucesso', $res['mensagem'], 'success');
-            } else {
-                flash_message('erro', $res['mensagem'], 'danger');
-            }
-        }
-
-        header('Location: /index.php?r=fase4');
-        exit;
+    public function decidirCorte(): void {
+        $this->executar(function(int $p,int $u): string {
+            if (($_POST['confirmacao']??'')!=='1') throw new RuntimeException('Confirme expressamente a decisão.');
+            $ids=$_POST['candidatos']??[];
+            if (!is_array($ids)) throw new InvalidArgumentException('Escolha inválida.');
+            EstadoMaior::decidirCorte($p,(string)($_POST['categoria']??''),$ids,(string)($_POST['justificativa']??''),$u);
+            return 'Decisão fundamentada registrada. A Administração poderá avançar após resolver todos os cortes pendentes.';
+        });
     }
-
-    public function reverter(): void {
+    private function executar(callable $acao): void {
         AuthMiddleware::handle();
-
-        if (!AuthManager::isEstadoMaior()) {
-            flash_message('erro', 'Acesso negado.', 'danger');
-            header('Location: /index.php?r=dashboard');
-            exit;
-        }
-
-        $user = AuthManager::user();
-        $pleito = Pleito::getAtivo();
-
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
-                flash_message('erro', 'Token CSRF inválido.', 'danger');
-                header('Location: /index.php?r=fase4');
-                exit;
-            }
-
-            $candidatoId = (int)($_POST['candidato_id'] ?? 0);
-            $res = ValidacaoSuperior::reverterExclusao((int)$pleito['id'], $candidatoId, (int)$user['id']);
-
-            if ($res['sucesso']) {
-                flash_message('sucesso', $res['mensagem'], 'success');
-            } else {
-                flash_message('erro', $res['mensagem'], 'danger');
-            }
-        }
-
-        header('Location: /index.php?r=fase4');
-        exit;
+        try {
+            if ($_SERVER['REQUEST_METHOD']!=='POST' || !verify_csrf_token($_POST['csrf_token']??'')) throw new RuntimeException('Requisição ou token de segurança inválido.');
+            $p=Pleito::getAtivo(); if (!$p) throw new RuntimeException('Nenhum pleito disponível.');
+            $msg=$acao((int)$p['id'],(int)AuthManager::user()['id']);
+            flash_message('sucesso',$msg,'success');
+        } catch (Throwable $e) { flash_message('erro',$e->getMessage(),'danger'); }
+        header('Location: /index.php?r=fase4'); exit;
     }
 }

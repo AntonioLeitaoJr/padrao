@@ -4,6 +4,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/AuditoriaService.php';
+require_once __DIR__ . '/../Models/Efetivo.php';
+require_once __DIR__ . '/../Models/EstadoMaior.php';
 
 /**
  * Serviço da Urna Eletrônica Sigilosa
@@ -107,12 +109,9 @@ class UrnaService {
 
         // Validar se foram escolhidos candidatos válidos para as 4 categorias oficiais
         $categoriasObrigatorias = [CAT_GRADUADO, CAT_PRACA, CAT_SPPF, CAT_SPTF];
-        foreach ($categoriasObrigatorias as $cat) {
-            if (empty($votosPorCategoria[$cat])) {
-                throw new InvalidArgumentException("O voto para a categoria {$cat} é obrigatório.");
-            }
+        if (array_diff(array_keys($votosPorCategoria), $categoriasObrigatorias)) {
+            throw new InvalidArgumentException('Categoria de voto inválida.');
         }
-
         // Gera código de comprovante único do eleitor
         $comprovante = 'COMARA-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(6)));
         $horarioExato = date('Y-m-d H:i:s');
@@ -121,14 +120,35 @@ class UrnaService {
         $pdo->beginTransaction();
 
         try {
+            // Impede voto após fechamento, inclusive requisições iniciadas antes da transição.
+            $stmtFase = $pdo->prepare('SELECT fase_atual, status FROM pleitos WHERE id = :p FOR UPDATE');
+            $stmtFase->execute([':p' => $pleitoId]);
+            $pleito = $stmtFase->fetch();
+            if (!$pleito || (int)$pleito['fase_atual'] !== FASE_3 || $pleito['status'] !== 'em_andamento') {
+                throw new RuntimeException('A votação geral não está aberta no momento.');
+            }
+            if (EstadoMaior::ciclo($pleitoId)) throw new RuntimeException('A votação foi encerrada. Aguarde a decisão do corte e a abertura da Fase 4.');
+            $votosValidados = [];
+            foreach ($categoriasObrigatorias as $cat) {
+                $ids = array_map('intval', array_column(Efetivo::listarParaUrna($pleitoId, $cat), 'id'));
+                if (!$ids) {
+                    if (!empty($votosPorCategoria[$cat])) throw new InvalidArgumentException('Categoria sem representantes não aceita voto.');
+                    continue;
+                }
+                $id = filter_var($votosPorCategoria[$cat] ?? null, FILTER_VALIDATE_INT);
+                if ($id === false || !in_array($id, $ids, true)) {
+                    throw new InvalidArgumentException('Escolha somente representantes válidos da Fase 2 na categoria correspondente.');
+                }
+                $votosValidados[$cat] = $id;
+            }
             // 1. Bloqueia e marca no controle de eleitores que o CPF votou
             $stmtLock = $pdo->prepare('
                 INSERT INTO `eleitores_ciclo` (`pleito_id`, `usuario_id`, `cpf_hash`, `votou`, `votou_em`, `codigo_comprovante`)
                 VALUES (:pleito, :user, :cpf_hash, 1, :horario, :comprovante)
                 ON DUPLICATE KEY UPDATE
-                    `votou` = IF(`votou` = 0, 1, 1),
                     `votou_em` = IF(`votou` = 0, VALUES(`votou_em`), `votou_em`),
-                    `codigo_comprovante` = IF(`votou` = 0, VALUES(`codigo_comprovante`), `codigo_comprovante`)
+                    `codigo_comprovante` = IF(`votou` = 0, VALUES(`codigo_comprovante`), `codigo_comprovante`),
+                    `votou` = 1
             ');
 
             $stmtLock->execute([
@@ -152,7 +172,7 @@ class UrnaService {
                 VALUES (:pleito, :cat, :candidato, :horario)
             ');
 
-            foreach ($votosPorCategoria as $cat => $candId) {
+            foreach ($votosValidados as $cat => $candId) {
                 $stmtUrna->execute([
                     ':pleito'    => $pleitoId,
                     ':cat'       => $cat,

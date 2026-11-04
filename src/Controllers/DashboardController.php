@@ -33,7 +33,7 @@ class DashboardController {
                 'total_praca'    => (int)$pdo->query("SELECT COUNT(*) FROM efetivo WHERE categoria = 'praca' AND ativo = 1")->fetchColumn(),
                 'total_sppf'     => (int)$pdo->query("SELECT COUNT(*) FROM efetivo WHERE categoria = 'sppf' AND ativo = 1")->fetchColumn(),
                 'total_sptf'     => (int)$pdo->query("SELECT COUNT(*) FROM efetivo WHERE categoria = 'sptf' AND ativo = 1")->fetchColumn(),
-                'total_votos'    => (int)$pdo->query("SELECT COUNT(*) FROM urna_votos WHERE pleito_id = {$pleito['id']}")->fetchColumn() / 4
+                'total_votos'    => (int)$pdo->query("SELECT COUNT(*) FROM eleitores_ciclo WHERE pleito_id = {$pleito['id']} AND votou = 1")->fetchColumn()
             ];
 
             // Subordinados apenas se for Oficial Chefe Direto

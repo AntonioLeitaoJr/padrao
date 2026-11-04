@@ -80,6 +80,13 @@ require_once ROOT_PATH . '/views/layouts/header.php';
         </form>
     </div>
 
+    <?php if ((int)$pleito['fase_atual'] >= 3): ?>
+    <div class="alert alert-info">
+        Ao encerrar a Fase 3, a urna será fechada definitivamente. Empates no corte bloqueiam a Fase 4 até decisão fundamentada da Presidência.
+        <a href="/index.php?r=fase4">Consultar corte e confirmações do Estado-Maior</a>.
+        A Fase 5 exige a confirmação de todos os avaliadores habilitados.
+    </div>
+    <?php endif; ?>
     <!-- Painel de Avanço de Fase e Bloqueios -->
     <div class="col-lg-4">
         <div class="card card-comara shadow-sm border-2 border-primary mb-4">
@@ -267,7 +274,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                             <label class="form-check-label" for="limpar_tudo">
                                 <strong class="text-danger d-block">Reset Completo (Recomendado para novo ciclo)</strong>
                                 <span class="small text-muted">
-                                    Zera os votos da Urna (Fase 3), seleções das divisões (Fase 2), fichas de indicação dos chefes (Fase 1), homologação e atas (Fase 5).
+                                    Zera os votos da Urna (Fase 3), seleções das divisões (Fase 2), fichas de indicação dos chefes (Fase 1), corte e ordenações do Estado-Maior (Fase 4), homologação e atas (Fase 5).
                                 </span>
                             </label>
 
@@ -284,7 +291,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                             <label class="form-check-label" for="apenas_fase">
                                 <strong class="text-primary d-block">Apenas Regressar para Fase 1</strong>
                                 <span class="small text-muted">
-                                    Mantém os votos e avaliações existentes no banco e apenas redefine o apontador de fase para a Fase 1.
+                                    Mantém os votos e avaliações existentes. Esta opção fica bloqueada após o encerramento da urna no novo fluxo.
                                 </span>
                             </label>
                         </div>
