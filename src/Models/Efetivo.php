@@ -461,7 +461,8 @@ class Efetivo {
                    c.posto as chefe_posto, c.nome_guerra as chefe_nome_guerra
             FROM efetivo e
             LEFT JOIN usuarios u ON u.efetivo_id = e.id
-            LEFT JOIN efetivo c ON c.id = e.chefe_direto_id
+            -- A listagem mostra chefia vigente; o vinculo historico permanece em e.chefe_direto_id.
+            LEFT JOIN efetivo c ON c.id = e.chefe_direto_id AND c.ativo = 1
             {$whereSql}
             ORDER BY e.ativo DESC, e.posto, e.nome
             LIMIT :limit OFFSET :offset
