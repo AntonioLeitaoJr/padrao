@@ -193,7 +193,7 @@ php database/migrate_fase5.php
 
 As migrações são idempotentes e não convertem resultados antigos. Não reinstale nem execute carga inicial em banco em uso. Consulte [regras, transições, testes e implantação](docs/ATUALIZACAO_FASES3_4.md).
 
-As issues do fork estão desabilitadas (GitHub HTTP 410). Os requisitos e critérios de aceite estão registrados no guia e no PR #2; não se declara que issues tenham sido abertas. Sem merge ou deploy nesta entrega.
+As issues do fork estão desabilitadas (GitHub HTTP 410). Os requisitos e critérios de aceite estão registrados no guia e no PR #2; não se declara que issues tenham sido abertas. O estado histórico dessa entrega está no PR #2; a revisão pós-deploy está no guia abaixo.
 
 ## Fase 5 — decisões e homologação
 
@@ -202,3 +202,11 @@ A Presidência pode revisar minerva e escolha excepcional até a homologação, 
 Presidente e ADMIN consultam ordenações e justificativas individuais identificadas da Fase 4. DIRECAO_SUPERIOR mantém consulta da apuração consolidada, sem poderes presidenciais. O efetivo acessa vencedores apenas após homologação. Consulta histórica usa a ata original, sem reinterpretar resultados antigos.
 
 Consulte [o guia da Fase 5](docs/ATUALIZACAO_FASE5.md), inclusive limitações de registros antigos e implantação. As issues continuam desabilitadas (HTTP 410 confirmado em 02/11/2026); requisitos registrados no guia e no PR da Fase 5.
+
+## Correções pós-deploy — Fases 3 e 4
+
+O cabeçalho preserva os diagnósticos das páginas. Sem ciclo preparado, a Fase 4 orienta aguardar o encerramento da urna; apenas cortes realmente pendentes exigem decisão presidencial. Na Fase 3, falhas de estrutura e seleções inconsistentes têm orientações distintas. Falhas SQL tratadas pelos formulários não são exibidas ao usuário; a STI consulta o log interno.
+
+Publicar arquivos não executa migrações. Siga o [procedimento pós-deploy](docs/CORRECAO_DEPLOY_FASES3_4.md) após backup, incluindo a sequência Fase 2 → Fases 3–4 → Fase 5. Não reinstale o banco para corrigir a urna.
+
+A suíte `tests/teste_deploy_fases3_4.php` inclui as verificações acumuladas das Fases 3–5 e as regressões de deploy; exige banco vazio, descartável e terminado em `_test`. Issues continuam desabilitadas no fork; achados e aceite são registrados no PR e nos guias.

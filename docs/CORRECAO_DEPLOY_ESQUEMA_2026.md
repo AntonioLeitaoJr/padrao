@@ -80,3 +80,7 @@ A coluna efetivo.data_inicio_servico e criada com NULL. O RH devera preencher da
 
 ## Limites
 Este ajuste corrige a estrutura prevista no schema e o erro encontrado nas telas. Nao valida o conteudo real do banco ate a execucao de --check no servidor, nem substitui testes funcionais completos das Fases 3, 4 e 5.
+
+## Complemento das Fases 3, 4 e 5
+
+`migrar_esquema.php --check` verifica a compatibilidade descrita neste documento, mas não substitui as migrações eleitorais. Depois de resolver essas pendências e confirmar o backup, execute em ordem `migrate_fase2.php`, `migrate_fases3_4.php` e `migrate_fase5.php`, interrompendo diante de falha. Consulte [a correção pós-deploy das Fases 3 e 4](CORRECAO_DEPLOY_FASES3_4.md). Não execute os testes de integração no banco de produção.

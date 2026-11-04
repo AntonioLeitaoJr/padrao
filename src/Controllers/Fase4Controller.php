@@ -62,7 +62,13 @@ class Fase4Controller {
             $p=Pleito::getAtivo(); if (!$p) throw new RuntimeException('Nenhum pleito disponível.');
             $msg=$acao((int)$p['id'],(int)AuthManager::user()['id']);
             flash_message('sucesso',$msg,'success');
-        } catch (Throwable $e) { flash_message('erro',$e->getMessage(),'danger'); }
+        } catch (Throwable $e) {
+            error_log('[Fase 4 / operação] '.$e->getMessage());
+            $mensagem=($e instanceof RuntimeException || $e instanceof InvalidArgumentException) && !($e instanceof PDOException)
+                ? $e->getMessage()
+                : 'Não foi possível concluir a operação da Fase 4. Solicite à STI a conferência do banco e do log de erros.';
+            flash_message('erro',$mensagem,'danger');
+        }
         header('Location: /index.php?r=fase4'); exit;
     }
 }

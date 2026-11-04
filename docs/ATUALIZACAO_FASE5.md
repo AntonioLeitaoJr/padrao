@@ -1,6 +1,6 @@
 # Atualização da Fase 5
 
-## Base e rastreabilidade
+## Base histórica e rastreabilidade
 
 Branch `ajustes-fase5`, derivada do commit `384bc268a44e78619b0a4a266e515feaef51b7da` do PR #2 (`ajustes-fases3-4`), ainda aberto. PR da Fase 5 direcionado a essa branch para revisão apenas do incremento; após integrar o PR #2, reavaliar a base antes da integração. Sem merge ou deploy nesta entrega.
 
@@ -57,7 +57,7 @@ O workflow executa sintaxe PHP/JavaScript, classificação da Fase 2, integraç�
 php tests/teste_fase2_regras_unitarias.php
 php tests/teste_ordenacao_estado_maior.php
 FASE2_TEST_DB=1 DB_NAME=comara_fase2_test php tests/teste_fase2_integracao.php
-FASE34_TEST_DB=1 DB_NAME=comara_fase34_test php tests/teste_fase5_integracao.php
+FASE34_TEST_DB=1 DB_NAME=comara_fase34_test php tests/teste_deploy_fases3_4.php
 ```
 
 Bancos distintos, inicialmente vazios, descartáveis e terminados em `_test`. A suíte da Fase 5 inclui as fixtures das Fases 3–4; não executá-las separadamente no mesmo banco. Testes de falha real usam triggers apenas no banco descartável. Concorrência utiliza dois processos PHP/conexões disputando o mesmo pleito.
@@ -69,3 +69,7 @@ Cobertura: pesos e critérios existentes; minerva restrita; exceção restrita e
 Revisados todos os Markdown da base: README, NPA, guias Fases 2 e 3–4, DEPLOY_TUTORIAL e scripts/deploy_aapanel; atualizados junto deste guia. A NPA mantém estrutura institucional e condição de minuta.
 
 Não há HMAC do comprovante demonstrado nesta base, e esta entrega não o declara implementado. Autenticação, CSRF e separação das cédulas da Fase 3 são preservados. A consulta identificada autorizada refere-se exclusivamente às avaliações da Fase 4. Não houve acesso à produção ou teste visual interativo no navegador nesta entrega.
+
+## Revisão pós-deploy de 04/11/2026
+
+As referências de branches/PRs no início descrevem a entrega original. A correção `2f654b1` já integra a `main`; o PR complementar revisa erros dos formulários e documentação. A suíte de deploy inclui a suíte da Fase 5 e as anteriores, com regressões de ciclo ausente, mensagens flash, migrações e falhas SQL. Consulte [diagnóstico, implantação e critérios de aceite](CORRECAO_DEPLOY_FASES3_4.md). As regras eleitorais deste guia permanecem.

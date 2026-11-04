@@ -42,4 +42,42 @@ require __DIR__.'/../database/migrate_fase2.php';
 require __DIR__.'/../database/migrate_fases3_4.php';
 require __DIR__.'/../database/migrate_fase5.php';
 foreach ($antes as $t=>$linhas) check($linhas===$pdo->query("SELECT * FROM $t")->fetchAll(),'migrações preservam '.$t);
+
+// POST real em subprocesso: preserva CSRF e captura somente a mensagem exibida.
+function executarPostDeploy(string $classe,string $metodo,array $post): array {
+    $script=tempnam(sys_get_temp_dir(),'comara-post-');
+    $code='<?php require '.var_export(ROOT_PATH.'/src/Controllers/'.$classe.'.php',true).'; '
+        .'$_SESSION["user"]=["id"=>1,"perfil"=>"ADMIN","posto"=>"Cel","nome_guerra"=>"Teste"]; '
+        .'$_SESSION["csrf_token"]="token-teste"; $_POST='.var_export($post,true).'; $_SERVER["REQUEST_METHOD"]="POST"; '
+        .'set_error_handler(function($s,$m,$f,$l){throw new ErrorException($m,0,$s,$f,$l);}); '
+        .'register_shutdown_function(function(){echo json_encode($_SESSION["flash"]??[],JSON_UNESCAPED_UNICODE);}); '
+        .'(new '.$classe.'())->'.$metodo.'();';
+    file_put_contents($script,$code);
+    $pipes=[]; $proc=proc_open([PHP_BINARY,$script],[1=>['pipe','w'],2=>['pipe','w']],$pipes);
+    $out=stream_get_contents($pipes[1]); $err=stream_get_contents($pipes[2]);
+    fclose($pipes[1]); fclose($pipes[2]); $exit=proc_close($proc); unlink($script);
+    if ($exit!==0) throw new RuntimeException($err);
+    return json_decode($out,true,512,JSON_THROW_ON_ERROR);
+}
+$pdo->exec('UPDATE pleitos SET fase_atual=3 WHERE id=99');
+$flash=executarPostDeploy('Fase3Controller','votar',['csrf_token'=>['invalido']]);
+check(str_contains($flash['erro']['message'],'Token de segurança'),'CSRF malformado rejeitado sem erro fatal');
+$flash=executarPostDeploy('Fase3Controller','votar',['csrf_token'=>'token-teste','cpf'=>['invalido']]);
+check($flash['erro']['message']==='Número de CPF inválido.','CPF malformado rejeitado sem erro fatal');
+$pdo->exec('RENAME TABLE eleitores_ciclo TO eleitores_ciclo_backup_teste');
+try {
+    $flash=executarPostDeploy('Fase3Controller','votar',['csrf_token'=>'token-teste','cpf'=>'52998224725']);
+    check(str_contains($flash['erro']['message'],'Solicite à STI'),'falha SQL no voto orienta STI');
+    check(!str_contains(json_encode($flash),'SQLSTATE') && !isset($flash['sucesso']),'POST do voto não revela SQL nem anuncia sucesso');
+} finally { $pdo->exec('RENAME TABLE eleitores_ciclo_backup_teste TO eleitores_ciclo'); }
+$pdo->exec('RENAME TABLE pleitos TO pleitos_backup_teste');
+try {
+    $flash=executarPostDeploy('Fase4Controller','confirmar',['csrf_token'=>'token-teste','confirmacao'=>'1']);
+    check(str_contains($flash['erro']['message'],'Solicite à STI'),'falha SQL na ordenação orienta STI');
+    check(!str_contains(json_encode($flash),'SQLSTATE') && !isset($flash['sucesso']),'POST do Estado-Maior não revela SQL nem anuncia sucesso');
+} finally { $pdo->exec('RENAME TABLE pleitos_backup_teste TO pleitos'); }
+$flash=executarPostDeploy('Fase4Controller','confirmar',['csrf_token'=>'token-teste']);
+check($flash['erro']['message']==='Confirme expressamente a avaliação.','validação funcional continua específica');
+foreach ($antes as $t=>$linhas) check($linhas===$pdo->query("SELECT * FROM $t")->fetchAll(),'POST inválido preserva '.$t);
+
 echo "$n verificações acumuladas aprovadas.\n";
