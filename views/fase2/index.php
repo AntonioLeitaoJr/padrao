@@ -73,8 +73,8 @@ $nomeOrgaoAtual = $todosOrgaosFase2[$orgaoSigla] ?? $orgaoSigla;
                         id="tab-btn-<?= $catKey ?>" data-bs-toggle="tab" data-bs-target="#tab-cat-<?= $catKey ?>" type="button">
                     <div class="d-flex justify-content-between align-items-center">
                         <span class="fw-bold"><?= $catInfo['nome'] ?></span>
-                        <span id="badge-count-<?= $catKey ?>" class="badge <?= ($qtdSel >= 1 || $candsDisponiveis === 0) ? 'bg-success' : 'bg-warning text-dark' ?> fs-6">
-                            <?= $qtdSel ?> / 1 selecionado
+                        <span id="badge-count-<?= $catKey ?>" class="badge <?= $candsDisponiveis === 0 ? 'bg-secondary' : ($qtdSel === 1 ? 'bg-success' : 'bg-warning text-dark') ?> fs-6">
+                            <?= $candsDisponiveis === 0 ? 'Sem candidatos' : $qtdSel . ' / 1 selecionado' ?>
                         </span>
                     </div>
                     <small class="text-muted d-block mt-1">
@@ -202,7 +202,9 @@ $nomeOrgaoAtual = $todosOrgaosFase2[$orgaoSigla] ?? $orgaoSigla;
                     <div class="border rounded p-2 bg-light h-100 shadow-sm text-center">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <strong class="text-primary"><?= $sig ?></strong>
-                            <?php if ($pInfo['concluido']): ?>
+                            <?php if (($pInfo['situacao'] ?? '') === 'sem_candidatos'): ?>
+                                <span class="badge bg-secondary" title="Nenhum candidato elegível; a seleção não foi concluída.">Sem candidatos</span>
+                            <?php elseif ($pInfo['concluido']): ?>
                                 <span class="badge bg-success"><i class="bi bi-check-lg"></i> Pronto</span>
                             <?php else: ?>
                                 <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split"></i> Pendente</span>
