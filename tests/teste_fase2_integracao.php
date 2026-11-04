@@ -72,6 +72,8 @@ check(!SelecaoFase2::salvarSelecao(1,'DPC',$levy,['graduado'=>[$cands[0],$cands[
 check(!SelecaoFase2::salvarSelecao(1,'DPC',$thiago,['graduado'=>[$cands[0]]])['sucesso'],'rejeita outro selecionador');
 check(SelecaoFase2::salvarSelecao(1,'DPC',$levy,['graduado'=>[$cands[0]]])['sucesso'],'aceita um e grupos vazios');
 check(SelecaoFase2::relatorioProgressoOrgaos(1)['DPC']['concluido'],'progresso considera vazios');
+check(SelecaoFase2::relatorioProgressoOrgaos(1)['DS']['situacao']==='sem_candidatos','orgao sem classificados nao aparece como Pronto na interface');
+check(SelecaoFase2::relatorioProgressoOrgaos(1)['DL']['situacao']==='pendente','orgao com classificado e nenhuma indicacao aparece como Pendente');
 check(!Pleito::avancarFase(1,$admin)['sucesso'],'avanço bloqueado com DL pendente');
 check(SelecaoFase2::salvarSelecao(1,'DL',$admin,['graduado'=>[$outra]])['sucesso'],'único candidato disponível');
 check(Pleito::avancarFase(1,$admin)['sucesso'],'avanço após escolhas válidas');
