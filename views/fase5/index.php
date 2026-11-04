@@ -4,6 +4,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
 
 $homologado = $apuracao['homologado'];
 $dadosHomol = $apuracao['dados_homologacao'];
+$podeHomologar = count(array_filter($apuracao['categorias'],fn($c)=>!empty($c['vencedor'])))===4;
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -20,7 +21,16 @@ $dadosHomol = $apuracao['dados_homologacao'];
     </div>
 </div>
 
-<!-- Cards dos 4 Vencedores Proclamados -->
+<form method="GET" class="mb-3">
+    <input type="hidden" name="r" value="fase5">
+    <label for="consultaPleito">Consultar homologação anterior:</label>
+    <select name="pleito_id" id="consultaPleito" required>
+        <?php foreach ($historicos as $h): ?><option value="<?= (int)$h['id'] ?>" <?= (int)$pleito['id']===(int)$h['id']?'selected':'' ?>><?= (int)$h['ano'] ?> — <?= sanitize_output($h['titulo']) ?></option><?php endforeach; ?>
+    </select><button class="btn btn-outline-primary btn-sm">Consultar</button>
+    <a href="/index.php?r=fase5">Pleito atual</a>
+</form>
+<?php if (!empty($apuracao['legado'])): ?><div class="alert alert-info">Homologação anterior: vencedores e ata originais preservados, sem recálculo. Dados de identificação vêm do cadastro atual; pontuações históricas não são presumidas.</div><?php endif; ?>
+<!-- Vencedores definidos; proclamados somente após homologação -->
 <div class="row g-3 mb-4">
     <?php foreach (CATEGORIAS_PADRAO as $catKey => $catInfo): ?>
         <?php
@@ -49,8 +59,8 @@ $dadosHomol = $apuracao['dados_homologacao'];
                         <div class="small text-secondary mb-2"><?= sanitize_output($vencedor['setor']) ?> (<?= sanitize_output($vencedor['divisao_sigla']) ?>)</div>
                         
                         <div class="p-2 bg-light rounded border">
-                            <div class="h4 fw-bold text-primary mb-0"><?= $vencedor['pontos_fase4'] ?? $vencedor['total_votos'] ?></div>
-                            <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Pontos do Estado-Maior</small>
+                            <div class="h4 fw-bold text-primary mb-0"><?= $vencedor['pontos_fase4'] ?? '—' ?></div>
+                            <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Pontos da Fase 4</small><div class="small">Votos da Fase 3: <?= $vencedor['total_votos'] ?? '—' ?></div>
                         </div>
 
                         <?php if ($dadosCat['minerva_registrado']): ?>
@@ -62,9 +72,12 @@ $dadosHomol = $apuracao['dados_homologacao'];
                         <div class="py-4 text-warning">
                             <i class="bi bi-exclamation-triangle fs-1 d-block mb-2"></i>
                             <strong>Decisão pendente</strong>
-                            <div class="small text-muted">Aguardando Voto de Minerva do Sr. Presidente.</div>
+                            <div class="small text-muted"><?= !empty($dadosCat['excepcional']) ? (empty($dadosCat['candidatos_empatados']) ? 'Sem integrante no universo excepcional. Homologação bloqueada; encaminhar à Presidência para decisão institucional.' : 'Aguardando escolha excepcional da Presidência.') : 'Aguardando voto de minerva entre os empatados finais.' ?></div>
                         </div>
                     <?php endif; ?>
+                    <div class="small mt-2"><?= sanitize_output($dadosCat['criterio_resultado'] ?? '') ?></div>
+                    <?php if (!empty($dadosCat['minerva_registrado'])): ?><div class="small text-start mt-2"><strong>Fundamentação registrada:</strong> <?= sanitize_output($dadosCat['minerva_registrado']['justificativa']) ?><br>Autor (usuário): <?= (int)$dadosCat['minerva_registrado']['presidente_usuario_id'] ?> · <?= sanitize_output($dadosCat['minerva_registrado']['registrado_em']) ?></div><?php endif; ?>
+                    <?php if (!$homologado): ?><div class="small text-warning-emphasis">Resultado provisório — não homologado.</div><?php endif; ?>
                 </div>
             </div>
         </div>
@@ -86,7 +99,7 @@ $dadosHomol = $apuracao['dados_homologacao'];
         </div>
         <div class="card-body p-0">
             
-            <?php if ($requerMinerva && !$homologado): ?>
+            <?php if (($requerMinerva || !empty($dadosCat['minerva_registrado'])) && !$homologado): ?>
                 <!-- Alerta e Módulo de Voto de Minerva do Presidente -->
                 <div class="p-3 bg-warning-subtle border-bottom border-warning">
                     <div class="d-flex align-items-center mb-2">
@@ -97,19 +110,21 @@ $dadosHomol = $apuracao['dados_homologacao'];
                         </div>
                     </div>
 
-                    <?php if (AuthManager::hasRole([PERFIL_PRESIDENTE, PERFIL_ADMIN])): ?>
+                    <?php if ($candsEmpatados && AuthManager::hasRole([PERFIL_PRESIDENTE, PERFIL_ADMIN])): ?>
                         <form onsubmit="return confirm('Confirmar esta decisão fundamentada?')" method="POST" action="/index.php?r=fase5/minerva" class="card p-3 bg-white border mt-2">
                             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                             <input type="hidden" name="categoria" value="<?= $catKey ?>">
+                            <input type="hidden" name="pleito_id" value="<?= (int)$pleito['id'] ?>">
+                            <input type="hidden" name="versao" value="<?= Homologacao::versaoDecisao($dadosCat['minerva_registrado']) ?>">
 
-                            <div class="fw-bold text-primary mb-2">Selecione o candidato a ser desempatado pelo Sr. Presidente:</div>
+                            <div class="fw-bold text-primary mb-2"><?= !empty($dadosCat['minerva_registrado']) ? 'Revisar decisão registrada (permitido até homologar):' : 'Selecione o candidato permitido para esta decisão:' ?></div>
                             <div class="row g-2 mb-3">
                                 <?php foreach ($candsEmpatados as $ce): ?>
                                     <div class="col-md-6">
                                         <div class="p-2 border rounded d-flex align-items-center bg-light">
                                             <input class="form-check-input me-3 fs-5" type="radio" 
                                                    name="candidato_id" id="min_<?= $catKey ?>_<?= $ce['candidato_id'] ?>" 
-                                                   value="<?= $ce['candidato_id'] ?>" required>
+                                                   value="<?= $ce['candidato_id'] ?>" <?= (int)($dadosCat['minerva_registrado']['candidato_vencedor_id']??0)===(int)$ce['candidato_id']?'checked':'' ?> required>
                                             <img src="/index.php?r=foto&saram=<?= $ce['saram'] ?>&id=<?= $ce['candidato_id'] ?>" class="cand-photo-sm me-2" alt="Foto">
                                             <div>
                                                 <label class="form-check-label fw-bold d-block" for="min_<?= $catKey ?>_<?= $ce['candidato_id'] ?>">
@@ -123,13 +138,14 @@ $dadosHomol = $apuracao['dados_homologacao'];
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label fw-bold small">Justificativa Regimental do Voto de Minerva <span class="text-danger">*</span></label>
-                                <textarea class="form-control" name="justificativa" rows="2" required placeholder="Fundamente a decisão do Voto de Minerva..."></textarea>
+                                <label class="form-label fw-bold small">Justificativa da decisão presidencial <span class="text-danger">*</span></label>
+                                <textarea class="form-control" name="justificativa" rows="2" required placeholder="Fundamente a decisão..."><?= sanitize_output($dadosCat['minerva_registrado']['justificativa']??'') ?></textarea>
                             </div>
 
+                            <label class="mb-2"><input type="checkbox" name="confirmar" value="1" required> Confirmo esta decisão. Poderei revisá-la até homologar.</label>
                             <div>
                                 <button type="submit" class="btn btn-warning fw-bold">
-                                    <i class="bi bi-pen-fill me-1"></i> Proferir Voto de Minerva Oficial
+                                    <i class="bi bi-pen-fill me-1"></i> Salvar decisão fundamentada
                                 </button>
                             </div>
                         </form>
@@ -157,12 +173,12 @@ $dadosHomol = $apuracao['dados_homologacao'];
                     </thead>
                     <tbody>
                         <?php foreach ($ranking as $pos => $cand): ?>
-                            <tr class="<?= $pos === 0 ? 'table-success fw-semibold' : '' ?>">
+                            <tr class="<?= $pos === 0 && !empty($dadosCat['vencedor']) ? 'table-success fw-semibold' : '' ?>">
                                 <td class="text-center">
-                                    <?php if ($pos === 0): ?>
+                                    <?php if ($pos === 0 && !empty($dadosCat['vencedor'])): ?>
                                         <span class="badge bg-success fs-6"><i class="bi bi-award-fill"></i> 1º Lugar</span>
                                     <?php else: ?>
-                                        <span class="badge bg-light text-dark border"><?= $pos + 1 ?>º</span>
+                                        <span class="badge bg-light text-dark border"><?= $requerMinerva ? 'Pendente' : ($pos + 1).'º' ?></span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
@@ -224,7 +240,11 @@ $dadosHomol = $apuracao['dados_homologacao'];
                 </div>
             </div>
         <?php elseif (AuthManager::hasRole([PERFIL_PRESIDENTE, PERFIL_ADMIN])): ?>
-            <form method="POST" action="/index.php?r=fase5/homologar">
+            <?php if (!$podeHomologar): ?><div class="alert alert-warning">Homologação bloqueada: defina um vencedor válido em cada uma das quatro categorias.</div><?php endif; ?>
+            <form method="POST" action="/index.php?r=fase5/homologar" onsubmit="return confirm('Homologar definitivamente os quatro vencedores? Não será possível alterar ou reiniciar esta eleição.');">
+                <input type="hidden" name="pleito_id" value="<?= (int)$pleito['id'] ?>">
+                <input type="hidden" name="versao" value="<?= Homologacao::versaoApuracao($apuracao) ?>">
+                <label class="mb-3"><input type="checkbox" name="confirmar" value="1" required> Conferi os quatro vencedores e confirmo a homologação definitiva.</label>
                 <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
 
                 <p class="text-muted small">
@@ -239,7 +259,7 @@ $dadosHomol = $apuracao['dados_homologacao'];
                 </div>
 
                 <div class="text-end">
-                    <button type="submit" class="btn btn-success btn-lg fw-bold px-4 shadow">
+                    <button type="submit" class="btn btn-success btn-lg fw-bold px-4 shadow" <?= $podeHomologar?'':'disabled' ?>>
                         <i class="bi bi-shield-lock-fill me-2"></i> HOMOLOGAR E BLOQUEAR RESULTADOS
                     </button>
                 </div>
@@ -250,17 +270,18 @@ $dadosHomol = $apuracao['dados_homologacao'];
             </div>
         <?php endif; ?>
 
+        <?php if ($homologado): ?>
         <!-- Links Diretos para os Relatórios Padronizados -->
         <hr class="my-4">
         <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
             <span class="small text-muted fw-bold">Documentos e Publicações Oficiais:</span>
             <div class="d-flex gap-2">
                 <?php if (AuthManager::hasRole(PERFIL_ADMIN)): ?>
-                    <a href="/index.php?r=relatorios/placa" class="btn btn-warning fw-bold text-dark shadow-sm">
+                    <a href="/index.php?r=relatorios/placa&amp;pleito_id=<?= (int)$pleito['id'] ?>" class="btn btn-warning fw-bold text-dark shadow-sm">
                         <i class="bi bi-trophy-fill me-1"></i> Placa Alusiva (Hall do Comando)
                     </a>
                 <?php endif; ?>
-                <a href="/index.php?r=relatorios/site" class="btn btn-primary fw-bold shadow-sm">
+                <a href="/index.php?r=relatorios/site&amp;pleito_id=<?= (int)$pleito['id'] ?>" class="btn btn-primary fw-bold shadow-sm">
                     <i class="bi bi-globe me-1"></i> Publicação Web (Site COMARA)
                 </a>
                 <a href="/index.php?r=relatorios/estatisticas" class="btn btn-outline-secondary fw-bold">
@@ -269,7 +290,21 @@ $dadosHomol = $apuracao['dados_homologacao'];
             </div>
         </div>
 
+        <?php endif; ?>
     </div>
 </div>
 
+<?php if (AuthManager::hasRole([PERFIL_PRESIDENTE, PERFIL_ADMIN])): ?>
+<details class="card p-3 mb-4"><summary>Avaliações individuais da Fase 4 — consulta restrita à Presidência e ADMIN</summary>
+<p class="small">Consulta identificada das ordenações e justificativas; não representa a votação secreta da Fase 3.</p>
+<div class="table-responsive"><table class="table"><thead><tr><th>Avaliador</th><th>Categoria</th><th>Candidato</th><th>Posição</th><th>Justificativa</th></tr></thead><tbody>
+<?php foreach ($avaliacoes as $a):
+    $candidatoNome='Candidato #'.(int)$a['candidato_id'];
+    foreach ($apuracao['categorias'][$a['categoria']]['ranking'] as $c) if ((int)$c['candidato_id']===(int)$a['candidato_id']) $candidatoNome=$c['posto'].' '.$c['nome_guerra'];
+?>
+<tr><td><?= sanitize_output($a['avaliador_posto'].' '.$a['avaliador_nome']) ?></td><td><?= sanitize_output($a['categoria']) ?></td><td><?= sanitize_output($candidatoNome) ?></td><td><?= (int)$a['posicao'] ?>º</td><td><?= sanitize_output($a['justificativa']) ?></td></tr>
+<?php endforeach; ?>
+</tbody></table></div></details>
+<?php endif; ?>
 <?php require_once ROOT_PATH . '/views/layouts/footer.php'; ?>
+

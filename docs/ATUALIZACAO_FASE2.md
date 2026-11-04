@@ -43,3 +43,7 @@ A rotina automatizada em `.github/workflows/fase2.yml` executa validação de si
 A urna confere a seleção explícita de cada unidade/categoria e sua consolidação. Registros consolidados antigos, sem seleção correspondente, não aparecem; duplicidade de unidade ou seleção inconsistente bloqueia a cédula com orientação. As seis unidades e as regras de classificação da Fase 2 são preservadas, inclusive a escolha expressa quando só há um candidato.
 
 A confirmação de execução da migração no servidor permanece pendente. A atualização seguinte exige também `php database/migrate_fases3_4.php`, depois da migração da Fase 2. A classificação e as escolhas da Fase 2 não mudam. No corte da Fase 3 para a 4, os quatro critérios continuam na mesma ordem, mas o empate persistente no limite de três exige decisão fundamentada da Presidência; não entram todos os empatados. Consulte [a revisão das Fases 3 e 4](ATUALIZACAO_FASES3_4.md).
+
+## Integração com a Fase 5
+
+As homologações oficiais continuam sendo consultadas diretamente por ano e categoria pelo histórico dos dois anos anteriores. Não se criam cópias manuais redundantes em `historico_vencedores`; a precedência das correções manuais já existente é preservada. O resultado homologado e sua ata não são recalculados quando o cadastro histórico é corrigido. Depois das migrações acima, execute também `php database/migrate_fases3_4.php` e `php database/migrate_fase5.php`. Consulte [o guia da Fase 5](ATUALIZACAO_FASE5.md).

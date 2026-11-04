@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__.'/../Services/ProtecaoHomologacao.php';
 
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../config/database.php';
@@ -12,6 +13,9 @@ require_once __DIR__ . '/../Services/AuditoriaService.php';
 class FichaIndicacao {
 
     public static function salvarFicha(array $dados, int $avaliadorUsuarioId): array {
+        return ProtecaoHomologacao::executar((int)($dados['pleito_id']??0),fn()=>self::salvarFichaInterna($dados,$avaliadorUsuarioId));
+    }
+    private static function salvarFichaInterna(array $dados, int $avaliadorUsuarioId): array {
         $pleitoId    = (int)($dados['pleito_id'] ?? 0);
         $candidatoId = (int)($dados['candidato_id'] ?? 0);
         $tipoAval    = $dados['tipo_avaliacao'] ?? 'OBRIGATORIA_CHEFE';
@@ -179,3 +183,4 @@ class FichaIndicacao {
         return $res ?: null;
     }
 }
+

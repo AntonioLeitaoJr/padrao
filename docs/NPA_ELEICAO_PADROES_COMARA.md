@@ -223,7 +223,8 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
 5. As posições e justificativas poderão ser revistas antes do comando **"Confirmar definitivamente as ordenações"**. Após a gravação, o sistema permitirá somente consulta da avaliação, vedada sua edição ou substituição.
 6. A confirmação abrangerá todas as categorias disponíveis em uma única gravação. Não haverá confirmação parcial em caso de erro.
 7. Categoria sem candidatos não receberá ordenação e será identificada para escolha excepcional pela Presidência na Fase 5.
-8. O avanço à Fase 5 dependerá da confirmação de todos os Oficiais Superiores registrados como avaliadores na abertura desta fase. O cadastro deverá ser conferido previamente pela Administração.
+8. O próprio avaliador poderá consultar sua ordenação. Na Fase 5, os perfis PRESIDENTE e ADMIN poderão consultar as posições, justificativas e identificação dos avaliadores. Essa consulta não alcança as cédulas secretas da Fase 3.
+9. O avanço à Fase 5 dependerá da confirmação de todos os Oficiais Superiores registrados como avaliadores na abertura desta fase. O cadastro deverá ser conferido previamente pela Administração.
 
 #### 6.5.3. Da Consolidação:
 1. O resultado de cada categoria corresponderá à soma dos pontos atribuídos nas ordenações individuais.
@@ -248,18 +249,25 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
 4. **Voto de Minerva:**
    - A retirada do quinto item do painel geral não elimina esta funcionalidade da Fase 5.
    - Após os quatro critérios, considerar-se-á a quantidade de votos da Fase 3. Persistindo o empate, a Presidência exercerá o **Voto de Minerva**, exclusivamente entre os empatados finais.
-   - Selecione o candidato vencedor na tela, insira a justificativa institucional e clique em **"Registrar Voto de Minerva"**.
+   - Selecione o candidato vencedor na tela, insira a justificativa institucional e clique em **"Salvar decisão fundamentada"**.
 5. **Categoria sem Finalistas:**
    - Somente quando uma categoria não tiver nenhum representante, a Presidência escolherá, com fundamentação obrigatória, entre os integrantes ativos daquela categoria registrados no encerramento da urna.
    - A exceção será identificada expressamente na tela e na auditoria. Não alcançará outra categoria nem ampliará lista que contenha um, dois ou três finalistas.
    - Se não houver nenhum integrante elegível naquela categoria, a homologação permanecerá bloqueada; o sistema não criará vencedor fictício.
-6. **Homologação e Publicação Oficial:**
+6. **Revisão de Decisões:**
+   - A decisão de minerva ou escolha excepcional poderá ser revista até a homologação, sempre dentro do conjunto originalmente permitido, com confirmação expressa e fundamentação.
+   - Cada alteração preservará autoria, data/hora e os dados da decisão anterior na auditoria. Formulário desatualizado exigirá nova conferência.
+7. **Homologação e Publicação Oficial:**
    - A homologação exigirá um vencedor em cada uma das quatro categorias.
-   - Com o resultado consolidado, clique no botão **"Homologar Pleito Oficialmente"**.
+   - Confira os quatro vencedores, registre a ata com no mínimo 20 caracteres, marque a confirmação expressa e acione **"HOMOLOGAR E BLOQUEAR RESULTADOS"**.
+   - Vencedores, ata, retrato do resultado e auditoria serão gravados atomicamente. Falha de gravação não produzirá homologação parcial nem mensagem de sucesso.
+   - Após homologação, decisões, notas, votos e resultados não poderão ser alterados pelas rotas comuns. O botão Reiniciar não poderá apagar eleição homologada, inclusive pelo ADMIN.
+   - Antes da homologação, a apuração será consultada pelos perfis PRESIDENTE, ADMIN e DIRECAO_SUPERIOR. O efetivo terá acesso aos vencedores somente após homologação.
+   - A consulta de anos anteriores preservará os vencedores e a ata originais, sem aplicar novamente os critérios atuais. Dados incompatíveis exigirão conferência institucional; não serão convertidos automaticamente.
    - O sistema gera os relatórios oficiais finais:
-     - **Ata da Eleição Oficial dos Padrões da COMARA** (pronta para assinatura digital e publicação em Boletim Interno ostensivo);
+     - **Ata da Eleição Oficial dos Padrões da COMARA** (texto registrado para os procedimentos institucionais de assinatura e publicação; o sistema não afirma assinatura digital ou publicação automática);
      - **Extrato do Hall dos Padrões da COMARA** (especificações para confecção das placas comemorativas);
-     - **Relatório Estatístico Completo** (índice de participação, abstenção e distribuição de votos por setor).
+     - **Relatório Estatístico Completo** (contagens de participação e etapas, sem associação entre eleitor e voto).
 
 ---
 
@@ -271,9 +279,9 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
 1. **Gerenciamento do Pleito e Transições de Fase (`admin/pleito`):**
    - Cria o pleito do ano corrente (ex.: *"Eleição dos Padrões COMARA 2026"*).
    - **Avanço Regimental de Fases:** Permite avançar as fases do processo. Na Fase 1, caso existam avaliações pendentes, o sistema exige do Administrador o **registro formal obrigatório de justificativa em texto** (gravada perenemente na tabela e no painel de auditoria de fases).
-   - **Retorno de Fase (Reversão):** Antes do encerramento da urna, o Administrador pode retornar à fase anterior com registro de motivo. Depois do encerramento para classificação, o retorno comum fica bloqueado para preservar votos, decisões e confirmações; eventual anulação observará o procedimento próprio de reinicialização.
+   - **Retorno de Fase (Reversão):** Antes do encerramento da urna, o Administrador pode retornar à fase anterior com registro de motivo. Depois do encerramento para classificação, o retorno comum fica bloqueado para preservar votos, decisões e confirmações; eventual anulação observará procedimento institucional, vedada a reinicialização de pleito homologado.
    - **Histórico e Auditoria Perene de Fases:** Acompanhamento em tempo real de todas as transições realizadas (data, hora, avanço/retorno, pendências e responsável).
-   - **Botão "Reiniciar Pleito":** Utilizado estritamente em caso de anulação formal autorizada pelo Chefe da COMARA. Exige dupla confirmação e registro detalhado da motivação administrativa.
+   - **Botão "Reiniciar Pleito":** Restrito a pleito ainda não homologado, no contexto de anulação formal autorizada. Após homologação, o comando será bloqueado para preservar ata, vencedores e histórico; eventual anulação dependerá de procedimento institucional específico, não implementado por esse botão.
 
 2. **Gerenciamento do Efetivo (`admin/efetivo`):**
    - Mantém a base com os **443 integrantes da COMARA**.
@@ -294,7 +302,7 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
 
 5. **Auditoria e Segurança (`admin/logs`):**
    - Inspeciona os registros de auditoria inalteráveis com retenção mínima obrigatória de **5 anos**.
-   - Todos os acessos, alterações de senha, inabilitações, votos de minerva, delegações de oficiais em missão e transições de fase geram logs criptografados com IP, data, hora e matrícula do usuário.
+   - Todos os acessos, alterações de senha, inabilitações, votos de minerva, delegações de oficiais em missão e transições de fase geram registros de auditoria com hash encadeado, IP, data, hora e identificação do usuário. As cédulas da Fase 3 não são incluídas nesses registros.
 
 6. **Backups e Rotinas Preventivas (`admin/backups`):**
    - Monitora os backups diários automáticos (executados às 23:00 via Cron).
@@ -329,8 +337,8 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
 | **Fase 3** | Votação Geral Secreta na Urna Eletrônica | Todo o Efetivo da COMARA | Semana 5 |
 | **Corte Fase 3 → 4** | Encerramento da urna e resolução de eventual empate na terceira vaga | Administração / Presidência | Antes da abertura da Fase 4 |
 | **Fase 4** | Ordenações individuais, justificativas e consolidação 5–3–1 | Oficiais Superiores | Início da Semana 6 |
-| **Fase 5** | Minerva, Homologação e Emissão de Ata | Chefe / Vice-Chefe da COMARA | Fim da Semana 6 |
-| **Publicação**| Veiculação em Boletim e Placa de Homenagem | Seção de Comunicação Social (SCS) | Solenidade de Aniversário |
+| **Fase 5** | Minerva ou escolha excepcional, revisão, conferência dos quatro vencedores e homologação com ata | Chefe / Vice-Chefe da COMARA | Fim da Semana 6 |
+| **Publicação**| Após homologação: procedimentos de veiculação em Boletim e Placa de Homenagem | Seção de Comunicação Social (SCS) | Solenidade de Aniversário |
 
 ---
 

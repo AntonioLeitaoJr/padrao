@@ -198,8 +198,33 @@ class EstadoMaior {
     public static function compararResultado(array $a,array $b): int {
         return DesempateService::comparar($a,$b,'pontos_fase4') ?: ((int)$b['total_votos']<=>(int)$a['total_votos']);
     }
+    private static function validarIntegridadeOrdenacoes(int $p): void {
+        $esperados=self::candidatos($p);
+        if (array_diff(self::CATEGORIAS,array_keys($esperados)) || array_diff(array_keys($esperados),self::CATEGORIAS)) throw new RuntimeException('Registro de categorias incompleto. Solicite conferência institucional.');
+        foreach (self::progresso($p) as $u) {
+            $itens=self::avaliacao($p,(int)$u['usuario_id']);
+            if (array_diff(array_keys($itens),self::CATEGORIAS)) throw new RuntimeException('Categoria incompatível nas ordenações. Solicite conferência institucional.');
+            foreach ($esperados as $cat=>$cs) {
+                if (!$cs) {
+                    if (!empty($itens[$cat])) throw new RuntimeException('Categoria excepcional contém ordenações incompatíveis. Solicite conferência institucional.');
+                    continue;
+                }
+                OrdenacaoEstadoMaior::validar(array_column($cs,'candidato_id'),array_values($itens[$cat]??[]));
+            }
+        }
+    }
+    public static function explicarResultado(array $lista,bool $excepcional,int $empatados): string {
+        if ($excepcional) return 'Categoria sem finalistas: escolha excepcional pendente.';
+        if ($empatados>1) return 'Empate persistente: aguarda minerva entre os empatados finais.';
+        if (count($lista)===1) return 'Finalista único, com confirmação expressa dos avaliadores.';
+        [$a,$b]=$lista;
+        if ($a['pontos_fase4']!==$b['pontos_fase4']) return 'Maior soma de pontos da Fase 4 (5–3–1).';
+        if (DesempateService::comparar($a,$b,'pontos_fase4')!==0) return DesempateService::explicarDesempate($a,$b);
+        return 'Maior quantidade de votos da Fase 3, após igualdade nos quatro critérios.';
+    }
     public static function resultados(int $p): array {
         self::exigirConcluida($p);
+        self::validarIntegridadeOrdenacoes($p);
         $s=Database::getConnection()->prepare('SELECT categoria,candidato_id,SUM(CASE posicao WHEN 1 THEN 5 WHEN 2 THEN 3 WHEN 3 THEN 1 ELSE 0 END) pontos FROM fase4_ordenacoes WHERE pleito_id=? GROUP BY categoria,candidato_id');
         $s->execute([$p]); $pontos=[]; foreach ($s->fetchAll() as $r) $pontos[$r['categoria']][$r['candidato_id']]=(int)$r['pontos'];
         $out=[]; $sit=self::situacao($p);
@@ -211,8 +236,9 @@ class EstadoMaior {
             // Nunca consultar todo o efetivo quando há um, dois ou três finalistas.
             $opcoes=$excepcional?$sit[$cat]['excepcional']:(count($emp)>1?$emp:[]);
             $out[$cat]=['ranking'=>$lista,'vencedor'=>count($emp)===1?$emp[0]:null,'requer_voto_de_minerva'=>$excepcional||count($emp)>1,
-                'candidatos_empatados'=>$opcoes,'excepcional'=>$excepcional];
+                'candidatos_empatados'=>$opcoes,'excepcional'=>$excepcional,'criterio_resultado'=>self::explicarResultado($lista,$excepcional,count($emp))];
         }
         return $out;
     }
 }
+

@@ -15,6 +15,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
     </div>
 </div>
 
+<form method="GET" class="mb-3"><input type="hidden" name="r" value="relatorios/site"><label>Eleição homologada: <select name="pleito_id"><?php foreach ($historicos as $h): ?><option value="<?= (int)$h['id'] ?>" <?= (int)$h['id']===(int)$pleito['id']?'selected':'' ?>><?= (int)$h['ano'] ?></option><?php endforeach; ?></select></label> <button class="btn btn-outline-primary btn-sm">Consultar</button></form>
 <div class="card card-comara shadow-sm mb-4">
     <div class="card-comara-header">
         <span><i class="bi bi-code-slash me-2"></i>Módulo de Integração com o Portal Joomla da COMARA</span>
@@ -74,7 +75,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                                     <?php if (isset($v['pontos_fase4'])): ?>
                                         <?= (int)$v['pontos_fase4'] ?> pontos no Estado-Maior • <?= (int)$v['total_votos'] ?> votos do efetivo
                                     <?php else: ?>
-                                        Eleito com <?= (int)$v['total_votos'] ?> votos populares
+                                        Vencedor conforme ata original; pontuação histórica não reconstruída.
                                     <?php endif; ?>
                                 </div>
                             <?php endif; ?>
@@ -88,7 +89,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
         <div class="mt-4">
             <label class="form-label fw-bold small text-muted">Código HTML para Incorporação no Portal Joomla / INTRAER:</label>
             <div class="input-group">
-                <textarea class="form-control font-monospace small bg-white" rows="2" readonly id="embedCode">&lt;iframe src="http://votacao.comara.intraer/index.php?r=relatorios/site" width="100%" height="450" frameborder="0" style="border:none; overflow:hidden;" scrolling="no"&gt;&lt;/iframe&gt;</textarea>
+                <textarea class="form-control font-monospace small bg-white" rows="2" readonly id="embedCode">&lt;iframe src="http://votacao.comara.intraer/index.php?r=relatorios/site&amp;pleito_id=<?= (int)$pleito['id'] ?>" width="100%" height="450" frameborder="0" style="border:none; overflow:hidden;" scrolling="no"&gt;&lt;/iframe&gt;</textarea>
                 <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText(document.getElementById('embedCode').value); alert('Código copiado para a área de transferência!');">
                     <i class="bi bi-clipboard"></i> Copiar Código
                 </button>
@@ -99,3 +100,4 @@ require_once ROOT_PATH . '/views/layouts/header.php';
 </div>
 
 <?php require_once ROOT_PATH . '/views/layouts/footer.php'; ?>
+

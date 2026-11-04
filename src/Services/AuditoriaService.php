@@ -17,7 +17,8 @@ class AuditoriaService {
         string $acao,
         ?array $detalhes = null,
         ?int $usuarioId = null,
-        ?string $login = null
+        ?string $login = null,
+        bool $obrigatorio = false
     ): void {
         try {
             $pdo = Database::getConnection();
@@ -65,6 +66,7 @@ class AuditoriaService {
             ]);
         } catch (\Throwable $e) {
             error_log('[AUDITORIA CRITICAL ERROR] ' . $e->getMessage());
+            if ($obrigatorio) throw new RuntimeException('Não foi possível registrar a auditoria obrigatória. Nenhuma alteração foi concluída.', 0, $e);
         }
     }
 
@@ -95,3 +97,4 @@ class AuditoriaService {
         return $stmt->fetchAll();
     }
 }
+

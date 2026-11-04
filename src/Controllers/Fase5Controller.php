@@ -14,7 +14,7 @@ class Fase5Controller {
         RoleMiddleware::handle([PERFIL_PRESIDENTE, PERFIL_DIRECAO_SUPERIOR, PERFIL_ADMIN]);
 
         $user = AuthManager::user();
-        $pleito = Pleito::getAtivo();
+        $pleito = Pleito::paraConsulta();
 
         if (!$pleito) {
             flash_message('erro', 'Nenhum pleito ativo.', 'warning');
@@ -22,8 +22,14 @@ class Fase5Controller {
             exit;
         }
 
+        if ((int)$pleito['fase_atual']!==5) {
+            $historicos=Pleito::homologados(); $rotaHistorico='fase5';
+            require ROOT_PATH.'/views/relatorios/aguardando_homologacao.php'; return;
+        }
         $apuracao = Homologacao::apurarResultados((int)$pleito['id']);
 
+        $historicos = Pleito::homologados();
+        $avaliacoes = AuthManager::hasRole([PERFIL_PRESIDENTE, PERFIL_ADMIN]) ? Homologacao::avaliacoesIndividuais((int)$pleito['id'], (int)$user['id']) : [];
         require_once ROOT_PATH . '/views/fase5/index.php';
     }
 
@@ -38,6 +44,10 @@ class Fase5Controller {
         $pleito = Pleito::getAtivo();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!$pleito || (int)($_POST['pleito_id'] ?? 0)!==(int)$pleito['id'] || !is_string($_POST['versao'] ?? null) || ($_POST['confirmar'] ?? '')!=='1') {
+                flash_message('erro', 'Recarregue o pleito e confirme expressamente a operação.', 'warning');
+                header('Location: /index.php?r=fase5'); exit;
+            }
             if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
                 flash_message('erro', 'Token CSRF inválido.', 'danger');
                 header('Location: /index.php?r=fase5');
@@ -53,7 +63,8 @@ class Fase5Controller {
                 $categoria,
                 $candidatoId,
                 $justificativa,
-                (int)$user['id']
+                (int)$user['id'],
+                $_POST['versao']
             );
 
             if ($res['sucesso']) {
@@ -78,6 +89,10 @@ class Fase5Controller {
         $pleito = Pleito::getAtivo();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!$pleito || (int)($_POST['pleito_id'] ?? 0)!==(int)$pleito['id'] || !is_string($_POST['versao'] ?? null) || ($_POST['confirmar'] ?? '')!=='1') {
+                flash_message('erro', 'Recarregue o pleito e confirme expressamente a operação.', 'warning');
+                header('Location: /index.php?r=fase5'); exit;
+            }
             if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
                 flash_message('erro', 'Token CSRF inválido.', 'danger');
                 header('Location: /index.php?r=fase5');
@@ -91,7 +106,7 @@ class Fase5Controller {
                 exit;
             }
 
-            $res = Homologacao::homologarResultados((int)$pleito['id'], (int)$user['id'], $ata);
+            $res = Homologacao::homologarResultados((int)$pleito['id'], (int)$user['id'], $ata, $_POST['versao']);
 
             if ($res['sucesso']) {
                 flash_message('sucesso', $res['mensagem'], 'success');
@@ -104,3 +119,4 @@ class Fase5Controller {
         exit;
     }
 }
+

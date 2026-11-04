@@ -185,7 +185,7 @@ switch ($rota) {
     error_log('[ELEICAO] '.$e->getMessage());
     http_response_code(503);
     $mensagem = $e instanceof PDOException
-        ? 'Não foi possível acessar os dados. STI: confira o banco e execute php database/migrate_fase2.php e php database/migrate_fases3_4.php. Nenhum resultado será presumido.'
+        ? 'Não foi possível acessar os dados. STI: confira o banco e execute php database/migrate_fase2.php , php database/migrate_fases3_4.php e php database/migrate_fase5.php. Nenhum resultado será presumido.'
         : ($e instanceof RuntimeException ? $e->getMessage() : 'Operação não concluída. Solicite suporte ao STI.');
     echo '<div role="alert" style="padding:2rem"><h2>Operação indisponível</h2><p>'.sanitize_output($mensagem).'</p><a href="/index.php?r=dashboard">Voltar ao painel</a></div>';
 }

@@ -43,13 +43,14 @@ Com backup e manutenção programada, somente após autorização de implantaç�
 ```sh
 php database/migrate_fase2.php
 php database/migrate_fases3_4.php
+php database/migrate_fase5.php
 ```
 
 A primeira execução em produção continua sem confirmação. A segunda exige os objetos da primeira e cria, de forma idempotente, `fase4_ciclos`, `fase4_decisoes_corte`, `fase4_avaliadores`, `fase4_confirmacoes` e `fase4_ordenacoes`. As chaves únicas impedem duplicidade de confirmação, candidato ou posição. Não se apagam nem se convertem seleções, votos, avaliações anteriores ou homologações. `database/schema.sql` também inclui as tabelas para instalações novas.
 
 Não use reinstalação/carga inicial em banco existente. Ausência das migrações bloqueia operações com orientação para o STI, sem presumir resultados. Dados cadastrais usados nos critérios mantêm o tratamento da Fase 2; conferir histórico de vencedores, datas e TACF antes de encerrar a urna. Campos desconhecidos não são inventados.
 
-Pleitos antigos em Fases 4/5 sem o novo registro de encerramento não são convertidos automaticamente: antes de liberar a versão, retornar administrativamente à Fase 3 e executar o encerramento pelo novo fluxo, após revisar eventuais exclusões legadas. Homologações antigas permanecem consultáveis pela apuração legada. Após o encerramento novo, retorno comum fica bloqueado. A reinicialização com limpeza, já existente e reservada à anulação formal, limpa também os novos registros; não deve ser usada para permitir edição de uma avaliação individual.
+Pleitos antigos em Fases 4/5 sem o novo registro de encerramento não são convertidos automaticamente: antes de liberar a versão, retornar administrativamente à Fase 3 e executar o encerramento pelo novo fluxo, após revisar eventuais exclusões legadas. Homologações antigas são consultadas pelos vencedores e ata originais, sem recalcular classificação ou preencher pontuações desconhecidas. Após o encerramento novo, retorno comum fica bloqueado. A reinicialização com limpeza, reservada à anulação formal de pleito ainda não homologado, limpa também os registros das Fases 3–4; não deve ser usada para permitir edição de uma avaliação individual.
 
 Rollback de código após o novo encerramento exige planejamento: a versão antiga não reconhece os bloqueios nem as ordenações. Não recolocar a versão antiga em operação com o mesmo pleito aberto. Restaurar backup somente mediante procedimento autorizado, preservando previamente os registros posteriores para auditoria.
 
@@ -69,7 +70,7 @@ php tests/teste_fase2_regras_unitarias.php
 php tests/teste_ordenacao_estado_maior.php
 # Bancos separados, vazios, descartáveis e terminados em _test:
 FASE2_TEST_DB=1 DB_NAME=comara_fase2_test php tests/teste_fase2_integracao.php
-FASE34_TEST_DB=1 DB_NAME=comara_fase34_test php tests/teste_fase4_integracao.php
+FASE34_TEST_DB=1 DB_NAME=comara_fase34_test php tests/teste_fase5_integracao.php
 node --check public/assets/js/main.js
 node --check public/assets/js/fase4.js
 ```
@@ -79,3 +80,9 @@ O teste da Fase 4 inclui as fixtures e verificações da Fase 3. Não o execute 
 ## Documentação revisada
 
 Todos os Markdown existentes: README, esta atualização, atualização da Fase 2, NPA, DEPLOY_TUTORIAL e scripts/deploy_aapanel. A NPA mantém títulos, numeração, listas e tabelas; atualiza atribuições, transições e cronograma, sem presumir aprovação institucional.
+
+## Complemento da Fase 5
+
+Execute a terceira migração também em instalações novas. `fase5_resultados` não preenche retrospectivamente homologações: preserva o retrato somente das novas. Decisões, ata, vencedores, retrato e auditoria da homologação têm gravação atômica. Homologações antigas utilizam exclusivamente os vencedores e a ata gravados, sem recálculo; identificações sem retrato histórico vêm do cadastro atual. Não restaurar código antigo em operação após homologar pela nova versão.
+
+Consulte [regras, permissões, testes e limitações da Fase 5](ATUALIZACAO_FASE5.md). Nenhuma migração em produção foi executada nesta entrega.

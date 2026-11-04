@@ -24,6 +24,16 @@ class Pleito {
         return $res ?: null;
     }
 
+    public static function paraConsulta(): ?array {
+        if (!isset($_GET['pleito_id'])) return self::getAtivo();
+        $id=filter_var($_GET['pleito_id'],FILTER_VALIDATE_INT);
+        $p=$id ? self::getPorId((int)$id) : null;
+        if (!$p || $p['status']!=='homologado') throw new RuntimeException('Selecione um pleito homologado válido para consulta histórica.');
+        return $p;
+    }
+    public static function homologados(): array {
+        return Database::getConnection()->query("SELECT id,ano,titulo FROM pleitos WHERE status='homologado' ORDER BY ano DESC")->fetchAll();
+    }
     public static function getPorId(int $id): ?array {
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare('SELECT * FROM pleitos WHERE id = :id LIMIT 1');
@@ -333,7 +343,9 @@ class Pleito {
         $pdo->beginTransaction();
 
         try {
-            $pdo->prepare('SELECT id FROM pleitos WHERE id=? FOR UPDATE')->execute([$pleitoId]);
+            $s=$pdo->prepare('SELECT status FROM pleitos WHERE id=? FOR UPDATE'); $s->execute([$pleitoId]); $status=$s->fetchColumn();
+            $s=$pdo->prepare('SELECT pleito_id FROM homologacao_pleito WHERE pleito_id=?'); $s->execute([$pleitoId]);
+            if ($status==='homologado' || $s->fetch()) throw new RuntimeException('Eleição homologada não pode ser reiniciada. Preserve ata e resultados; eventual anulação exige procedimento institucional específico.');
             EstadoMaior::verificarEstrutura();
             if (!$limparDados && EstadoMaior::ciclo($pleitoId)) throw new RuntimeException('Não é possível reiniciar mantendo dados de uma urna encerrada.');
 
@@ -395,7 +407,6 @@ class Pleito {
 
             $msg = 'Pleito reiniciado com sucesso para a Fase 1: Avaliações dos Chefes Diretos & TACF.';
             if ($limparDados) {
-                $pdo->prepare('DELETE FROM fase4_ciclos WHERE pleito_id=?')->execute([$pleitoId]);
                 $msg .= ' Todos os votos e avaliações do ciclo anterior foram zerados para um novo processo.';
             }
 
@@ -416,3 +427,4 @@ class Pleito {
         }
     }
 }
+

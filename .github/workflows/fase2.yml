@@ -47,4 +47,5 @@ jobs:
           FASE34_TEST_DB: '1'
         run: |
           mysql -h127.0.0.1 -uroot -ptest -e 'CREATE DATABASE comara_fase34_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
-          php tests/teste_fase4_integracao.php
+          php tests/teste_fase5_integracao.php
+

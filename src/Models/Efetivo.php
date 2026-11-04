@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__.'/../Services/ProtecaoHomologacao.php';
 
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../config/database.php';
@@ -106,6 +107,9 @@ class Efetivo {
      * Salva ou atualiza delegação de avaliação da Fase 1 (Oficial em Missão)
      */
     public static function salvarDelegacao(int $pleitoId, int $candidatoId, int $oficialDelegadoId, int $designadoPorId, string $motivo): array {
+        return ProtecaoHomologacao::executar($pleitoId,fn()=>self::salvarDelegacaoInterna($pleitoId,$candidatoId,$oficialDelegadoId,$designadoPorId,$motivo));
+    }
+    private static function salvarDelegacaoInterna(int $pleitoId, int $candidatoId, int $oficialDelegadoId, int $designadoPorId, string $motivo): array {
         $candidato = self::getPorId($candidatoId);
         if (!$candidato) {
             return ['sucesso' => false, 'mensagem' => 'Candidato não encontrado.'];
@@ -149,6 +153,9 @@ class Efetivo {
      * Remove delegação de avaliação da Fase 1
      */
     public static function removerDelegacao(int $pleitoId, int $candidatoId): bool {
+        return ProtecaoHomologacao::executar($pleitoId,fn()=>self::removerDelegacaoInterna($pleitoId,$candidatoId));
+    }
+    private static function removerDelegacaoInterna(int $pleitoId, int $candidatoId): bool {
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare('DELETE FROM delegacoes_fase1 WHERE pleito_id = :p AND candidato_id = :c');
         return $stmt->execute([':p' => $pleitoId, ':c' => $candidatoId]);
@@ -756,4 +763,5 @@ class Efetivo {
         return $stmt->rowCount();
     }
 }
+
 

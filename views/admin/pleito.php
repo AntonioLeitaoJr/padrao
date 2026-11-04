@@ -255,6 +255,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
+            <?php if ($pleito['status']==='homologado'): ?><div class="alert alert-info">Eleição homologada: reinicialização bloqueada para preservar vencedores, ata e histórico.</div><?php else: ?>
             <form method="POST" action="/index.php?r=admin/reiniciar_pleito">
                 <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
 
@@ -274,7 +275,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                             <label class="form-check-label" for="limpar_tudo">
                                 <strong class="text-danger d-block">Reset Completo (Recomendado para novo ciclo)</strong>
                                 <span class="small text-muted">
-                                    Zera os votos da Urna (Fase 3), seleções das divisões (Fase 2), fichas de indicação dos chefes (Fase 1), corte e ordenações do Estado-Maior (Fase 4), homologação e atas (Fase 5).
+                                    Zera os votos da Urna (Fase 3), seleções das divisões (Fase 2), fichas de indicação dos chefes (Fase 1), corte e ordenações do Estado-Maior (Fase 4), decisões ainda não homologadas (Fase 5).
                                 </span>
                             </label>
 
@@ -316,6 +317,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                     </button>
                 </div>
             </form>
+            <?php endif; ?>
         </div>
     </div>
 </div>
@@ -410,3 +412,4 @@ require_once ROOT_PATH . '/views/layouts/header.php';
 </div>
 
 <?php require_once ROOT_PATH . '/views/layouts/footer.php'; ?>
+
