@@ -26,7 +26,12 @@ class Fase4Controller {
                         && in_array($user['posto']??'',POSTOS_ESTADO_MAIOR,true);
                 }
             }
-        } catch (Throwable $e) { $erro=$e->getMessage(); }
+        } catch (Throwable $e) {
+            error_log('[Fase 4] '.$e->getMessage());
+            $erro=$e instanceof RuntimeException && !($e instanceof PDOException)
+                ? $e->getMessage()
+                : 'Não foi possível carregar a Fase 4. Solicite à STI a conferência do banco e do log de erros.';
+        }
         $rascunho=$_SESSION['fase4_rascunho'][(int)($pleito['id']??0)]??[];
         require ROOT_PATH.'/views/fase4/index.php';
     }

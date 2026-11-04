@@ -27,26 +27,34 @@ class Fase3Controller {
         // Verifica se o usuário atual já votou (por CPF)
         $jaVotou = false;
         $registroVoto = null;
-        if (!empty($user['cpf'])) {
-            $checagem = UrnaService::podeVotar((int)$pleito['id'], $user['cpf']);
-            if (!$checagem['pode'] && !empty($checagem['comprovante'])) {
-                $jaVotou = true;
-                $registroVoto = $checagem;
-            }
-        }
-
-        // Busca candidatos indicados da Fase 2 (consolidados) para compor a cédula
         $candidatosUrna = [];
         $erroUrna = null;
         try {
-            if (EstadoMaior::ciclo((int)$pleito['id'])) $faseAberta = false;
-            foreach ([CAT_GRADUADO, CAT_PRACA, CAT_SPPF, CAT_SPTF] as $cat) {
-                $candidatosUrna[$cat] = Efetivo::listarParaUrna((int)$pleito['id'], $cat);
-
+            if (!empty($user['cpf'])) {
+                $checagem = UrnaService::podeVotar((int)$pleito['id'], $user['cpf']);
+                if (!$checagem['pode'] && !empty($checagem['comprovante'])) {
+                    $jaVotou = true;
+                    $registroVoto = $checagem;
+                }
             }
-        } catch (RuntimeException $e) {
-            $erroUrna = 'Não foi possível carregar a urna. STI: confira as seleções e execute as migrações migrate_fase2.php e migrate_fases3_4.php.';
-            error_log($e->getMessage());
+            // Fora da votação, não consultar seleções nem exigir estrutura da próxima fase.
+            if ($faseAberta && !$jaVotou) {
+                if (EstadoMaior::ciclo((int)$pleito['id'])) {
+                    $faseAberta = false;
+                } else {
+                    foreach ([CAT_GRADUADO, CAT_PRACA, CAT_SPPF, CAT_SPTF] as $cat) {
+                        $candidatosUrna[$cat] = Efetivo::listarParaUrna((int)$pleito['id'], $cat);
+                    }
+                }
+            }
+        } catch (Throwable $e) {
+            $faseAberta = false;
+            $candidatosUrna = [];
+            // PDOException também herda de RuntimeException: nunca exibir SQL em tela.
+            $erroUrna = $e instanceof RuntimeException && !($e instanceof PDOException)
+                ? $e->getMessage()
+                : 'Não foi possível carregar a urna. Solicite à STI a conferência do banco e do log de erros.';
+            error_log('[Fase 3] '.$e->getMessage());
         }
 
         require_once ROOT_PATH . '/views/fase3/urna.php';

@@ -213,15 +213,15 @@ $rotaAtual = $_GET['r'] ?? 'dashboard';
 
 <!-- Mensagens Flash -->
 <div class="container-fluid px-4 mt-3">
-    <?php if ($sucesso = flash_message('sucesso')): ?>
+    <?php if ($flashSucessoLayout = flash_message('sucesso')): ?>
         <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i> <?= sanitize_output($sucesso['message']) ?>
+            <i class="bi bi-check-circle-fill me-2"></i> <?= sanitize_output($flashSucessoLayout['message']) ?>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     <?php endif; ?>
-    <?php if ($erro = flash_message('erro')): ?>
+    <?php if ($flashErroLayout = flash_message('erro')): ?>
         <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i> <?= sanitize_output($erro['message']) ?>
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> <?= sanitize_output($flashErroLayout['message']) ?>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     <?php endif; ?>

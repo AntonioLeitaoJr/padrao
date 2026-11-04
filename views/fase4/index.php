@@ -6,7 +6,9 @@ require ROOT_PATH.'/views/layouts/header.php';
 <p>Coronéis, Tenentes-Coronéis e Majores ordenam individualmente cada categoria. Primeiro: <strong>5 pontos</strong>; segundo: <strong>3</strong>; terceiro: <strong>1</strong>.</p>
 <?php if ($erro): ?>
 <div class="alert alert-warning" role="alert"><?= sanitize_output($erro) ?></div>
-<?php elseif (!$ciclo['aberto_em']): ?>
+<?php elseif (!$ciclo): ?>
+<div class="alert alert-info" role="alert">Aguarde o encerramento da Fase 3 pela Administração para preparar a Fase 4.</div>
+<?php elseif (empty($ciclo['aberto_em'])): ?>
 <div class="alert alert-warning" role="alert"><strong>Urna encerrada; Fase 4 bloqueada.</strong> A Presidência deve resolver os empates no corte. Após as decisões, a Administração deve avançar novamente a fase.</div>
 <?php foreach ($situacao as $cat=>$d): if (!$d['pendente']) continue; ?>
 <section class="card card-body mb-3">
