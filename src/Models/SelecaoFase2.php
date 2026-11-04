@@ -85,6 +85,14 @@ class SelecaoFase2 {
                 }
             }
 
+            if ($totalIndicados === 0) {
+                $pdo->rollBack();
+                return [
+                    'sucesso' => false,
+                    'mensagem' => 'Não há candidatos elegíveis para indicação neste órgão. A ausência de candidatos não constitui seleção concluída; verifique as avaliações da Fase 1.'
+                ];
+            }
+
             // Remove seleções anteriores deste órgão para re-gravação
             $stmtDel = $pdo->prepare('DELETE FROM selecao_fase2 WHERE pleito_id = :p AND orgao_sigla = :org');
             $stmtDel->execute([':p' => $pleitoId, ':org' => $orgaoSigla]);
@@ -157,19 +165,25 @@ class SelecaoFase2 {
 
             require_once __DIR__ . '/Efetivo.php';
             $concluido = true;
+            $temElegiveis = false;
             $esperados = [];
             foreach ([CAT_GRADUADO, CAT_PRACA, CAT_SPPF, CAT_SPTF] as $cat) {
                 $disponiveis = array_map('intval', array_column(Efetivo::listarParaSelecaoFase2($pleitoId, $cat, $sigla), 'id'));
                 $selecionados = array_map('intval', self::obterSelecionados($pleitoId, $sigla, $cat));
                 $esperados[$cat] = empty($disponiveis) ? 0 : 1;
+                if (!empty($disponiveis)) $temElegiveis = true;
                 if (count($selecionados) !== $esperados[$cat] || array_diff($selecionados, $disponiveis)) $concluido = false;
             }
+            // Zero elegiveis nao e conclusao: 0/0 nunca significa selecao oficial realizada.
+            $concluido = $temElegiveis && $concluido;
+            $situacao = !$temElegiveis ? 'sem_candidatos' : ($concluido ? 'pronto' : 'pendente');
 
             $relatorio[$sigla] = [
                 'nome'       => $nome,
                 'contagens'  => $contagens,
                 'esperados' => $esperados,
-                'concluido'  => $concluido
+                'concluido'  => $concluido,
+                'situacao'   => $situacao
             ];
         }
 
