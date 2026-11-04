@@ -167,9 +167,11 @@ class SelecaoFase2 {
             $concluido = true;
             $temElegiveis = false;
             $esperados = [];
+            $classificados = [];
             foreach ([CAT_GRADUADO, CAT_PRACA, CAT_SPPF, CAT_SPTF] as $cat) {
                 $disponiveis = array_map('intval', array_column(Efetivo::listarParaSelecaoFase2($pleitoId, $cat, $sigla), 'id'));
                 $selecionados = array_map('intval', self::obterSelecionados($pleitoId, $sigla, $cat));
+                $classificados[$cat] = count($disponiveis);
                 $esperados[$cat] = empty($disponiveis) ? 0 : 1;
                 if (!empty($disponiveis)) $temElegiveis = true;
                 if (count($selecionados) !== $esperados[$cat] || array_diff($selecionados, $disponiveis)) $concluido = false;
@@ -182,6 +184,7 @@ class SelecaoFase2 {
                 'nome'       => $nome,
                 'contagens'  => $contagens,
                 'esperados' => $esperados,
+                'classificados' => $classificados,
                 'concluido'  => $concluido,
                 'situacao'   => $situacao
             ];
