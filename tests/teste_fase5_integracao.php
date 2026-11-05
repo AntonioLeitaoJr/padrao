@@ -36,7 +36,35 @@ function executarControllerTeste(string $classe,string $metodo,int $usuario,arra
     $out=stream_get_contents($pipes[1]); $err=stream_get_contents($pipes[2]); fclose($pipes[1]); fclose($pipes[2]);
     $exit=proc_close($proc); unlink($script); if ($exit!==0) throw new RuntimeException($err); return $out;
 }
+// Comparação das etapas não confunde pontos do Estado-Maior com votos populares.
+$populares=[
+    ['candidato_id'=>101,'total_votos'=>90],
+    ['candidato_id'=>102,'total_votos'=>60],
+    ['candidato_id'=>103,'total_votos'=>60],
+    ['candidato_id'=>104,'total_votos'=>30],
+];
+$finalistas=[
+    ['candidato_id'=>104,'total_votos'=>30,'pontos_fase4'=>15],
+    ['candidato_id'=>102,'total_votos'=>60,'pontos_fase4'=>9],
+    ['candidato_id'=>103,'total_votos'=>60,'pontos_fase4'=>9],
+];
+$comparativo=EstadoMaior::classificarComparativo($finalistas,$populares);
+check(array_column($comparativo,'posicao_fase3')===[4,2,2],'popular usa categoria inteira, não apenas finalistas');
+check(array_column($comparativo,'posicao_fase4')===[1,2,2],'ordenação consolidada independente da popular');
+check(!$comparativo[0]['empate_fase3'] && $comparativo[1]['empate_fase3'] && $comparativo[1]['empate_fase4'],'empates de cada etapa identificados');
+$finalistas[1]['data_admissao_comara']='2000-01-01';
+$comparativo=EstadoMaior::classificarComparativo($finalistas,$populares);
+check(array_column($comparativo,'posicao_fase4')===[1,2,3],'quatro critérios resolvem empate da Fase 4');
+check(array_column($comparativo,'posicao_fase3')===[4,2,2],'desempate institucional não inventa diferença de votos populares');
+check(EstadoMaior::classificarComparativo([],[])===[],'exceção sem finalistas não recebe posição');
+$unico=EstadoMaior::classificarComparativo([['candidato_id'=>1,'total_votos'=>0,'pontos_fase4'=>5]],[['candidato_id'=>1,'total_votos'=>0]]);
+check($unico[0]['posicao_fase3']===1 && $unico[0]['posicao_fase4']===1 && !$unico[0]['empate_fase3'],'candidato único e zero votos exibem posições válidas');
+$posicoesAntes=array_column($r['graduado']['ranking'],null,'candidato_id');
+foreach ($r['graduado']['candidatos_empatados'] as $c) check(isset($c['posicao_fase3'],$c['posicao_fase4']),'opções presidenciais recebem as duas posições');
+
 $html=renderizarFase5Teste(2,$pres);
+check(str_contains($html,'Classificação popular — Fase 3') && str_contains($html,'Ordenação final — Fase 4'),'tela separa posições de ambas as etapas');
+check(str_contains($html,'(empatado)') && str_contains($html,'não participou das Fases 3 e 4'),'tela distingue empate de exceção');
 check(str_contains($html,'Resultado provisório') && str_contains($html,'Exceção: categoria sem finalistas'),'renderiza apuração e situação excepcional');
 check(str_contains($html,'Empate persistente') && str_contains($html,'disabled'),'interface bloqueia homologação pendente');
 check(substr_count($html,'name="categoria"')===2,'formulário de decisão somente para empate e exceção');
@@ -83,6 +111,10 @@ $html=renderizarFase5Teste(2,$pres);
 check(substr_count($html,'Revisar decisão registrada')===2 && str_contains($html,'Decisão revista e fundamentada'),'interface permite revisão e recupera fundamento');
 check(!Homologacao::homologarResultados(2,$pres,'curta')['sucesso'],'ata insuficiente rejeitada');
 $antes=Homologacao::apurarResultados(2);
+foreach ($antes['categorias']['graduado']['ranking'] as $c) {
+    $anterior=$posicoesAntes[$c['candidato_id']];
+    check($c['posicao_fase3']===$anterior['posicao_fase3'] && $c['posicao_fase4']===$anterior['posicao_fase4'],'minerva não reescreve posições das etapas anteriores');
+}
 check(!Homologacao::homologarResultados(2,$pres,$ata,'desatualizado')['sucesso'],'homologação exige a apuração efetivamente conferida');
 $pdo->exec("CREATE TRIGGER teste_retrato_fase5 BEFORE INSERT ON fase5_resultados FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='falha interna secreta'");
 $falha=Homologacao::homologarResultados(2,$pres,$ata);
@@ -133,6 +165,16 @@ rejeita(fn()=>AvaliacaoTacf::salvarNota(2,$g1,5,$admin),'TACF não pode mudar ap
 rejeita(fn()=>Efetivo::salvarDelegacao(2,$g1,1,$admin,'Missão'),'delegação não pode mudar após homologação');
 rejeita(fn()=>Efetivo::removerDelegacao(2,$g1),'delegação não pode ser removida após homologação');
 $salvo=Homologacao::apurarResultados(2);
+check(isset($salvo['categorias']['graduado']['ranking'][0]['posicao_fase3'],$salvo['categorias']['graduado']['ranking'][0]['posicao_fase4']),'homologação arquiva as duas classificações');
+$semPosicoes=$salvo['categorias'];
+foreach ($semPosicoes as &$catTeste) {
+    foreach ($catTeste['ranking'] as &$candTeste) unset($candTeste['posicao_fase3'],$candTeste['posicao_fase4'],$candTeste['empate_fase3'],$candTeste['empate_fase4']);
+    unset($candTeste);
+}
+unset($catTeste);
+$pdo->prepare('UPDATE fase5_resultados SET resultado_json=? WHERE pleito_id=2')->execute([json_encode($semPosicoes)]);
+check(str_contains(renderizarFase5Teste(2,$pres),'Posição não registrada'),'snapshot anterior sem posições é exibido sem recálculo ou warning');
+$pdo->prepare('UPDATE fase5_resultados SET resultado_json=? WHERE pleito_id=2')->execute([json_encode($salvo['categorias'])]);
 check(!str_contains(renderizarFase5Teste(2,$pres),'name="categoria"'),'interface homologada não oferece alteração');
 $out=executarControllerTeste('RelatorioController','siteOficial',1,[],['pleito_id'=>'2']);
 check(str_contains($out,'Nome completo'),'efetivo consulta publicação após homologação');

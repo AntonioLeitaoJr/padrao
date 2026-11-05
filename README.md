@@ -210,3 +210,6 @@ O cabeçalho preserva os diagnósticos das páginas. Sem ciclo preparado, a Fase
 Publicar arquivos não executa migrações. Siga o [procedimento pós-deploy](docs/CORRECAO_DEPLOY_FASES3_4.md) após backup, incluindo a sequência Fase 2 → Fases 3–4 → Fase 5. Não reinstale o banco para corrigir a urna.
 
 A suíte `tests/teste_deploy_fases3_4.php` inclui as verificações acumuladas das Fases 3–5 e as regressões de deploy; exige banco vazio, descartável e terminado em `_test`. Issues continuam desabilitadas no fork; achados e aceite são registrados no PR e nos guias.
+
+
+Na Fase 5, cada finalista apresenta a **classificação popular da Fase 3 (posição e votos)** e a **ordenação final da Fase 4 (posição e pontos)** em colunas separadas e nas opções de minerva. A posição popular considera apenas os votos de todos os candidatos da categoria, inclusive os que não chegaram à Fase 4; empates compartilham posição. A posição da Fase 4 aplica pontos 5–3–1, quatro critérios e votos anteriores. A minerva não reescreve essas posições. Categorias excepcionais não recebem classificação fictícia; homologações anteriores sem posições arquivadas indicam dado não registrado.

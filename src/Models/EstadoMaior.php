@@ -222,6 +222,31 @@ class EstadoMaior {
         if (DesempateService::comparar($a,$b,'pontos_fase4')!==0) return DesempateService::explicarDesempate($a,$b);
         return 'Maior quantidade de votos da Fase 3, após igualdade nos quatro critérios.';
     }
+    /** Posições das etapas, anteriores à decisão presidencial; empates compartilham posição. */
+    public static function classificarComparativo(array $finalistas, array $populares): array {
+        foreach ($finalistas as &$c) {
+            $c['posicao_fase3']=null; $c['empate_fase3']=false;
+            foreach ($populares as $popular) {
+                if ((int)$popular['candidato_id']!==(int)$c['candidato_id']) continue;
+                $acima=0; $iguais=0;
+                foreach ($populares as $outro) {
+                    if ((int)$outro['total_votos']>(int)$popular['total_votos']) $acima++;
+                    if ((int)$outro['total_votos']===(int)$popular['total_votos']) $iguais++;
+                }
+                $c['posicao_fase3']=$acima+1; $c['empate_fase3']=$iguais>1;
+                break;
+            }
+            $acima=0; $iguais=0;
+            foreach ($finalistas as $outro) {
+                $cmp=self::compararResultado($outro,$c);
+                if ($cmp<0) $acima++;
+                if ($cmp===0) $iguais++;
+            }
+            $c['posicao_fase4']=$acima+1; $c['empate_fase4']=$iguais>1;
+        }
+        unset($c);
+        return $finalistas;
+    }
     public static function resultados(int $p): array {
         self::exigirConcluida($p);
         self::validarIntegridadeOrdenacoes($p);
@@ -231,6 +256,7 @@ class EstadoMaior {
         foreach (self::candidatos($p) as $cat=>$lista) {
             foreach ($lista as &$c) $c['pontos_fase4']=$pontos[$cat][$c['candidato_id']]??0;
             unset($c); usort($lista,[self::class,'compararResultado']);
+            $lista=self::classificarComparativo($lista,$sit[$cat]['candidatos']);
             $emp=[]; foreach ($lista as $c) { if (self::compararResultado($lista[0],$c)!==0) break; $emp[]=$c; }
             $excepcional=!$lista;
             // Nunca consultar todo o efetivo quando há um, dois ou três finalistas.

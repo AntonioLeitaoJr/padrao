@@ -73,3 +73,12 @@ Não há HMAC do comprovante demonstrado nesta base, e esta entrega não o decla
 ## Revisão pós-deploy de 04/11/2026
 
 As referências de branches/PRs no início descrevem a entrega original. A correção `2f654b1` já integra a `main`; o PR complementar revisa erros dos formulários e documentação. A suíte de deploy inclui a suíte da Fase 5 e as anteriores, com regressões de ciclo ausente, mensagens flash, migrações e falhas SQL. Consulte [diagnóstico, implantação e critérios de aceite](CORRECAO_DEPLOY_FASES3_4.md). As regras eleitorais deste guia permanecem.
+
+## Comparação por finalista — Fases 3 e 4
+
+
+Na Fase 5, cada finalista apresenta a **classificação popular da Fase 3 (posição e votos)** e a **ordenação final da Fase 4 (posição e pontos)** em colunas separadas e nas opções de minerva. A posição popular considera apenas os votos de todos os candidatos da categoria, inclusive os que não chegaram à Fase 4; empates compartilham posição. A posição da Fase 4 aplica pontos 5–3–1, quatro critérios e votos anteriores. A minerva não reescreve essas posições. Categorias excepcionais não recebem classificação fictícia; homologações anteriores sem posições arquivadas indicam dado não registrado.
+
+As posições são calculadas a partir dos dados congelados no encerramento da urna e das ordenações confirmadas, antes da decisão presidencial. Usam classificação competitiva (1º, 1º, 3º) em empate. A ordenação da Fase 4 já considera os desempates existentes; não se trata da posição dada por um avaliador isolado. A consulta individual identificada permanece disponível à Presidência e ao ADMIN.
+
+Novas homologações arquivam as posições no JSON de resultado existente; nenhuma migração adicional é necessária. Homologações já arquivadas não são recalculadas. A tabela mantém as permissões de consulta da Fase 5; não publica resultados antecipadamente ao efetivo. Testes cobrem diferenças entre as etapas, empate, categoria inteira, candidato único, exceção e preservação após minerva e homologação.

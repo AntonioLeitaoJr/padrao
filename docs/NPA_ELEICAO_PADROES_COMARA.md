@@ -240,6 +240,9 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
 #### Procedimentos na Fase 5:
 1. Acesse o menu **"Fase 5: Apuração e Homologação"**.
 2. O sistema apresenta o resultado consolidado das ordenações do Estado-Maior, conforme o item 6.5.3, preservando a identificação dos votos da Fase 3 para desempate.
+   - Para cada finalista, serão apresentadas separadamente a classificação popular da Fase 3, com posição e número de votos, e a ordenação final da Fase 4, com posição e soma dos pontos.
+   - A classificação popular considerará exclusivamente a quantidade de votos entre todos os candidatos da categoria naquela fase. Empatados compartilharão posição; essa apresentação não substitui os critérios regimentais de classificação para a Fase 4.
+   - A posição final da Fase 4 observará os desempates do item 6.5.3 e será preservada após eventual minerva. A escolha excepcional não receberá posição fictícia; dados não arquivados em homologações anteriores serão identificados como não registrados.
 3. **Tratamento Automático de Empate:**
    - Em caso de empate em qualquer categoria, o sistema aplica previamente os critérios estatutários:
      - Preferência a quem não venceu nos dois anos anteriores ao pleito;

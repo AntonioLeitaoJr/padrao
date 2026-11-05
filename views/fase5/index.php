@@ -85,6 +85,12 @@ $podeHomologar = count(array_filter($apuracao['categorias'],fn($c)=>!empty($c['v
 </div>
 
 <!-- Detalhamento da Apuração e Ranking por Categoria -->
+<div class="alert alert-info small">
+    <strong>Comparação das etapas:</strong> a classificação popular considera apenas os votos de todos os candidatos da categoria na Fase 3.
+    A ordenação final da Fase 4 considera os pontos 5–3–1, os quatro critérios e os votos da Fase 3, antes da minerva.
+    Empatados compartilham posição (ex.: 1º, 1º, 3º). A decisão presidencial não altera essas posições.
+    Posições ausentes em homologações anteriores são indicadas como não registradas.
+</div>
 <?php foreach (CATEGORIAS_PADRAO as $catKey => $catInfo): ?>
     <?php
     $dadosCat = $apuracao['categorias'][$catKey] ?? null;
@@ -130,7 +136,13 @@ $podeHomologar = count(array_filter($apuracao['categorias'],fn($c)=>!empty($c['v
                                                 <label class="form-check-label fw-bold d-block" for="min_<?= $catKey ?>_<?= $ce['candidato_id'] ?>">
                                                     <?= sanitize_output($ce['posto']) ?> <?= sanitize_output($ce['nome_guerra']) ?>
                                                 </label>
-                                                <small class="text-muted"><?= sanitize_output($ce['nome']) ?> (<?= $ce['total_votos'] ?> votos)</small>
+                                                <small class="text-muted"><?= sanitize_output($ce['nome']) ?></small>
+                                                <?php if (!empty($dadosCat['excepcional'])): ?>
+                                                    <div class="small">Escolha excepcional — não participou das Fases 3 e 4.</div>
+                                                <?php else: ?>
+                                                    <div class="small">Fase 3: <?= isset($ce['posicao_fase3']) ? (int)$ce['posicao_fase3'].'º' : 'Posição não registrada' ?><?= !empty($ce['empate_fase3']) ? ' (empatado)' : '' ?> · <?= (int)$ce['total_votos'] ?> votos</div>
+                                                    <div class="small">Fase 4: <?= isset($ce['posicao_fase4']) ? (int)$ce['posicao_fase4'].'º' : 'Posição não registrada' ?><?= !empty($ce['empate_fase4']) ? ' (empatado)' : '' ?> · <?= (int)($ce['pontos_fase4']??0) ?> pontos</div>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </div>
@@ -159,12 +171,13 @@ $podeHomologar = count(array_filter($apuracao['categorias'],fn($c)=>!empty($c['v
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 70px;" class="text-center">Classificação</th>
+                            <th style="width: 70px;" class="text-center">Resultado da Fase 5</th>
                             <th style="width: 60px;">Foto</th>
                             <th>Candidato / SARAM</th>
                             <th>Posto / Especialidade</th>
                             <th>Setor</th>
-                            <th class="text-center">Pontos Fase 4 / Votos Fase 3</th>
+                            <th class="text-center">Classificação popular — Fase 3</th>
+                            <th class="text-center">Ordenação final — Fase 4</th>
                             <th>Critério 1 (Vitórias nos 2 anos anteriores)</th>
                             <th>Critério 2 (COMARA)</th>
                             <th>Critério 3 (Serviço)</th>
@@ -191,7 +204,18 @@ $podeHomologar = count(array_filter($apuracao['categorias'],fn($c)=>!empty($c['v
                                 <td><?= sanitize_output($cand['quadro']) ?> - <?= sanitize_output($cand['especialidade']) ?></td>
                                 <td><?= sanitize_output($cand['setor']) ?> (<?= sanitize_output($cand['divisao_sigla']) ?>)</td>
                                 <td class="text-center">
-                                    <span class="badge bg-primary fs-5 px-3"><?= $cand['pontos_fase4'] ?? '—' ?> / <?= $cand['total_votos'] ?></span>
+                                    <?php if (!empty($dadosCat['excepcional'])): ?>Não participou
+                                    <?php elseif (isset($cand['posicao_fase3'])): ?>
+                                        <strong><?= (int)$cand['posicao_fase3'] ?>º<?= !empty($cand['empate_fase3']) ? ' (empatado)' : '' ?></strong>
+                                    <?php else: ?>Posição não registrada<?php endif; ?>
+                                    <?php if (empty($dadosCat['excepcional'])): ?><div class="small"><?= isset($cand['total_votos']) ? (int)$cand['total_votos'].' votos' : 'Votos não registrados' ?></div><?php endif; ?>
+                                </td>
+                                <td class="text-center">
+                                    <?php if (!empty($dadosCat['excepcional'])): ?>Não participou
+                                    <?php elseif (isset($cand['posicao_fase4'])): ?>
+                                        <strong><?= (int)$cand['posicao_fase4'] ?>º<?= !empty($cand['empate_fase4']) ? ' (empatado)' : '' ?></strong>
+                                    <?php else: ?>Posição não registrada<?php endif; ?>
+                                    <?php if (empty($dadosCat['excepcional'])): ?><div class="small"><?= isset($cand['pontos_fase4']) ? (int)$cand['pontos_fase4'].' pontos' : 'Pontos não registrados' ?></div><?php endif; ?>
                                 </td>
                                 <td>
                                     <small class="badge <?= (int)$cand['vitorias_ultimos_dois_anos'] === 0 ? 'bg-success' : 'bg-secondary' ?>">
