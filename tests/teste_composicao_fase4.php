@@ -71,4 +71,32 @@ check(count(EstadoMaior::composicao(101))===3,'migração inicial preserva roste
 EstadoMaior::salvarComposicao(101,[1],$admin);
 require __DIR__.'/../database/migrate_fases3_4.php';
 check(count(EstadoMaior::progresso(101))===1,'migração idempotente preserva seleção corrigida');
+
+// A tela e a rota reais devem refletir o mesmo conjunto, inclusive CHEFE_DIV_ASSESS.
+$html=executarControllerTeste('AdminController','chefias',$admin);
+check(str_contains($html,'Fase 4: Ordenação e Pareceres'),'tela administrativa apresenta finalidade correta');
+check((bool)preg_match('/name="membros_direcao\[\]" value="1"[^>]*checked/',$html),'checkbox de chefe selecionado permanece marcado');
+check(!preg_match('/name="membros_direcao\[\]" value="'.(int)$major.'"[^>]*checked/',$html),'checkbox desmarcado corresponde ao progresso');
+function salvarComposicaoPelaRotaTeste(int $autor,array $post): array {
+    $script=tempnam(sys_get_temp_dir(),'comara-composicao-');
+    $code='<?php require '.var_export(ROOT_PATH.'/src/Controllers/AdminController.php',true).'; '
+        .'$_SESSION["user"]=EstadoMaior::usuario('.$autor.'); $_SESSION["csrf_token"]="composicao-teste"; '
+        .'$_SERVER["REQUEST_METHOD"]="POST"; $_POST='.var_export($post,true).'; '
+        .'register_shutdown_function(function(){echo json_encode($_SESSION["flash"]??[],JSON_UNESCAPED_UNICODE);}); '
+        .'(new AdminController())->salvarChefias();';
+    file_put_contents($script,$code); $pipes=[];
+    $proc=proc_open([PHP_BINARY,$script],[1=>['pipe','w'],2=>['pipe','w']],$pipes);
+    $out=stream_get_contents($pipes[1]); $err=stream_get_contents($pipes[2]);
+    fclose($pipes[1]); fclose($pipes[2]); $exit=proc_close($proc); unlink($script);
+    if ($exit!==0) throw new RuntimeException($err);
+    return json_decode($out,true,512,JSON_THROW_ON_ERROR);
+}
+$post=['secao'=>'direcao_superior','pleito_id'=>101,'versao_composicao'=>EstadoMaior::versaoComposicao(101),'membros_direcao'=>[1,$major],'csrf_token'=>'invalido'];
+$flash=salvarComposicaoPelaRotaTeste($admin,$post);
+check(isset($flash['erro']) && count(EstadoMaior::progresso(101))===1,'rota rejeita CSRF sem alterar composição');
+$post['csrf_token']='composicao-teste';
+$flash=salvarComposicaoPelaRotaTeste($admin,$post);
+check(isset($flash['sucesso']) && count(EstadoMaior::progresso(101))===2,'rota salva seleção independente do perfil');
+check(EstadoMaior::usuario(1)['perfil']==='CHEFE_DIV_ASSESS','rota preserva perfil do chefe');
+
 echo "$n verificações acumuladas aprovadas.\n";

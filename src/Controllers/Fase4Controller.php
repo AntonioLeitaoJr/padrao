@@ -9,6 +9,7 @@ class Fase4Controller {
         AuthMiddleware::handle();
         if (!AuthManager::isEstadoMaior()) { http_response_code(403); exit('Acesso restrito ao Estado-Maior.'); }
         $user=AuthManager::user(); $pleito=Pleito::getAtivo();
+        $membroSelecionado=false;
         $erro=null; $ciclo=null; $situacao=[]; $candidatos=[]; $avaliacao=[]; $progresso=[]; $podeConfirmar=false; $confirmado=false;
         try {
             if (!$pleito) throw new RuntimeException('Nenhum pleito disponível.');
@@ -21,6 +22,7 @@ class Fase4Controller {
                 $avaliacao=EstadoMaior::avaliacao($p,$u);
                 $progresso=EstadoMaior::progresso($p);
                 foreach ($progresso as $a) if ((int)$a['usuario_id']===$u) {
+                    $membroSelecionado=true;
                     $confirmado=!empty($a['confirmado_em']);
                     $podeConfirmar=!$confirmado && (int)$pleito['fase_atual']===4 && $pleito['status']==='em_andamento'
                         && in_array($user['posto']??'',POSTOS_ESTADO_MAIOR,true);

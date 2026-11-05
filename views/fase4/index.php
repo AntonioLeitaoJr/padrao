@@ -29,6 +29,7 @@ require ROOT_PATH.'/views/layouts/header.php';
 </section>
 <?php endforeach; ?>
 <?php else: ?>
+<?php if (isset($membroSelecionado) && !$membroSelecionado): ?><div class="alert alert-info">Você não está selecionado na composição deste pleito. Eventual avaliação anterior permanece disponível para consulta, mas não soma pontos nem é exigida para avanço.</div><?php endif; ?>
 <?php if ($confirmado): ?><div class="alert alert-success">Avaliação confirmada e gravada. Consulta somente; não é possível alterar posições ou justificativas.</div>
 <?php elseif (!$podeConfirmar): ?><div class="alert alert-info">Consulta somente. A confirmação exige seleção na composição do pleito, conta e efetivo ativos e Fase 4 aberta.</div><?php endif; ?>
 <form method="post" action="/index.php?r=fase4/confirmar" id="formOrdenacao">
