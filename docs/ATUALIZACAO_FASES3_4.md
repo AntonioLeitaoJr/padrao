@@ -20,13 +20,13 @@ Se o empate abranger mais de uma vaga (por exemplo quatro candidatos empatados n
 
 ## Ordenação do Estado-Maior
 
-- Abertura registra a lista dos avaliadores com conta e efetivo ativos, postos Cel, Ten Cel e Maj. Todos ordenam individualmente, independentemente da chefia da Fase 2.
+- Abertura registra somente os avaliadores selecionados pelo ADMIN na composição do pleito, com conta e efetivo ativos, postos Cel, Ten Cel e Maj. A participação é independente da chefia e do perfil de acesso.
 - DIRECAO_SUPERIOR não dispensa posto de Oficial Superior. ADMIN/PRESIDENTE conservam gestão e consulta, mas não ganham cédula de ordenação sem esse requisito.
 - Finalistas apresentados alfabeticamente, sem revelar a votação anterior como ordem inicial.
 - Cada avaliador atribui posições únicas e justificativa individual obrigatória de até 150 grafemas Unicode, com contador e validação no cliente/servidor. Acentos decompostos contam como uma letra. Navegadores atuais usam Intl.Segmenter; o servidor é sempre a validação definitiva.
 - Confirmação única abrange todas as categorias com finalistas. Com dois usa 5 e 3; com um usa 5, mediante escolha/justificativa/confirmacão expressas. Categoria vazia não recebe posição.
 - Confirmação e itens são gravados na mesma transação. Restrição única e bloqueio do pleito impedem duplicidade e edição após confirmar. O usuário pode consultar suas próprias posições e justificativas.
-- Todos os avaliadores registrados devem confirmar antes da Fase 5. A Administração deve conferir contas e postos antes da abertura. Não há dispensa automática por ausência ou troca de função.
+- Todos os membros marcados devem confirmar antes da Fase 5; ao menos um é obrigatório. Até o fim da Fase 4, o ADMIN pode ajustar a composição. Desmarcados deixam de contar no progresso e nos pontos, preservando seus registros. Na Fase 5 a composição fica bloqueada.
 
 ## Consolidação e Presidência
 
@@ -90,3 +90,5 @@ Consulte [regras, permissões, testes e limitações da Fase 5](ATUALIZACAO_FASE
 ## Revisão pós-deploy de 04/11/2026
 
 As referências de branches/PRs no início descrevem a entrega original. A correção `2f654b1` já integra a `main`; o PR complementar revisa erros dos formulários e documentação. A suíte de deploy inclui a suíte da Fase 5 e as anteriores, com regressões de ciclo ausente, mensagens flash, migrações e falhas SQL. Consulte [diagnóstico, implantação e critérios de aceite](CORRECAO_DEPLOY_FASES3_4.md). As regras eleitorais deste guia permanecem.
+
+A orientação de habilitação foi atualizada em 05/11/2026: [composição por pleito, migração e testes](COMPOSICAO_FASE4.md). O workflow agora executa `tests/teste_composicao_fase4.php`, que inclui as suítes anteriores.

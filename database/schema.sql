@@ -359,3 +359,12 @@ CREATE TABLE IF NOT EXISTS fase5_resultados (
  registrado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
  FOREIGN KEY (pleito_id) REFERENCES homologacao_pleito(pleito_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS fase4_composicao (
+ pleito_id INT NOT NULL,
+ usuario_id INT NOT NULL,
+ habilitado TINYINT(1) NOT NULL DEFAULT 1,
+ PRIMARY KEY (pleito_id,usuario_id),
+ FOREIGN KEY (pleito_id) REFERENCES pleitos(id) ON DELETE CASCADE,
+ FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

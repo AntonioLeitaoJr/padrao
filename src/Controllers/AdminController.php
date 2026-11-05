@@ -754,14 +754,20 @@ class AdminController {
         ')->fetchAll();
         $avaliadorTacf = $avaliadoresTacf[0] ?? null;
 
-        // 4. Membros da Direção Superior (Fase 4)
-        $direcaoSuperior = $pdo->query('
-            SELECT u.id as usuario_id, e.*
-            FROM usuarios u
-            INNER JOIN efetivo e ON e.id = u.efetivo_id
-            WHERE u.perfil = "DIRECAO_SUPERIOR"
-            ORDER BY e.posto, e.nome
-        ')->fetchAll();
+        // Composição por pleito, independente dos perfis de acesso.
+        $pleitoComposicao=Pleito::getAtivo();
+        $direcaoSuperior=[]; $erroComposicao=null; $versaoComposicao='';
+        $composicaoEditavel=$pleitoComposicao && (int)$pleitoComposicao['fase_atual']<=4
+            && in_array($pleitoComposicao['status'],['planejamento','em_andamento'],true);
+        try {
+            if (!$pleitoComposicao) throw new RuntimeException('Crie um pleito antes de selecionar os membros da Fase 4.');
+            $direcaoSuperior=EstadoMaior::opcoesComposicao((int)$pleitoComposicao['id']);
+            $versaoComposicao=EstadoMaior::versaoComposicao((int)$pleitoComposicao['id']);
+        } catch (Throwable $e) {
+            $composicaoEditavel=false;
+            $erroComposicao=$e instanceof PDOException ? 'Não foi possível consultar a composição. Solicite suporte à STI.' : $e->getMessage();
+            error_log('[Composição Fase 4] '.$e->getMessage());
+        }
 
         // 5. Presidência da COMARA (Fase 5)
         $presidente = $pdo->query('
@@ -948,23 +954,17 @@ class AdminController {
                     }
                 }
             } elseif ($secao === 'direcao_superior') {
-                $membros = $_POST['membros_direcao'] ?? []; // array de efetivo_id
-
-                // Remove anteriores mantendo ADMIN e PRESIDENTE
-                $pdo->exec('UPDATE usuarios SET perfil = "ELEITOR" WHERE perfil = "DIRECAO_SUPERIOR"');
-
-                foreach ($membros as $efId) {
-                    $efId = (int)$efId;
-                    if ($efId <= 0) continue;
-                    $pdo->prepare('
-                        UPDATE usuarios 
-                        SET perfil = "DIRECAO_SUPERIOR" 
-                        WHERE efetivo_id = :ef AND perfil NOT IN ("ADMIN", "PRESIDENTE", "CHEFE_DIV_ASSESS")
-                    ')->execute([':ef' => $efId]);
+                try {
+                    $membros=$_POST['membros_direcao']??[];
+                    $id=filter_var($_POST['pleito_id']??null,FILTER_VALIDATE_INT);
+                    $versao=$_POST['versao_composicao']??null;
+                    if (!$id || !is_array($membros) || !is_string($versao)) throw new InvalidArgumentException('Formulário inválido. Recarregue a composição.');
+                    EstadoMaior::salvarComposicao((int)$id,$membros,(int)AuthManager::user()['id'],$versao);
+                    flash_message('sucesso','Composição da Fase 4 salva. Somente os membros marcados contam para a ordenação e o avanço à Fase 5.','success');
+                } catch (Throwable $e) {
+                    error_log('[Composição Fase 4] '.$e->getMessage());
+                    flash_message('erro',$e instanceof PDOException ? 'Não foi possível salvar a composição. Nenhuma alteração foi concluída. Solicite suporte à STI.' : $e->getMessage(),'danger');
                 }
-
-                AuditoriaService::log('DIRECAO_SUPERIOR_ATUALIZADA', ['membros' => $membros]);
-                flash_message('sucesso', 'Composição da Direção Superior (Fase 4) atualizada com sucesso!', 'success');
 
             } elseif ($secao === 'presidente') {
                 $efetivoId = (int)($_POST['presidente_efetivo_id'] ?? 0);

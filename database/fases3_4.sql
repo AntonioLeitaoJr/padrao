@@ -47,3 +47,12 @@ CREATE TABLE IF NOT EXISTS fase4_ordenacoes (
  FOREIGN KEY (pleito_id,usuario_id) REFERENCES fase4_confirmacoes(pleito_id,usuario_id) ON DELETE CASCADE,
  FOREIGN KEY (candidato_id) REFERENCES efetivo(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS fase4_composicao (
+ pleito_id INT NOT NULL,
+ usuario_id INT NOT NULL,
+ habilitado TINYINT(1) NOT NULL DEFAULT 1,
+ PRIMARY KEY (pleito_id,usuario_id),
+ FOREIGN KEY (pleito_id) REFERENCES pleitos(id) ON DELETE CASCADE,
+ FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

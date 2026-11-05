@@ -28,6 +28,7 @@ $major=criarUsuarioTeste('Maj','DIRECAO_SUPERIOR','Major');
 $pres=criarUsuarioTeste('Cap','PRESIDENTE','PresidenteTeste');
 $admin=criarUsuarioTeste('CV','ADMIN','AdminTeste');
 $cap=criarUsuarioTeste('Cap','DIRECAO_SUPERIOR','Capitao');
+EstadoMaior::salvarComposicao(1,[1,$major],$admin);
 $pdo->exec('DELETE FROM urna_votos WHERE pleito_id=1');
 // Os dados dos testes anteriores não são resultados eleitorais reais.
 $pdo->exec("DELETE FROM selecao_fase2 WHERE categoria='praca' AND orgao_sigla NOT IN ('DPC','DA')");
@@ -51,7 +52,7 @@ rejeita(fn()=>EstadoMaior::decidirCorte(1,'graduado',array_slice($d['empatados']
 check(Pleito::avancarFase(1,$admin)['sucesso'],'abre Fase 4 após decisão');
 $grupos=EstadoMaior::candidatos(1);
 check(array_map('count',$grupos)===['graduado'=>3,'praca'=>2,'sppf'=>1,'sptf'=>0],'corte 3/2/1/0 sem ampliar listas');
-check(count(EstadoMaior::progresso(1))===2,'avaliadores somente Cel/Maj ativos, incluindo oficial com perfil ELEITOR');
+check(count(EstadoMaior::progresso(1))===2,'avaliadores selecionados, incluindo oficial com perfil ELEITOR');
 $nomes=array_column($grupos['graduado'],'nome_guerra');
 check($nomes===['Álvaro','bruno','célia'],'apresentação alfabética independente do corte');
 $html=renderizarOrdenacaoTeste(false);

@@ -13,7 +13,7 @@ class EstadoMaior {
 
     public static function verificarEstrutura(): void {
         $pdo = Database::getConnection();
-        foreach (['historico_vencedores','fase4_ciclos','fase4_decisoes_corte','fase4_avaliadores','fase4_confirmacoes','fase4_ordenacoes'] as $t) {
+        foreach (['historico_vencedores','fase4_ciclos','fase4_decisoes_corte','fase4_avaliadores','fase4_confirmacoes','fase4_ordenacoes','fase4_composicao'] as $t) {
             if (!$pdo->query("SHOW TABLES LIKE '$t'")->fetch()) {
                 throw new RuntimeException('Atualização do banco necessária. STI: execute php database/migrate_fase2.php e depois php database/migrate_fases3_4.php antes de continuar.');
             }
@@ -131,14 +131,65 @@ class EstadoMaior {
             AuditoriaService::log('DECISAO_CORTE_FASE3',['pleito_id'=>$p,'categoria'=>$cat,'candidatos'=>$ids,'justificativa'=>$just],$autor);
         } catch (Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
     }
+    public static function composicao(int $p): array {
+        self::verificarEstrutura();
+        $s=Database::getConnection()->prepare('SELECT usuario_id,habilitado FROM fase4_composicao WHERE pleito_id=? ORDER BY usuario_id');
+        $s->execute([$p]); return $s->fetchAll();
+    }
+    public static function versaoComposicao(int $p): string {
+        return hash('sha256',json_encode(self::composicao($p),JSON_THROW_ON_ERROR));
+    }
+    public static function opcoesComposicao(int $p): array {
+        self::verificarEstrutura();
+        $s=Database::getConnection()->prepare("SELECT u.id AS usuario_id,u.ativo AS conta_ativa,e.*,
+            COALESCE(c.habilitado,0) AS habilitado
+            FROM usuarios u JOIN efetivo e ON e.id=u.efetivo_id
+            LEFT JOIN fase4_composicao c ON c.usuario_id=u.id AND c.pleito_id=?
+            WHERE e.posto IN ('Cel','Ten Cel','Maj') OR c.habilitado=1
+            ORDER BY e.nome_guerra,u.id");
+        $s->execute([$p]); return $s->fetchAll();
+    }
+    public static function salvarComposicao(int $p,array $ids,int $autor,?string $versao=null): void {
+        self::verificarEstrutura(); $pdo=Database::getConnection(); $pdo->beginTransaction();
+        try {
+            $s=$pdo->prepare('SELECT * FROM pleitos WHERE id=? FOR UPDATE'); $s->execute([$p]); $pleito=$s->fetch();
+            if (self::usuario($autor)['perfil']!==PERFIL_ADMIN) throw new RuntimeException('Composição restrita ao Administrador.');
+            if (!$pleito || !in_array($pleito['status'],['planejamento','em_andamento'],true) || (int)$pleito['fase_atual']>4)
+                throw new RuntimeException('A composição somente pode ser alterada até a Fase 4. Na Fase 5 ela está bloqueada.');
+            $s=$pdo->prepare('SELECT pleito_id FROM homologacao_pleito WHERE pleito_id=?'); $s->execute([$p]);
+            if ($s->fetch()) throw new RuntimeException('Homologação registrada: composição bloqueada.');
+            if ($versao!==null && !hash_equals(self::versaoComposicao($p),$versao)) throw new RuntimeException('A composição mudou. Recarregue a tela antes de salvar.');
+            $selecionados=[];
+            foreach ($ids as $id) {
+                if (!is_scalar($id) || filter_var($id,FILTER_VALIDATE_INT)===false || (int)$id<1) throw new InvalidArgumentException('Membro inválido.');
+                $u=self::usuario((int)$id);
+                if (!(int)$u['efetivo_ativo'] || !in_array($u['posto'],POSTOS_ESTADO_MAIOR,true)) throw new RuntimeException('Selecione somente Oficiais Superiores com conta e efetivo ativos.');
+                $selecionados[(int)$id]=$u;
+            }
+            $antes=self::composicao($p);
+            $pdo->prepare('UPDATE fase4_composicao SET habilitado=0 WHERE pleito_id=?')->execute([$p]);
+            $ins=$pdo->prepare('INSERT INTO fase4_composicao(pleito_id,usuario_id,habilitado) VALUES(?,?,1) ON DUPLICATE KEY UPDATE habilitado=1');
+            foreach ($selecionados as $id=>$u) $ins->execute([$p,$id]);
+            $c=self::ciclo($p);
+            if ($c && $c['aberto_em']) self::registrarAvaliadores($p,array_values($selecionados));
+            AuditoriaService::log('COMPOSICAO_FASE4_ATUALIZADA',['pleito_id'=>$p,'anterior'=>$antes,'selecionados'=>array_keys($selecionados)],$autor,null,true);
+            $pdo->commit();
+        } catch (Throwable $e) { if ($pdo->inTransaction()) $pdo->rollBack(); throw $e; }
+    }
+    private static function registrarAvaliadores(int $p,array $avaliadores): void {
+        $ins=Database::getConnection()->prepare('INSERT INTO fase4_avaliadores(pleito_id,usuario_id,nome_guerra,posto) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE usuario_id=VALUES(usuario_id)');
+        foreach ($avaliadores as $u) $ins->execute([$p,$u['id'],$u['nome_guerra']??'',$u['posto']]);
+    }
     public static function abrir(int $p): void {
         $pdo=Database::getConnection();
-        $s=$pdo->query("SELECT u.id,e.nome_guerra,e.posto FROM usuarios u JOIN efetivo e ON e.id=u.efetivo_id
-            WHERE u.ativo=1 AND e.ativo=1 AND e.posto IN ('Cel','Ten Cel','Maj') ORDER BY e.nome_guerra");
-        $avaliadores=$s->fetchAll();
-        if (!$avaliadores) throw new RuntimeException('Cadastre contas ativas para os Oficiais Superiores antes de abrir a Fase 4.');
-        $ins=$pdo->prepare('INSERT INTO fase4_avaliadores(pleito_id,usuario_id,nome_guerra,posto) VALUES(?,?,?,?)');
-        foreach ($avaliadores as $u) $ins->execute([$p,$u['id'],$u['nome_guerra']??'',$u['posto']]);
+        $s=$pdo->prepare("SELECT u.id,e.nome_guerra,e.posto FROM fase4_composicao c
+            JOIN usuarios u ON u.id=c.usuario_id JOIN efetivo e ON e.id=u.efetivo_id
+            WHERE c.pleito_id=? AND c.habilitado=1 AND u.ativo=1 AND e.ativo=1 AND e.posto IN ('Cel','Ten Cel','Maj') ORDER BY e.nome_guerra");
+        $s->execute([$p]); $avaliadores=$s->fetchAll();
+        if (!$avaliadores) throw new RuntimeException('Selecione ao menos um Oficial Superior em Gestão do Pleito > Atribuição de Chefias e Perfis > Composição da Fase 4.');
+        $marcados=array_filter(self::composicao($p),fn($m)=>(int)$m['habilitado']===1);
+        if (count($marcados)!==count($avaliadores)) throw new RuntimeException('Há membro marcado sem conta/efetivo ativo ou posto habilitado. Confira a composição da Fase 4.');
+        self::registrarAvaliadores($p,$avaliadores);
         $pdo->prepare('UPDATE fase4_ciclos SET aberto_em=NOW() WHERE pleito_id=?')->execute([$p]);
     }
     public static function candidatos(int $p): array {
@@ -157,7 +208,7 @@ class EstadoMaior {
         return strtolower(preg_replace('/\p{M}/u','',$s));
     }
     public static function progresso(int $p): array {
-        $s=Database::getConnection()->prepare('SELECT a.*, c.confirmado_em FROM fase4_avaliadores a LEFT JOIN fase4_confirmacoes c ON c.pleito_id=a.pleito_id AND c.usuario_id=a.usuario_id WHERE a.pleito_id=? ORDER BY a.nome_guerra');
+        $s=Database::getConnection()->prepare('SELECT a.*, c.confirmado_em FROM fase4_avaliadores a JOIN fase4_composicao m ON m.pleito_id=a.pleito_id AND m.usuario_id=a.usuario_id AND m.habilitado=1 LEFT JOIN fase4_confirmacoes c ON c.pleito_id=a.pleito_id AND c.usuario_id=a.usuario_id WHERE a.pleito_id=? ORDER BY a.nome_guerra');
         $s->execute([$p]); return $s->fetchAll();
     }
     public static function avaliacao(int $p,int $u): array {
@@ -192,8 +243,9 @@ class EstadoMaior {
         $c=self::ciclo($p);
         if (!$c || !$c['aberto_em']) throw new RuntimeException('Fase 4 não preparada. Encerre a votação e resolva os cortes antes de prosseguir.');
         $r=self::progresso($p);
-        if (!$r) throw new RuntimeException('Não há avaliadores habilitados.');
-        foreach ($r as $u) if (!$u['confirmado_em']) throw new RuntimeException('Aguarde a confirmação de todos os Oficiais Superiores habilitados.');
+        if (!$r) throw new RuntimeException('Não há membros selecionados para a Fase 4. Salve a composição em Atribuição de Chefias e Perfis.');
+        $pendentes=array_filter($r,fn($u)=>!$u['confirmado_em']);
+        if ($pendentes) throw new RuntimeException('Aguarde a confirmação dos membros selecionados: '.implode(', ',array_map(fn($u)=>$u['posto'].' '.$u['nome_guerra'],$pendentes)).'.');
     }
     public static function compararResultado(array $a,array $b): int {
         return DesempateService::comparar($a,$b,'pontos_fase4') ?: ((int)$b['total_votos']<=>(int)$a['total_votos']);
@@ -250,7 +302,7 @@ class EstadoMaior {
     public static function resultados(int $p): array {
         self::exigirConcluida($p);
         self::validarIntegridadeOrdenacoes($p);
-        $s=Database::getConnection()->prepare('SELECT categoria,candidato_id,SUM(CASE posicao WHEN 1 THEN 5 WHEN 2 THEN 3 WHEN 3 THEN 1 ELSE 0 END) pontos FROM fase4_ordenacoes WHERE pleito_id=? GROUP BY categoria,candidato_id');
+        $s=Database::getConnection()->prepare('SELECT o.categoria,o.candidato_id,SUM(CASE o.posicao WHEN 1 THEN 5 WHEN 2 THEN 3 WHEN 3 THEN 1 ELSE 0 END) pontos FROM fase4_ordenacoes o JOIN fase4_composicao m ON m.pleito_id=o.pleito_id AND m.usuario_id=o.usuario_id AND m.habilitado=1 WHERE o.pleito_id=? GROUP BY o.categoria,o.candidato_id');
         $s->execute([$p]); $pontos=[]; foreach ($s->fetchAll() as $r) $pontos[$r['categoria']][$r['candidato_id']]=(int)$r['pontos'];
         $out=[]; $sit=self::situacao($p);
         foreach (self::candidatos($p) as $cat=>$lista) {

@@ -32,6 +32,8 @@ class Fase4Controller {
                 ? $e->getMessage()
                 : 'Não foi possível carregar a Fase 4. Solicite à STI a conferência do banco e do log de erros.';
         }
+        // Mesmo desmarcado, o autor pode consultar sua confirmação preservada.
+        if ($pleito && !$erro && $avaliacao) $confirmado=true;
         $rascunho=$_SESSION['fase4_rascunho'][(int)($pleito['id']??0)]??[];
         require ROOT_PATH.'/views/fase4/index.php';
     }

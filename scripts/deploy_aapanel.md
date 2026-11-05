@@ -201,3 +201,7 @@ Consulte [regras, permissões, testes e limitações da Fase 5](../docs/ATUALIZA
 Se a urna informar atualização do banco, confirme o sucesso das três migrações antes de liberar a votação. Se informar seleções inconsistentes, confira a Fase 2; não apague votos ou seleções. Ciclo ausente não significa empate no corte. Erros técnicos tratados nos formulários orientam a STI, que deve consultar o log do PHP.
 
 Consulte o [procedimento de correção pós-deploy](../docs/CORRECAO_DEPLOY_FASES3_4.md). O comando Deploy latest atualiza arquivos, mas não comprova a execução das migrações. Os testes automatizados são exclusivos de bancos descartáveis.
+
+## Atualização da composição do Estado-Maior
+
+Reaplique `php database/migrate_fases3_4.php` após backup e publicação da versão aprovada. A atualização cria `fase4_composicao`, preserva os avaliadores existentes e não reativa membros desmarcados em reexecuções. Antes de avançar, o ADMIN deve salvar os participantes desejados em Atribuição de Chefias e Perfis. Avaliações existentes não precisam ser apagadas ou refeitas. Consulte [o procedimento completo](../docs/COMPOSICAO_FASE4.md).
