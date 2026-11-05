@@ -79,4 +79,20 @@ check(SelecaoFase2::salvarSelecao(1,'DL',$admin,['graduado'=>[$outra]])['sucesso
 check(Pleito::avancarFase(1,$admin)['sucesso'],'avanço após escolhas válidas');
 check(count(Efetivo::listarParaUrna(1,'graduado'))===2,'urna recebe somente escolhidos');
 check(!SelecaoFase2::salvarSelecao(1,'DPC',$levy,['graduado'=>[$cands[1]]])['sucesso'],'seleção bloqueada após Fase 2');
+// A listagem administrativa exibe somente chefias ativas sem apagar o vínculo original.
+$chefeTeste = pessoa('CHEFE TESTE INATIVACAO', 'ineligivel', 'DE', 'Maj');
+$subTeste = pessoa('SUBORDINADO TESTE CHEFIA INATIVA', 'graduado', 'DE');
+$pdo->prepare('UPDATE efetivo SET chefe_direto_id = ? WHERE id = ?')->execute([$chefeTeste, $subTeste]);
+$verChefia = static function (): array {
+    $linhas = Efetivo::listarPaginado(10, 0, 'SUBORDINADO TESTE CHEFIA INATIVA');
+    check(count($linhas) === 1, 'subordinado localizado na listagem administrativa');
+    return $linhas[0];
+};
+check($verChefia()['chefe_nome_guerra'] === 'CHEFE TESTE INATIVACAO', 'chefe ativo aparece na listagem');
+Efetivo::toggleAtivo($chefeTeste);
+$linhaInativo = $verChefia();
+check($linhaInativo['chefe_nome_guerra'] === null, 'chefe inativo nao aparece na listagem');
+check((int)$linhaInativo['chefe_direto_id'] === $chefeTeste, 'vinculo historico preservado apos inativacao');
+Efetivo::toggleAtivo($chefeTeste);
+check($verChefia()['chefe_nome_guerra'] === 'CHEFE TESTE INATIVACAO', 'reativacao restaura nome sem novo vinculo');
 echo "Integração concluída.\n";
