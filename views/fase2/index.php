@@ -40,9 +40,6 @@ $nomeOrgaoAtual = $todosOrgaosFase2[$orgaoSigla] ?? $orgaoSigla;
     </div>
 </div>
 
-<?php if (AuthManager::hasRole([PERFIL_ADMIN, PERFIL_RH])): ?>
-<p><a class="btn btn-outline-primary" href="/index.php?r=admin/vencedores">Cadastrar vencedores anteriores</a></p>
-<?php endif; ?>
 <form data-editavel="<?= (int)$pleito['fase_atual'] === FASE_2 && $pleito['status'] === 'em_andamento' ? '1' : '0' ?>" id="formFase2" method="POST" action="/index.php?r=fase2">
     <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
     <input type="hidden" name="orgao" value="<?= sanitize_output($orgaoSigla) ?>">
