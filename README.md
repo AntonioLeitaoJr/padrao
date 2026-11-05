@@ -179,7 +179,7 @@ A urna recebe somente os representantes escolhidos na Fase 2, até seis por cate
 
 Ao encerrar a Fase 3, o sistema fixa votos e dados de classificação. Avançam até três por categoria, aplicando os quatro critérios de desempate da Fase 2. Se houver empate persistente no corte, a urna é encerrada e a Fase 4 fica bloqueada: a Presidência decide, com justificativa, somente entre os empatados pelas vagas restantes. A Administração avança novamente depois dessas decisões.
 
-Na Fase 4, todos os Coronéis, Tenentes-Coronéis e Majores com efetivo e conta ativos na abertura ordenam individualmente os finalistas e justificam cada posição em até 150 caracteres. Pesos: primeiro 5, segundo 3, terceiro 1. Com dois candidatos usam-se 5 e 3; com um, 5, sempre mediante confirmação expressa. Nenhuma avaliação confirmada pode ser editada. Somente depois de todas as confirmações a Administração pode avançar à Fase 5.
+Na Fase 4, os Coronéis, Tenentes-Coronéis e Majores com efetivo e conta ativos selecionados pelo ADMIN na composição do pleito ordenam individualmente os finalistas e justificam cada posição em até 150 caracteres. Pesos: primeiro 5, segundo 3, terceiro 1. Com dois candidatos usam-se 5 e 3; com um, 5, sempre mediante confirmação expressa. Nenhuma avaliação confirmada pode ser editada. Somente depois das confirmações de todos os membros marcados a Administração pode avançar à Fase 5.
 
 Resultado: soma dos pontos → quatro critérios existentes → votos da Fase 3 → voto de minerva entre os empatados finais. Somente a categoria que ficou sem finalistas disponibiliza à Presidência seu próprio efetivo ativo, registrado no encerramento da urna. Essa exceção não amplia as listas das demais categorias. A homologação exige quatro vencedores.
 
@@ -213,3 +213,7 @@ A suíte `tests/teste_deploy_fases3_4.php` inclui as verificações acumuladas d
 
 
 Na Fase 5, cada finalista apresenta a **classificação popular da Fase 3 (posição e votos)** e a **ordenação final da Fase 4 (posição e pontos)** em colunas separadas e nas opções de minerva. A posição popular considera apenas os votos de todos os candidatos da categoria, inclusive os que não chegaram à Fase 4; empates compartilham posição. A posição da Fase 4 aplica pontos 5–3–1, quatro critérios e votos anteriores. A minerva não reescreve essas posições. Categorias excepcionais não recebem classificação fictícia; homologações anteriores sem posições arquivadas indicam dado não registrado.
+
+## Participantes da Fase 4
+
+A seleção em **Atribuição de Chefias e Perfis > Membros da Direção Superior** determina quem ordena e quem é exigido no avanço. É independente dos perfis de chefe/ADMIN/PRESIDENTE, ajustável até a Fase 4 e bloqueada a partir da Fase 5. Desmarcados deixam de somar pontos e de bloquear o avanço; avaliações são preservadas. Após atualizar, reaplique `migrate_fases3_4.php` e salve a composição desejada. Consulte [procedimento e testes](docs/COMPOSICAO_FASE4.md).

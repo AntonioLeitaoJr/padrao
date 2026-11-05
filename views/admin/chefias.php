@@ -307,29 +307,38 @@ require_once ROOT_PATH . '/views/layouts/header.php';
             <div class="col-12">
                 <div class="card card-comara shadow-sm">
                     <div class="card-comara-header">
-                        <i class="bi bi-shield-lock-fill me-2 text-primary"></i> Membros da Direção Superior (Fase 4: Validação e Impugnações)
+                        <i class="bi bi-shield-lock-fill me-2 text-primary"></i> Membros da Direção Superior (Fase 4: Ordenação e Pareceres)
                     </div>
                     <div class="card-body p-4">
                         <p class="text-muted small mb-3">
-                            Na <strong>Fase 4</strong>, os Oficiais Superiores com perfil <strong>DIRECAO_SUPERIOR</strong> têm acesso exclusivo para analisar pareceres de conduta ética, impugnar eventuais candidatos e consolidar a lista quádrupla para a Urna Eletrônica.
+                            Marque os Coronéis, Tenentes-Coronéis e Majores que ordenarão os finalistas e registrarão suas justificativas.
+                            Somente os membros marcados contam para os pontos e para o avanço à Fase 5.
+                            A seleção não altera os perfis de chefe de divisão, ADMIN ou PRESIDENTE.
+                            Pode ser ajustada até o fim da Fase 4; na Fase 5 fica bloqueada.
+                            Ao desmarcar alguém, suas avaliações são preservadas, mas deixam de compor a apuração. Ao remarcar, a confirmação anterior continua definitiva.
                         </p>
 
                         <form method="POST" action="/index.php?r=admin/salvar_chefias">
                             <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
                             <input type="hidden" name="secao" value="direcao_superior">
+                            <input type="hidden" name="pleito_id" value="<?= (int)($pleitoComposicao['id']??0) ?>">
+                            <input type="hidden" name="versao_composicao" value="<?= sanitize_output($versaoComposicao) ?>">
+                            <?php if ($erroComposicao): ?><div class="alert alert-warning"><?= sanitize_output($erroComposicao) ?></div><?php endif; ?>
+                            <?php if ($pleitoComposicao): ?><p>Pleito: <?= sanitize_output($pleitoComposicao['titulo']) ?> — Fase <?= (int)$pleitoComposicao['fase_atual'] ?>.</p><?php endif; ?>
+                            <?php if (!$composicaoEditavel && !$erroComposicao): ?><div class="alert alert-info">Composição bloqueada após a Fase 4.</div><?php endif; ?>
+                            <fieldset <?= $composicaoEditavel ? '' : 'disabled' ?>>
 
                             <div class="row g-2 mb-4">
                                 <?php
-                                $membrosIdsAtuais = array_column($direcaoSuperior, 'id');
-                                foreach ($oficiais as $of):
-                                    if (!in_array($of['posto'], ['Cel', 'Ten Cel', 'Maj'], true)) continue;
-                                    $marcado = in_array($of['id'], $membrosIdsAtuais, true);
+                                foreach ($direcaoSuperior as $of):
+                                    $marcado = (int)$of['habilitado']===1;
                                 ?>
                                     <div class="col-md-4">
                                         <div class="form-check p-2 border rounded bg-light">
-                                            <input class="form-check-input ms-1" type="checkbox" name="membros_direcao[]" value="<?= $of['id'] ?>" id="ds_<?= $of['id'] ?>" <?= $marcado ? 'checked' : '' ?>>
-                                            <label class="form-check-label ms-2 fw-semibold text-dark" for="ds_<?= $of['id'] ?>">
+                                            <input class="form-check-input ms-1" type="checkbox" name="membros_direcao[]" value="<?= (int)$of['usuario_id'] ?>" id="ds_<?= (int)$of['usuario_id'] ?>" <?= $marcado ? 'checked' : '' ?>>
+                                            <label class="form-check-label ms-2 fw-semibold text-dark" for="ds_<?= (int)$of['usuario_id'] ?>">
                                                 <?= sanitize_output($of['posto']) ?> <?= sanitize_output($of['nome_guerra']) ?>
+                                                <?php if (!(int)$of['ativo'] || !(int)$of['conta_ativa'] || !in_array($of['posto'],POSTOS_ESTADO_MAIOR,true)): ?><span class="badge bg-warning text-dark">Inapto: desmarque ou regularize o cadastro</span><?php endif; ?>
                                                 <small class="text-muted d-block"><?= sanitize_output($of['divisao_sigla']) ?> - <?= sanitize_output($of['nome']) ?></small>
                                             </label>
                                         </div>
@@ -340,6 +349,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                             <button type="submit" class="btn btn-primary fw-bold">
                                 <i class="bi bi-check2-circle me-1"></i> Salvar Composição da Direção Superior
                             </button>
+                            </fieldset>
                         </form>
                     </div>
                 </div>

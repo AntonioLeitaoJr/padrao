@@ -145,7 +145,7 @@ class Homologacao {
         $s=Database::getConnection()->prepare('SELECT fase_atual FROM pleitos WHERE id=?'); $s->execute([$p]);
         if ((int)$s->fetchColumn()!==5) throw new RuntimeException('Consulta individual disponível à Presidência na Fase 5.');
         if (!Database::getConnection()->query("SHOW TABLES LIKE 'fase4_ordenacoes'")->fetch()) return [];
-        $s=Database::getConnection()->prepare('SELECT o.*,a.nome_guerra AS avaliador_nome,a.posto AS avaliador_posto FROM fase4_ordenacoes o JOIN fase4_avaliadores a ON a.pleito_id=o.pleito_id AND a.usuario_id=o.usuario_id WHERE o.pleito_id=? ORDER BY a.nome_guerra,o.categoria,o.posicao');
+        $s=Database::getConnection()->prepare('SELECT o.*,a.nome_guerra AS avaliador_nome,a.posto AS avaliador_posto FROM fase4_ordenacoes o JOIN fase4_composicao m ON m.pleito_id=o.pleito_id AND m.usuario_id=o.usuario_id AND m.habilitado=1 JOIN fase4_avaliadores a ON a.pleito_id=o.pleito_id AND a.usuario_id=o.usuario_id WHERE o.pleito_id=? ORDER BY a.nome_guerra,o.categoria,o.posicao');
         $s->execute([$p]); $avaliacoes=$s->fetchAll();
         return $avaliacoes;
     }

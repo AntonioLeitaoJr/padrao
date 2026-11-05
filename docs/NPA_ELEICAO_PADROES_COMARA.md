@@ -199,7 +199,7 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
 
 ### 6.5. DO ESTADO-MAIOR — FASE 4
 
-**Público-alvo:** Coronéis, Tenentes-Coronéis e Majores do efetivo ativo, com contas ativas habilitadas na abertura da Fase 4. Cada Oficial Superior registra sua própria ordenação; não se limita a participação aos seis representantes da Fase 2. O perfil DIRECAO_SUPERIOR não substitui o requisito de posto. ADMIN mantém atribuições administrativas, mas somente participa da ordenação quando também for Oficial Superior habilitado.
+**Público-alvo:** Coronéis, Tenentes-Coronéis e Majores do efetivo ativo, com contas ativas e selecionados pelo Administrador na composição do pleito. Cada Oficial Superior registra sua própria ordenação; não se limita a participação aos seis representantes da Fase 2. O perfil DIRECAO_SUPERIOR não substitui o requisito de posto. ADMIN mantém atribuições administrativas, mas somente participa da ordenação quando também for Oficial Superior habilitado.
 
 #### 6.5.1. Do Encerramento da Fase 3 e da Classificação:
 1. A Administração encerra a votação pelo comando de avanço da fase. O sistema registra os votos e os dados usados na classificação, preservando-os para as etapas seguintes.
@@ -224,7 +224,7 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
 6. A confirmação abrangerá todas as categorias disponíveis em uma única gravação. Não haverá confirmação parcial em caso de erro.
 7. Categoria sem candidatos não receberá ordenação e será identificada para escolha excepcional pela Presidência na Fase 5.
 8. O próprio avaliador poderá consultar sua ordenação. Na Fase 5, os perfis PRESIDENTE e ADMIN poderão consultar as posições, justificativas e identificação dos avaliadores. Essa consulta não alcança as cédulas secretas da Fase 3.
-9. O avanço à Fase 5 dependerá da confirmação de todos os Oficiais Superiores registrados como avaliadores na abertura desta fase. O cadastro deverá ser conferido previamente pela Administração.
+9. O avanço à Fase 5 dependerá da confirmação de todos os Oficiais Superiores marcados na composição do pleito, sendo obrigatório ao menos um membro. Até o fim da Fase 4, o Administrador poderá incluir ou desmarcar membros em Atribuição de Chefias e Perfis. Desmarcados não serão exigidos para avanço e suas avaliações não integrarão a soma de pontos, preservando-se os registros e a auditoria. Ao remarcar um membro, eventual confirmação anterior permanecerá definitiva. A composição ficará bloqueada a partir da Fase 5.
 
 #### 6.5.3. Da Consolidação:
 1. O resultado de cada categoria corresponderá à soma dos pontos atribuídos nas ordenações individuais.
@@ -298,7 +298,7 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
    - Aba 1: Vincula os Chefes de Divisão e Chefes de Assessoria responsáveis pela Fase 2.
    - Aba 2: **Administradores do Sistema** — Permite conceder privilégios de Administrador (`ADMIN`) a outros militares/civis da OM ou revogá-los com 1 clique (mantendo sempre protegida a conta master `admin`).
    - Aba 3: **Comissão de Avaliadores do TACF (`ED_FISICA`)** — Permite cadastrar múltiplos avaliadores de educação física de forma colaborativa, bem como remover membros da comissão.
-   - Aba 4: Vincula os Oficiais Superiores que compõem a Direção Superior na Fase 4.
+   - **Membros da Direção Superior (Fase 4: Ordenação e Pareceres):** Seleciona por pleito os Oficiais Superiores que ordenarão e registrarão justificativas. A seleção independe do perfil de chefia, ADMIN ou PRESIDENTE, sem alterar essas atribuições. Somente marcados contam no avanço e na apuração, conforme o item 6.5.2.
 
 4. **Publicações Oficiais e Placa Alusiva (`relatorios/placa`):**
    - A aba e visualização em alta definição da **Placa Alusiva Oficial do Hall do Prédio do Comando** é de prerrogativa **exclusiva do perfil Administrador (`ADMIN`)**, preservando o layout comemorativo oficial da Aeronáutica para impressão e confecção física.

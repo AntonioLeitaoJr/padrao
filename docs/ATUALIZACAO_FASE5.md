@@ -11,7 +11,7 @@ Fork e original conferidos antes da edição. Original `main` em `66a436752eec1b
 - Resultado: soma 5–3–1, quatro critérios (não vencedor nos dois anos anteriores, antiguidade COMARA, serviço, TACF), votos da Fase 3 e minerva somente entre empatados finais. Sem novo critério.
 - Vencedor regular não admite escolha livre. Minerva e exceção têm identificação distinta, fundamento obrigatório e validação no servidor.
 - Lista excepcional permanece a registrada ao encerrar a Fase 3, somente da categoria sem finalistas. Não se atualiza com novos cadastros nem se amplia outra categoria.
-- Todos os avaliadores registrados da Fase 4 devem confirmar. Registros incompletos ou posições incompatíveis bloqueiam apuração, sem converter ausências em zero.
+- Todos os membros selecionados na composição da Fase 4 devem confirmar; ao menos um é obrigatório. Registros incompletos ou posições incompatíveis bloqueiam apuração, sem converter ausências em zero.
 - Decisões presidenciais revisáveis até homologar, conforme resposta do criador neste chat. Revisão exige confirmação e justificativa; auditam-se valor anterior, novo, autor e data/hora. Reenvio idêntico é idempotente e versão desatualizada é rejeitada.
 - Presidente e ADMIN consultam as avaliações identificadas da Fase 4; demais avaliadores mantêm consulta própria. DIRECAO_SUPERIOR vê somente a consolidação na Fase 5 e não ganha poderes presidenciais.
 - Divulgação de vencedores ao efetivo somente após homologação. Placa permanece restrita ao ADMIN.
@@ -82,3 +82,7 @@ Na Fase 5, cada finalista apresenta a **classificação popular da Fase 3 (posi�
 As posições são calculadas a partir dos dados congelados no encerramento da urna e das ordenações confirmadas, antes da decisão presidencial. Usam classificação competitiva (1º, 1º, 3º) em empate. A ordenação da Fase 4 já considera os desempates existentes; não se trata da posição dada por um avaliador isolado. A consulta individual identificada permanece disponível à Presidência e ao ADMIN.
 
 Novas homologações arquivam as posições no JSON de resultado existente; nenhuma migração adicional é necessária. Homologações já arquivadas não são recalculadas. A tabela mantém as permissões de consulta da Fase 5; não publica resultados antecipadamente ao efetivo. Testes cobrem diferenças entre as etapas, empate, categoria inteira, candidato único, exceção e preservação após minerva e homologação.
+
+## Composição congelada na entrada da Fase 5
+
+A apuração e a consulta identificada consideram somente os membros marcados ao concluir a Fase 4. Avaliações dos desmarcados permanecem armazenadas, sem somar pontos. A composição não pode ser alterada na Fase 5, mesmo antes de homologar. A migração preserva a composição histórica existente. Consulte [a composição por pleito](COMPOSICAO_FASE4.md).

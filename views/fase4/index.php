@@ -3,7 +3,7 @@ declare(strict_types=1);
 require ROOT_PATH.'/views/layouts/header.php';
 ?>
 <h2 class="h4 text-primary">Fase 4: Ordenação pelo Estado-Maior</h2>
-<p>Coronéis, Tenentes-Coronéis e Majores ordenam individualmente cada categoria. Primeiro: <strong>5 pontos</strong>; segundo: <strong>3</strong>; terceiro: <strong>1</strong>.</p>
+<p>Os Coronéis, Tenentes-Coronéis e Majores selecionados na composição deste pleito ordenam individualmente cada categoria. Primeiro: <strong>5 pontos</strong>; segundo: <strong>3</strong>; terceiro: <strong>1</strong>.</p>
 <?php if ($erro): ?>
 <div class="alert alert-warning" role="alert"><?= sanitize_output($erro) ?></div>
 <?php elseif (!$ciclo): ?>
@@ -29,8 +29,9 @@ require ROOT_PATH.'/views/layouts/header.php';
 </section>
 <?php endforeach; ?>
 <?php else: ?>
+<?php if (isset($membroSelecionado) && !$membroSelecionado): ?><div class="alert alert-info">Você não está selecionado na composição deste pleito. Eventual avaliação anterior permanece disponível para consulta, mas não soma pontos nem é exigida para avanço.</div><?php endif; ?>
 <?php if ($confirmado): ?><div class="alert alert-success">Avaliação confirmada e gravada. Consulta somente; não é possível alterar posições ou justificativas.</div>
-<?php elseif (!$podeConfirmar): ?><div class="alert alert-info">Consulta somente. A confirmação exige Oficial Superior habilitado e Fase 4 aberta.</div><?php endif; ?>
+<?php elseif (!$podeConfirmar): ?><div class="alert alert-info">Consulta somente. A confirmação exige seleção na composição do pleito, conta e efetivo ativos e Fase 4 aberta.</div><?php endif; ?>
 <form method="post" action="/index.php?r=fase4/confirmar" id="formOrdenacao">
 <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
 <?php foreach ($candidatos as $cat=>$lista): ?>
@@ -63,8 +64,9 @@ $just=is_string($item['justificativa']??null)?$item['justificativa']:'';
 <button class="btn btn-success" id="confirmarOrdenacao">Confirmar definitivamente as ordenações</button>
 <?php endif; ?>
 </form>
+<?php if (AuthManager::hasRole(PERFIL_ADMIN)): ?><p class="mt-3"><a href="/index.php?r=admin/chefias">Ajustar membros da Fase 4 em Atribuição de Chefias e Perfis</a></p><?php endif; ?>
 <?php if (AuthManager::hasRole([PERFIL_ADMIN,PERFIL_PRESIDENTE])): ?>
-<details class="mt-4"><summary>Progresso dos Oficiais Superiores habilitados</summary><ul>
+<details class="mt-4"><summary>Progresso dos membros selecionados para este pleito</summary><ul>
 <?php foreach ($progresso as $a): ?><li><?= sanitize_output($a['posto'].' '.$a['nome_guerra']) ?>: <?= $a['confirmado_em']?'confirmado':'pendente' ?></li><?php endforeach; ?>
 </ul></details>
 <?php endif; ?>

@@ -8,6 +8,7 @@ $pdo->exec("INSERT INTO pleitos(id,ano,titulo,fase_atual) VALUES(2,2027,'Fase 5 
 $pdo->exec('INSERT INTO fase4_ciclos SELECT 2,categorias_json,encerrado_em,encerrado_por,aberto_em FROM fase4_ciclos WHERE pleito_id=1');
 $pdo->exec('INSERT INTO fase4_decisoes_corte SELECT 2,categoria,candidatos_json,justificativa,usuario_id,confirmado_em FROM fase4_decisoes_corte WHERE pleito_id=1');
 $pdo->exec('INSERT INTO fase4_avaliadores SELECT 2,usuario_id,nome_guerra,posto FROM fase4_avaliadores WHERE pleito_id=1');
+$pdo->exec('INSERT INTO fase4_composicao SELECT 2,usuario_id,habilitado FROM fase4_composicao WHERE pleito_id=1');
 $pdo->exec('INSERT INTO fase4_confirmacoes SELECT 2,usuario_id,confirmado_em FROM fase4_confirmacoes WHERE pleito_id=1');
 $pdo->exec('INSERT INTO fase4_ordenacoes SELECT 2,usuario_id,categoria,candidato_id,posicao,justificativa FROM fase4_ordenacoes WHERE pleito_id=1');
 $r=Homologacao::apurarResultados(2)['categorias'];

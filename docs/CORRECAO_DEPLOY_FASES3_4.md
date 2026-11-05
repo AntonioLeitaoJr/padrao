@@ -35,3 +35,7 @@ Critérios de aceite adicionais:
 - Teste acumulado: `FASE34_TEST_DB=1 DB_NAME=comara_fase34_test php tests/teste_deploy_fases3_4.php`, somente em banco vazio e descartável. Inclui a suíte Fases 3–5; não executar ambas no mesmo banco já preenchido.
 
 Todos os nove Markdown existentes foram revisados: README, DEPLOY_TUTORIAL, guia aaPanel e os seis documentos em `docs/`. Documentos afetados são atualizados neste PR; regras eleitorais permanecem iguais. Não houve acesso ao servidor de produção nem validação visual interativa.
+
+## Atualização da composição do Estado-Maior
+
+Reaplique `php database/migrate_fases3_4.php` após backup e publicação da versão aprovada. A atualização cria `fase4_composicao`, preserva os avaliadores existentes e não reativa membros desmarcados em reexecuções. Antes de avançar, o ADMIN deve salvar os participantes desejados em Atribuição de Chefias e Perfis. Avaliações existentes não precisam ser apagadas ou refeitas. Consulte [o procedimento completo](COMPOSICAO_FASE4.md).
