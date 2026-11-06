@@ -85,6 +85,21 @@ class EstadoMaior {
         }
         return $dados;
     }
+    public static function opcoesPresidenciais(int $p,string $cat): array {
+        $opcoes=self::dadosCandidato($p,$cat,null); $populares=self::situacao($p)[$cat]['candidatos'];
+        $map=array_column($populares,null,'candidato_id');
+        foreach ($opcoes as &$c) {
+            $id=$c['candidato_id']; $c['posicao_fase3']=null; $c['posicao_fase4']=null;
+            $c['total_votos']=null; $c['pontos_fase4']=null;
+            $c['participou_fase3']=isset($map[$id]); $c['participou_fase4']=false;
+            if (isset($map[$id])) {
+                $v=(int)$map[$id]['total_votos']; $acima=0; $iguais=0;
+                foreach ($populares as $outro) { $acima+=(int)((int)$outro['total_votos']>$v); $iguais+=(int)((int)$outro['total_votos']===$v); }
+                $c['posicao_fase3']=$acima+1; $c['empate_fase3']=$iguais>1; $c['total_votos']=$v;
+            }
+        }
+        unset($c); return $opcoes;
+    }
     /** Chamado dentro da transação de avanço: fecha a urna mesmo quando há corte pendente. */
     public static function preparar(int $p, int $autor): bool {
         $c=self::ciclo($p);
@@ -319,4 +334,3 @@ class EstadoMaior {
         return $out;
     }
 }
-

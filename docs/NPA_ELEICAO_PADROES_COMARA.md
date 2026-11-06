@@ -57,7 +57,7 @@ O processo seletivo desenvolve-se obrigatoriamente através de cinco fases suces
 | 2 | Escolha de um representante por unidade e categoria disponível |
 | 3 | Votação do efetivo e classificação de até três por categoria |
 | 4 | Ordenação individual pelos Oficiais Superiores, com pesos 5–3–1 |
-| 5 | Consolidação final, minerva ou escolha excepcional e homologação |
+| 5 | Ordenação presidencial, inclusões, exclusões e homologação |
 
 ---
 
@@ -229,7 +229,7 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
 #### 6.5.3. Da Consolidação:
 1. O resultado de cada categoria corresponderá à soma dos pontos atribuídos nas ordenações individuais.
 2. Em igualdade de pontos, aplicar-se-ão os quatro critérios do item 6.4. Persistindo a igualdade, prevalecerá a maior quantidade de votos recebidos na Fase 3.
-3. Persistindo o empate após essas etapas, a decisão caberá à Presidência na Fase 5, mediante voto de minerva restrito aos empatados finais e fundamentação registrada.
+3. A classificação consolidada constituirá referência para a decisão da Presidência na Fase 5. Eventuais empates remanescentes serão indicados sem impor a ordem final presidencial, regida pelo item 6.6.
 
 ---
 
@@ -238,31 +238,28 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
 **Público-alvo:** Ordenador de Despesas e Autoridade Máxima da Organização Militar.
 
 #### Procedimentos na Fase 5:
-1. Acesse o menu **"Fase 5: Apuração e Homologação"**.
-2. O sistema apresenta o resultado consolidado das ordenações do Estado-Maior, conforme o item 6.5.3, preservando a identificação dos votos da Fase 3 para desempate.
-   - Para cada finalista, serão apresentadas separadamente a classificação popular da Fase 3, com posição e número de votos, e a ordenação final da Fase 4, com posição e soma dos pontos.
-   - A classificação popular considerará exclusivamente a quantidade de votos entre todos os candidatos da categoria naquela fase. Empatados compartilharão posição; essa apresentação não substitui os critérios regimentais de classificação para a Fase 4.
-   - A posição final da Fase 4 observará os desempates do item 6.5.3 e será preservada após eventual minerva. A escolha excepcional não receberá posição fictícia; dados não arquivados em homologações anteriores serão identificados como não registrados.
-3. **Tratamento Automático de Empate:**
-   - Em caso de empate em qualquer categoria, o sistema aplica previamente os critérios estatutários:
-     - Preferência a quem não venceu nos dois anos anteriores ao pleito;
-     - Maior antiguidade na COMARA (apresentação/admissão);
-     - Maior tempo de serviço militar ou civil;
-     - Maior nota do TACF.
-4. **Voto de Minerva:**
-   - A retirada do quinto item do painel geral não elimina esta funcionalidade da Fase 5.
-   - Após os quatro critérios, considerar-se-á a quantidade de votos da Fase 3. Persistindo o empate, a Presidência exercerá o **Voto de Minerva**, exclusivamente entre os empatados finais.
-   - Selecione o candidato vencedor na tela, insira a justificativa institucional e clique em **"Salvar decisão fundamentada"**.
-5. **Categoria sem Finalistas:**
-   - Somente quando uma categoria não tiver nenhum representante, a Presidência escolherá, com fundamentação obrigatória, entre os integrantes ativos daquela categoria registrados no encerramento da urna.
-   - A exceção será identificada expressamente na tela e na auditoria. Não alcançará outra categoria nem ampliará lista que contenha um, dois ou três finalistas.
-   - Se não houver nenhum integrante elegível naquela categoria, a homologação permanecerá bloqueada; o sistema não criará vencedor fictício.
+1. Acesse o menu **"Fase 5: Ordenação Presidencial e Homologação Oficial"**.
+2. Confira as referências das fases anteriores:
+   - Para cada finalista, serão apresentadas separadamente a classificação popular da Fase 3, com posição e votos, e a ordenação final da Fase 4, com posição e pontos.
+   - A posição popular considerará exclusivamente os votos de todos os candidatos da categoria; empatados compartilharão posição. A referência da Fase 4 seguirá o item 6.5.3.
+   - A decisão presidencial não modificará essas referências. Ausência de participação não receberá posição fictícia; homologações anteriores sem posição arquivada serão identificadas como dado não registrado.
+3. **Ordenação Presidencial:**
+   - A Presidência poderá definir livremente o 1º, 2º e 3º colocados de cada grupo, independentemente da classificação nas fases anteriores.
+   - Os campos iniciarão sem classificação predefinida. Todas as categorias exigirão decisão expressa, inclusive aquelas sem empate.
+   - As posições deverão ser únicas e contínuas a partir do 1º lugar. Poderão ser classificados um, dois ou três integrantes, sendo obrigatório ao menos um vencedor por grupo.
+4. **Exclusões e Inclusões:**
+   - Cada finalista poderá ser ordenado ou excluído nesta fase, com fundamentação da decisão. A exclusão não apagará o cadastro nem sua participação eleitoral anterior.
+   - A Presidência poderá incluir qualquer integrante ativo do mesmo grupo, mesmo que não tenha participado da Fase 1, usando o campo **"Incluir integrante deste grupo"**.
+   - A prerrogativa alcançará todas as categorias; não ficará restrita a empates ou grupos sem finalistas. Se não houver integrante ativo na categoria, a homologação ficará bloqueada.
+5. **Registro da Decisão:**
+   - Informe a fundamentação da ordenação, inclusões e exclusões, confirme expressamente e salve cada categoria.
+   - Consulte as avaliações individuais identificadas da Fase 4 na seção anterior ao Ato de Homologação; acesso restrito a PRESIDENTE e ADMIN, sem acesso às cédulas secretas da Fase 3.
 6. **Revisão de Decisões:**
-   - A decisão de minerva ou escolha excepcional poderá ser revista até a homologação, sempre dentro do conjunto originalmente permitido, com confirmação expressa e fundamentação.
-   - Cada alteração preservará autoria, data/hora e os dados da decisão anterior na auditoria. Formulário desatualizado exigirá nova conferência.
+   - A decisão poderá ser revista até a homologação, com nova fundamentação e confirmação expressa.
+   - Cada alteração preservará autoria, data/hora e decisão anterior na auditoria. Formulário desatualizado exigirá nova conferência.
 7. **Homologação e Publicação Oficial:**
    - A homologação exigirá um vencedor em cada uma das quatro categorias.
-   - Confira os quatro vencedores, registre a ata com no mínimo 20 caracteres, marque a confirmação expressa e acione **"HOMOLOGAR E BLOQUEAR RESULTADOS"**.
+   - Confira a ordenação salva, inclusões, exclusões e os quatro vencedores; registre a ata com no mínimo 20 caracteres, marque a confirmação expressa e acione **"HOMOLOGAR E BLOQUEAR RESULTADOS"**.
    - Vencedores, ata, retrato do resultado e auditoria serão gravados atomicamente. Falha de gravação não produzirá homologação parcial nem mensagem de sucesso.
    - Após homologação, decisões, notas, votos e resultados não poderão ser alterados pelas rotas comuns. O botão Reiniciar não poderá apagar eleição homologada, inclusive pelo ADMIN.
    - Antes da homologação, a apuração será consultada pelos perfis PRESIDENTE, ADMIN e DIRECAO_SUPERIOR. O efetivo terá acesso aos vencedores somente após homologação.
@@ -305,7 +302,7 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
 
 5. **Auditoria e Segurança (`admin/logs`):**
    - Inspeciona os registros de auditoria inalteráveis com retenção mínima obrigatória de **5 anos**.
-   - Todos os acessos, alterações de senha, inabilitações, votos de minerva, delegações de oficiais em missão e transições de fase geram registros de auditoria com hash encadeado, IP, data, hora e identificação do usuário. As cédulas da Fase 3 não são incluídas nesses registros.
+   - Todos os acessos, alterações de senha, inabilitações, decisões presidenciais, delegações de oficiais em missão e transições de fase geram registros de auditoria com hash encadeado, IP, data, hora e identificação do usuário. As cédulas da Fase 3 não são incluídas nesses registros.
 
 6. **Backups e Rotinas Preventivas (`admin/backups`):**
    - Monitora os backups diários automáticos (executados às 23:00 via Cron).
@@ -345,7 +342,7 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
 | **Fase 3** | Votação Geral Secreta na Urna Eletrônica | Todo o Efetivo da COMARA | Semana 5 |
 | **Corte Fase 3 → 4** | Encerramento da urna e resolução de eventual empate na terceira vaga | Administração / Presidência | Antes da abertura da Fase 4 |
 | **Fase 4** | Ordenações individuais, justificativas e consolidação 5–3–1 | Oficiais Superiores | Início da Semana 6 |
-| **Fase 5** | Minerva ou escolha excepcional, revisão, conferência dos quatro vencedores e homologação com ata | Chefe / Vice-Chefe da COMARA | Fim da Semana 6 |
+| **Fase 5** | Ordenação, inclusões, exclusões, revisão e homologação com ata | Chefe / Vice-Chefe da COMARA | Fim da Semana 6 |
 | **Publicação**| Após homologação: procedimentos de veiculação em Boletim e Placa de Homenagem | Seção de Comunicação Social (SCS) | Solenidade de Aniversário |
 
 ---
