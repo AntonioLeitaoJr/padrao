@@ -7,6 +7,7 @@ declare(strict_types=1);
  * Tambem pode ser incluido pelo instalador, apos a carga inicial.
  */
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/perfil_rh.php';
 
 /** @return list<array{descricao:string,sql:string}> */
 function identificarCorrecoesEsquema(PDO $pdo): array
@@ -30,6 +31,8 @@ function identificarCorrecoesEsquema(PDO $pdo): array
     }
 
     $correcoes = [];
+    $perfilRh = correcaoPerfilRh($pdo);
+    if ($perfilRh !== null) $correcoes[] = $perfilRh;
     $adicionarSeAusente = [
         ['efetivo', 'data_inicio_servico', 'ALTER TABLE efetivo ADD COLUMN data_inicio_servico DATE NULL AFTER data_admissao_comara'],
         ['fichas_indicacao', 'is_nob', 'ALTER TABLE fichas_indicacao ADD COLUMN is_nob TINYINT(1) NOT NULL DEFAULT 0 AFTER tipo_avaliacao'],

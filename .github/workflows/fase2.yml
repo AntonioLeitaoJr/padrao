@@ -48,4 +48,10 @@ jobs:
         run: |
           mysql -h127.0.0.1 -uroot -ptest -e 'CREATE DATABASE comara_fase34_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
           php tests/teste_composicao_fase4.php
-
+      - name: Cadastro, RH e unicidade em banco descartável
+        env:
+          DB_NAME: comara_cadastro_test
+          CADASTRO_TEST_DB: '1'
+        run: |
+          mysql -h127.0.0.1 -uroot -ptest -e 'CREATE DATABASE comara_cadastro_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
+          php tests/teste_cadastro_integracao.php

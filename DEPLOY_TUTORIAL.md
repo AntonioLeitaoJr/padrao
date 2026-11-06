@@ -334,3 +334,7 @@ Consulte o [procedimento de correção pós-deploy](docs/CORRECAO_DEPLOY_FASES3_
 ## Atualização da composição do Estado-Maior
 
 Reaplique `php database/migrate_fases3_4.php` após backup e publicação da versão aprovada. A atualização cria `fase4_composicao`, preserva os avaliadores existentes e não reativa membros desmarcados em reexecuções. Antes de avançar, o ADMIN deve salvar os participantes desejados em Atribuição de Chefias e Perfis. Avaliações existentes não precisam ser apagadas ou refeitas. Consulte [o procedimento completo](docs/COMPOSICAO_FASE4.md).
+
+## Cadastro: RH e matrícula/SARAM
+
+Para bancos legados que recusam RH e para impedir novas matrículas duplicadas, siga o [procedimento de diagnóstico e atualização](docs/CORRECAO_CADASTRO_RH_SARAM.md). Após backup e deploy, execute `php database/migrate_perfil_rh.php --check` e `php database/migrate_saram_unico.php --check`. Aplique cada ajuste com `--apply` quando indicado. Duplicados existentes são reportados para conferência, sem exclusão automática de dados eleitorais.

@@ -217,3 +217,7 @@ Na Fase 5, cada finalista apresenta a **classificação popular da Fase 3 (posi�
 ## Participantes da Fase 4
 
 A seleção em **Atribuição de Chefias e Perfis > Membros da Direção Superior** determina quem ordena e quem é exigido no avanço. É independente dos perfis de chefe/ADMIN/PRESIDENTE, ajustável até a Fase 4 e bloqueada a partir da Fase 5. Desmarcados deixam de somar pontos e de bloquear o avanço; avaliações são preservadas. Após atualizar, reaplique `migrate_fases3_4.php` e salve a composição desejada. Consulte [procedimento e testes](docs/COMPOSICAO_FASE4.md).
+
+## Cadastro: RH e matrícula/SARAM
+
+Para bancos legados que recusam RH e para impedir novas matrículas duplicadas, siga o [procedimento de diagnóstico e atualização](docs/CORRECAO_CADASTRO_RH_SARAM.md). Após backup e deploy, execute `php database/migrate_perfil_rh.php --check` e `php database/migrate_saram_unico.php --check`. Aplique cada ajuste com `--apply` quando indicado. Duplicados existentes são reportados para conferência, sem exclusão automática de dados eleitorais.
