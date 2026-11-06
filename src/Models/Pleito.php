@@ -370,6 +370,7 @@ class Pleito {
             if ($limparDados) {
                 $pdo->prepare('DELETE FROM fase4_ciclos WHERE pleito_id=?')->execute([$pleitoId]);
                 $pdo->prepare('DELETE FROM homologacao_pleito WHERE pleito_id = :p')->execute([':p' => $pleitoId]);
+                if ($pdo->query("SHOW TABLES LIKE 'fase5_decisoes'")->fetch()) $pdo->prepare('DELETE FROM fase5_decisoes WHERE pleito_id=?')->execute([$pleitoId]);
                 $pdo->prepare('DELETE FROM voto_minerva_presidente WHERE pleito_id = :p')->execute([':p' => $pleitoId]);
                 $pdo->prepare('DELETE FROM urna_votos WHERE pleito_id = :p')->execute([':p' => $pleitoId]);
                 $pdo->prepare('DELETE FROM eleitores_ciclo WHERE pleito_id = :p')->execute([':p' => $pleitoId]);
@@ -427,4 +428,3 @@ class Pleito {
         }
     }
 }
-

@@ -94,6 +94,9 @@ switch ($rota) {
     case 'fase5':
         (new Fase5Controller())->index();
         break;
+    case 'fase5/ordenar':
+        (new Fase5Controller())->ordenar();
+        break;
     case 'fase5/minerva':
         (new Fase5Controller())->votoMinerva();
         break;
