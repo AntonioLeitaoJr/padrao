@@ -84,4 +84,17 @@ rejeita(fn()=>Efetivo::salvarOuAtualizar(dados('001234')+['id'=>$id]),'duplicida
 $antes=$pdo->query('SELECT * FROM efetivo ORDER BY id')->fetchAll();
 $out=phpScript('$argv=["migrate_saram_unico.php","--apply"]; require '.var_export(ROOT_PATH.'/database/migrate_saram_unico.php',true).';',2);
 check(str_contains($out,'registros') && $antes===$pdo->query('SELECT * FROM efetivo ORDER BY id')->fetchAll(),'migração reporta IDs e preserva duplicados legados');
+// CSV não escolhe um registro legado arbitrariamente, mas continua processando linhas válidas.
+$csv=tempnam(sys_get_temp_dir(),'cadastro-csv-');
+file_put_contents($csv,"SARAM;CPF;NOME;NOME_GUERRA;POSTO;CATEGORIA;VINCULO\n001234;;Não sobrescrever;Não sobrescrever;1S;graduado;MILITAR_CARREIRA\n8888;;Importado;Importado;1S;graduado;MILITAR_CARREIRA\n");
+$out=phpScript('require '.var_export(ROOT_PATH.'/src/Controllers/AdminController.php',true).'; $_SESSION["user"]=["id"=>1,"perfil"=>"ADMIN"]; $_SESSION["csrf_token"]="teste"; $_SERVER["REQUEST_METHOD"]="POST"; $_POST=["csrf_token"=>"teste"]; $_FILES=["arquivo_csv"=>["tmp_name"=>'.var_export($csv,true).',"error"=>0]]; register_shutdown_function(function(){echo json_encode($_SESSION["flash"]??[]);}); (new AdminController())->importarCsv();');
+unlink($csv); $flash=json_decode($out,true,512,JSON_THROW_ON_ERROR);
+check(isset($flash['erro']) && str_contains($flash['erro']['message'],'Linha 2'),'CSV informa linha ambígua');
+check((int)$pdo->query("SELECT COUNT(*) FROM efetivo WHERE saram='8888'")->fetchColumn()===1,'CSV processa somente linhas válidas');
+check(Efetivo::getPorId($id)['nome']!=='NÃO SOBRESCREVER','CSV não sobrescreve cadastro ambíguo');
+$pdo->exec("UPDATE efetivo SET saram='CORRIGIDO' WHERE nome='Legado duplicado'");
+$out=phpScript('$argv=["migrate_saram_unico.php","--apply"]; require '.var_export(ROOT_PATH.'/database/migrate_saram_unico.php',true).';');
+check(str_contains($out,'Unicidade'),'migração instala índice após saneamento');
+$out=phpScript('$argv=["migrate_saram_unico.php","--apply"]; require '.var_export(ROOT_PATH.'/database/migrate_saram_unico.php',true).';');
+check(str_contains($out,'já instalado'),'migração de unicidade idempotente');
 echo "$n verificações de cadastro aprovadas.\n";

@@ -685,48 +685,48 @@ class AdminController {
                 }
 
                 try {
-                // Verifica se já existe por SARAM ou CPF
-                $existenteId = null;
-                if ($saram !== '') {
-                    $stmtCheck = $pdo->prepare('SELECT id FROM efetivo WHERE TRIM(saram) = :s');
-                    $stmtCheck->execute([':s' => $saram]);
-                    $encontrados=$stmtCheck->fetchAll(PDO::FETCH_COLUMN);
-                    if (count($encontrados)>1) throw new InvalidArgumentException('Identificador duplicado na base; confira os cadastros antes de importar.');
-                    $existenteId=$encontrados[0]??null;
-                }
-                if (!$existenteId && $cpf !== '') {
-                    $cpfNumeros = preg_replace('/\D/', '', $cpf);
-                    $stmtCheck = $pdo->prepare('SELECT id FROM efetivo WHERE cpf_hash = :h');
-                    $stmtCheck->execute([':h' => hash('sha256', $cpfNumeros)]);
-                    $encontrados=$stmtCheck->fetchAll(PDO::FETCH_COLUMN);
-                    if (count($encontrados)>1) throw new InvalidArgumentException('Identificador duplicado na base; confira os cadastros antes de importar.');
-                    $existenteId=$encontrados[0]??null;
-                }
+                    // Verifica se já existe por SARAM ou CPF
+                    $existenteId = null;
+                    if ($saram !== '') {
+                        $stmtCheck = $pdo->prepare('SELECT id FROM efetivo WHERE TRIM(saram) = :s');
+                        $stmtCheck->execute([':s' => $saram]);
+                        $encontrados=$stmtCheck->fetchAll(PDO::FETCH_COLUMN);
+                        if (count($encontrados)>1) throw new InvalidArgumentException('Identificador duplicado na base; confira os cadastros antes de importar.');
+                        $existenteId=$encontrados[0]??null;
+                    }
+                    if (!$existenteId && $cpf !== '') {
+                        $cpfNumeros = preg_replace('/\D/', '', $cpf);
+                        $stmtCheck = $pdo->prepare('SELECT id FROM efetivo WHERE cpf_hash = :h');
+                        $stmtCheck->execute([':h' => hash('sha256', $cpfNumeros)]);
+                        $encontrados=$stmtCheck->fetchAll(PDO::FETCH_COLUMN);
+                        if (count($encontrados)>1) throw new InvalidArgumentException('Identificador duplicado na base; confira os cadastros antes de importar.');
+                        $existenteId=$encontrados[0]??null;
+                    }
 
-                $dadosSalvar = [
-                    'id'             => $existenteId ?: null,
-                    'saram'          => $saram,
-                    'cpf'            => $cpf,
-                    'nome'           => $nome,
-                    'nome_guerra'    => $nomeGuerra,
-                    'posto'          => $posto,
-                    'quadro'         => $quadro,
-                    'especialidade'  => $esp,
-                    'setor'          => $setor,
-                    'divisao_sigla'  => $divisao,
-                    'categoria'      => $cat,
-                    'tipo_vinculo'   => $vinculo ?: 'MILITAR_CARREIRA',
-                    'telefone'       => $tel,
-                    'ativo'          => 1
-                ];
+                    $dadosSalvar = [
+                        'id'             => $existenteId ?: null,
+                        'saram'          => $saram,
+                        'cpf'            => $cpf,
+                        'nome'           => $nome,
+                        'nome_guerra'    => $nomeGuerra,
+                        'posto'          => $posto,
+                        'quadro'         => $quadro,
+                        'especialidade'  => $esp,
+                        'setor'          => $setor,
+                        'divisao_sigla'  => $divisao,
+                        'categoria'      => $cat,
+                        'tipo_vinculo'   => $vinculo ?: 'MILITAR_CARREIRA',
+                        'telefone'       => $tel,
+                        'ativo'          => 1
+                    ];
 
-                Efetivo::salvarOuAtualizar($dadosSalvar);
-                $totalProcessados++;
-                if ($existenteId) {
-                    $totalAtualizados++;
-                } else {
-                    $totalInseridos++;
-                }
+                    Efetivo::salvarOuAtualizar($dadosSalvar);
+                    $totalProcessados++;
+                    if ($existenteId) {
+                        $totalAtualizados++;
+                    } else {
+                        $totalInseridos++;
+                    }
                 } catch (Throwable $e) {
                     error_log('[IMPORTACAO_CADASTRO] '.$e->getMessage());
                     $rejeitadas[]='Linha '.($i+1).': '.($e instanceof InvalidArgumentException ? $e->getMessage() : 'Falha ao salvar; solicite conferência ao STI.');
