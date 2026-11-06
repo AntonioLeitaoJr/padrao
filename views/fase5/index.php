@@ -46,7 +46,7 @@ $podeHomologar = count(array_filter($apuracao['categorias'],fn($c)=>!empty($c['v
                 <div class="card-body text-center p-3">
                     <?php if ($vencedor): ?>
                         <div class="position-relative d-inline-block mb-2">
-                            <img src="/index.php?r=foto&saram=<?= rawurlencode((string)$vencedor['saram']) ?>&id=<?= $vencedor['candidato_id'] ?>" 
+                            <img src="/index.php?r=foto&saram=<?= rawurlencode((string)$vencedor['saram']) ?>&id=<?= $vencedor['candidato_id'] ?>"
                                  class="cand-photo border border-3 border-primary shadow" alt="Foto">
                             <span class="position-absolute bottom-0 start-50 translate-middle-x badge bg-success fs-6">
                                 <i class="bi bi-trophy-fill text-warning"></i> 1º LUGAR
@@ -57,7 +57,7 @@ $podeHomologar = count(array_filter($apuracao['categorias'],fn($c)=>!empty($c['v
                         </h5>
                         <small class="text-muted d-block text-truncate"><?= sanitize_output($vencedor['nome']) ?></small>
                         <div class="small text-secondary mb-2"><?= sanitize_output($vencedor['setor']) ?> (<?= sanitize_output($vencedor['divisao_sigla']) ?>)</div>
-                        
+
                         <div class="p-2 bg-light rounded border">
                             <div class="h4 fw-bold text-primary mb-0"><?= $vencedor['pontos_fase4'] ?? '—' ?></div>
                             <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Pontos da Fase 4</small><div class="small">Votos da Fase 3: <?= $vencedor['total_votos'] ?? '—' ?></div>
@@ -114,7 +114,7 @@ $podeHomologar = count(array_filter($apuracao['categorias'],fn($c)=>!empty($c['v
             <span class="badge bg-secondary"><?= count($ranking) ?> Candidatos na lista</span>
         </div>
         <div class="card-body p-0">
-            
+
             <?php if ($editar): ?>
             <form class="ordenacao-fase5" method="POST" action="/index.php?r=fase5/ordenar" onsubmit="return confirm('Salvar a ordenação, inclusões e exclusões desta categoria?');">
                 <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
@@ -273,7 +273,7 @@ $podeHomologar = count(array_filter($apuracao['categorias'],fn($c)=>!empty($c['v
                 <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
 
                 <p class="text-muted small">
-                    Ao homologar este pleito, o Sr. Presidente confirma e proclama os padrões eleitos das 4 categorias regimentais. 
+                    Ao homologar este pleito, o Sr. Presidente confirma e proclama os padrões eleitos das 4 categorias regimentais.
                     <strong class="text-danger">A homologação bloqueia permanentemente a edição de notas, votos e resultados.</strong>
                 </p>
 

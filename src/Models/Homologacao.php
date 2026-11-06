@@ -32,6 +32,7 @@ class Homologacao {
             $r['categoria']=CATEGORIAS_PADRAO[$cat]; $r['referencia_fase4']=$r['ranking'];
             $r['decisao_presidencial']=$decisoes[$cat]??null;
             $r['minerva_registrado']=null; $r['vencedor']=null; $r['excluidos']=[];
+            $r['requer_voto_de_minerva']=false; $r['requer_ordenacao_presidencial']=!isset($decisoes[$cat]);
             $r['criterio_resultado']='Aguardando ordenação expressa da Presidência.';
             if (isset($decisoes[$cat])) {
                 $d=json_decode($decisoes[$cat]['decisao_json'],true,512,JSON_THROW_ON_ERROR);

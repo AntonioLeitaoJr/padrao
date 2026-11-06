@@ -23,7 +23,7 @@ function renderizarFase5Teste(int $p,int $u): string {
 function executarControllerTeste(string $classe,string $metodo,int $usuario,array $post=[],array $get=[]): string {
     $script=tempnam(sys_get_temp_dir(),'comara-controller-');
     $code='<?php require '.var_export(ROOT_PATH.'/src/Controllers/'.$classe.'.php',true).'; '
-        .'$_SESSION["user"]=EstadoMaior::usuario('.$usuario.'); $_POST='.var_export($post,true).'; $_GET='.var_export($get,true).'; '
+        .'$_SESSION["user"]=EstadoMaior::usuario('.$usuario.'); $_SESSION["csrf_token"]="fase5-teste"; $_POST='.var_export($post,true).'; $_GET='.var_export($get,true).'; '
         .'$_SERVER["REQUEST_METHOD"]='.var_export($post?'POST':'GET',true).'; '
         .'register_shutdown_function(function(){echo "FLASH:".json_encode($_SESSION["flash"]??[],JSON_UNESCAPED_UNICODE);}); '
         .'(new '.$classe.'())->'.$metodo.'();';
@@ -65,6 +65,9 @@ check(strpos($html,'Avaliações individuais da Fase 4 — consulta restrita')<s
 check(!str_contains(renderizarFase5Teste(2,$major),'name="categoria"'),'Direção não recebe controles presidenciais');
 check(!str_contains(renderizarFase5Teste(2,$major),'Avaliações individuais da Fase 4 — consulta restrita'),'Direção não consulta avaliações identificadas');
 check(!Homologacao::homologarResultados(2,$pres,$ata)['sucesso'],'sem decisões homologação bloqueada');
+$pdo->exec('RENAME TABLE fase5_decisoes TO fase5_decisoes_ausente');
+rejeita(fn()=>Homologacao::apurarResultados(2),'migração ausente bloqueia apuração');
+$pdo->exec('RENAME TABLE fase5_decisoes_ausente TO fase5_decisoes');
 $refs=$r['graduado']['referencia_fase4']; $g1=(int)$refs[0]['candidato_id']; $g2=(int)$refs[1]['candidato_id']; $g3=(int)$refs[2]['candidato_id'];
 $ord=[['candidato_id'=>$g1,'posicao'=>3],['candidato_id'=>$g2,'posicao'=>1],['candidato_id'=>$g3,'posicao'=>2]];
 $vazio=Homologacao::versaoDecisao(null);
@@ -76,6 +79,10 @@ $x=$ord; $x[1]['candidato_id']=$g1;
 check(!Homologacao::salvarOrdenacao(2,'graduado',$x,'Motivo',$pres,$vazio)['sucesso'],'pessoa repetida rejeitada');
 check(!Homologacao::salvarOrdenacao(2,'graduado',[['candidato_id'=>[],'posicao'=>1]],'Motivo',$pres,$vazio)['sucesso'],'item malformado rejeitado');
 check(!Homologacao::salvarOrdenacao(2,'invalida',$ord,'Motivo',$pres,$vazio)['sucesso'],'categoria inválida rejeitada');
+$x=$ord; foreach ($x as &$item) $item['posicao']='excluir'; unset($item);
+check(!Homologacao::salvarOrdenacao(2,'graduado',$x,'Motivo',$pres,$vazio)['sucesso'],'não deixa categoria sem vencedor');
+$x[0]['posicao']=1; $x[1]['posicao']=3;
+check(!Homologacao::salvarOrdenacao(2,'graduado',$x,'Motivo',$pres,$vazio)['sucesso'],'não aceita lacunas de posição');
 check(!Homologacao::salvarOrdenacao(2,'graduado',array_slice($ord,0,1),'Motivo',$pres,$vazio)['sucesso'],'omissão de finalista rejeitada');
 $pdo->exec("UPDATE pleitos SET fase_atual=4 WHERE id=2");
 check(!Homologacao::salvarOrdenacao(2,'graduado',$ord,'Motivo',$pres,$vazio)['sucesso'],'fora da fase rejeitado');
@@ -109,6 +116,11 @@ $pdo->exec('UPDATE efetivo SET ativo=1 WHERE id='.$novo);
 $post=['pleito_id'=>2,'categoria'=>'graduado','escolhas'=>$ord,'justificativa'=>'Tentativa','confirmar'=>'1','versao'=>'x','csrf_token'=>['malformado']];
 $out=executarControllerTeste('Fase5Controller','ordenar',$pres,$post);
 check(str_contains($out,'Recarregue'),'CSRF malformado rejeitado sem fatal');
+$post['csrf_token']='fase5-teste';
+$post['versao']=Homologacao::versaoDecisao(Homologacao::apurarResultados(2)['categorias']['graduado']['decisao_presidencial']);
+$post['escolhas']=[['candidato_id'=>$g1,'posicao'=>'excluir'],['candidato_id'=>$g2,'posicao'=>'excluir'],['candidato_id'=>$g3,'posicao'=>'2'],['candidato_id'=>$novo,'posicao'=>'1'],['candidato_id'=>'','posicao'=>'']];
+$out=executarControllerTeste('Fase5Controller','ordenar',$pres,$post);
+check(str_contains($out,'sucesso') && (int)Homologacao::apurarResultados(2)['categorias']['graduado']['vencedor']['candidato_id']===$novo,'rota real salva inclusões exclusões e posições');
 rejeita(fn()=>Homologacao::avaliacoesIndividuais(2,$major),'Direção não consulta avaliações identificadas');
 check(count(Homologacao::avaliacoesIndividuais(2,$pres))===12,'Presidência consulta avaliações');
 check(!Homologacao::homologarResultados(2,$major,$ata)['sucesso'],'Direção não homologa');
@@ -132,6 +144,11 @@ check(count($salvo['categorias']['graduado']['excluidos'])===2 && (int)$salvo['c
 check(!Homologacao::salvarOrdenacao(2,'graduado',$ord,'Tardia',$pres,$vazio)['sucesso'],'homologação bloqueia revisão');
 check(!Homologacao::homologarResultados(2,$pres,$ata)['sucesso'],'não duplica homologação');
 check(!Pleito::reiniciar(2,true,false,$admin)['sucesso'] && !Pleito::voltarFase(2,$admin)['sucesso'],'protege eleição homologada');
+require_once __DIR__.'/../src/Models/FichaIndicacao.php';
+require_once __DIR__.'/../src/Models/AvaliacaoTacf.php';
+rejeita(fn()=>FichaIndicacao::salvarFicha(['pleito_id'=>2,'candidato_id'=>$g1],$admin),'fichas protegidas após homologação');
+rejeita(fn()=>AvaliacaoTacf::salvarNota(2,$g1,5,$admin),'TACF protegido após homologação');
+rejeita(fn()=>Efetivo::salvarDelegacao(2,$g1,1,$admin,'Missão'),'delegação protegida após homologação');
 check(!str_contains(renderizarFase5Teste(2,$pres),'name="categoria"'),'tela homologada sem controles');
 $out=executarControllerTeste('RelatorioController','siteOficial',1,[],['pleito_id'=>2]);
 check(str_contains($out,'Novo'),'publicação usa vencedor presidencial');

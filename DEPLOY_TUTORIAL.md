@@ -334,3 +334,7 @@ Consulte o [procedimento de correção pós-deploy](docs/CORRECAO_DEPLOY_FASES3_
 ## Atualização da composição do Estado-Maior
 
 Reaplique `php database/migrate_fases3_4.php` após backup e publicação da versão aprovada. A atualização cria `fase4_composicao`, preserva os avaliadores existentes e não reativa membros desmarcados em reexecuções. Antes de avançar, o ADMIN deve salvar os participantes desejados em Atribuição de Chefias e Perfis. Avaliações existentes não precisam ser apagadas ou refeitas. Consulte [o procedimento completo](docs/COMPOSICAO_FASE4.md).
+
+## Ordenação presidencial da Fase 5
+
+Após backup e deploy desta atualização, reaplique `php database/migrate_fase5.php` para criar `fase5_decisoes`. A Presidência precisa salvar a ordenação das quatro categorias, podendo incluir e excluir integrantes, antes de homologar. Não reinicie o pleito para isso. Homologações já registradas não são recalculadas.
