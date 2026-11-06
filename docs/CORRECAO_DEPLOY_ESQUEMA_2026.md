@@ -84,3 +84,7 @@ Este ajuste corrige a estrutura prevista no schema e o erro encontrado nas telas
 ## Complemento das Fases 3, 4 e 5
 
 `migrar_esquema.php --check` verifica a compatibilidade descrita neste documento, mas não substitui as migrações eleitorais. Depois de resolver essas pendências e confirmar o backup, execute em ordem `migrate_fase2.php`, `migrate_fases3_4.php` e `migrate_fase5.php`, interrompendo diante de falha. Consulte [a correção pós-deploy das Fases 3 e 4](CORRECAO_DEPLOY_FASES3_4.md). Não execute os testes de integração no banco de produção.
+
+## Cadastro: RH e matrícula/SARAM
+
+Para bancos legados que recusam RH e para impedir novas matrículas duplicadas, siga o [procedimento de diagnóstico e atualização](CORRECAO_CADASTRO_RH_SARAM.md). Após backup e deploy, execute `php database/migrate_perfil_rh.php --check` e `php database/migrate_saram_unico.php --check`. Aplique cada ajuste com `--apply` quando indicado. Duplicados existentes são reportados para conferência, sem exclusão automática de dados eleitorais.

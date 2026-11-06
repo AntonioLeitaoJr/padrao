@@ -397,54 +397,69 @@ class AdminController {
                 }
             }
 
+            $pdo = Database::getConnection();
+            $cadastroBloqueado=false;
             try {
+                Efetivo::bloquearCadastro(); $cadastroBloqueado=true;
+                // Sem DDL na requisição: orientar a migração antes de qualquer gravação.
+                if (AuthManager::hasRole(PERFIL_ADMIN) && !empty($_POST['is_rh'])) {
+                    require_once ROOT_PATH.'/database/perfil_rh.php';
+                    if (correcaoPerfilRh($pdo)!==null) throw new InvalidArgumentException('O banco ainda não aceita o perfil RH. STI: após backup, execute php database/migrate_perfil_rh.php --apply e tente novamente.');
+                }
+                $pdo->beginTransaction();
                 $salvoId = Efetivo::salvarOuAtualizar($_POST, $fotoCustom);
-            } catch (InvalidArgumentException $e) {
-                flash_message('erro', $e->getMessage(), 'danger');
-                header('Location: /index.php?r=admin/efetivo'); exit;
-            }
 
-            // Atualiza papel de Administrador ou RH exclusivamente se a alteração for feita por um Administrador Geral
-            if (AuthManager::hasRole(PERFIL_ADMIN)) {
-                $pdo = Database::getConnection();
-                $stmtU = $pdo->prepare('SELECT id, login, perfil FROM usuarios WHERE efetivo_id = :ef LIMIT 1');
-                $stmtU->execute([':ef' => $salvoId]);
-                $userFound = $stmtU->fetch();
+                // Atualiza papel de Administrador ou RH exclusivamente se a alteração for feita por um Administrador Geral
+                if (AuthManager::hasRole(PERFIL_ADMIN)) {
+                    $pdo = Database::getConnection();
+                    $stmtU = $pdo->prepare('SELECT id, login, perfil FROM usuarios WHERE efetivo_id = :ef LIMIT 1');
+                    $stmtU->execute([':ef' => $salvoId]);
+                    $userFound = $stmtU->fetch();
 
-                if ($userFound && $userFound['login'] !== 'admin') {
-                    $novoPerfil = $userFound['perfil'];
+                    if ($userFound && $userFound['login'] !== 'admin') {
+                        $novoPerfil = $userFound['perfil'];
 
-                    if (isset($_POST['is_admin_enviado'])) {
-                        $isAdmin = !empty($_POST['is_admin']);
-                        if ($isAdmin) {
-                            $novoPerfil = PERFIL_ADMIN;
-                        } elseif ($userFound['perfil'] === PERFIL_ADMIN) {
-                            $novoPerfil = PERFIL_ELEITOR;
+                        if (isset($_POST['is_admin_enviado'])) {
+                            $isAdmin = !empty($_POST['is_admin']);
+                            if ($isAdmin) {
+                                $novoPerfil = PERFIL_ADMIN;
+                            } elseif ($userFound['perfil'] === PERFIL_ADMIN) {
+                                $novoPerfil = PERFIL_ELEITOR;
+                            }
                         }
-                    }
 
-                    if (isset($_POST['is_rh_enviado'])) {
-                        $isRh = !empty($_POST['is_rh']);
-                        if ($isRh && $novoPerfil !== PERFIL_ADMIN) {
-                            $novoPerfil = PERFIL_RH;
-                        } elseif (!$isRh && $userFound['perfil'] === PERFIL_RH) {
-                            $novoPerfil = PERFIL_ELEITOR;
+                        if (isset($_POST['is_rh_enviado'])) {
+                            $isRh = !empty($_POST['is_rh']);
+                            if ($isRh && $novoPerfil !== PERFIL_ADMIN) {
+                                $novoPerfil = PERFIL_RH;
+                            } elseif (!$isRh && $novoPerfil === PERFIL_RH) {
+                                $novoPerfil = PERFIL_ELEITOR;
+                            }
                         }
-                    }
 
-                    if ($novoPerfil !== $userFound['perfil']) {
-                        $pdo->prepare('UPDATE usuarios SET perfil = :p WHERE id = :id')->execute([':p' => $novoPerfil, ':id' => $userFound['id']]);
-                        AuditoriaService::log('PERFIL_USUARIO_ATUALIZADO', ['efetivo_id' => $salvoId, 'novo_perfil' => $novoPerfil]);
+                        if ($novoPerfil !== $userFound['perfil']) {
+                            $pdo->prepare('UPDATE usuarios SET perfil = :p WHERE id = :id')->execute([':p' => $novoPerfil, ':id' => $userFound['id']]);
+                            AuditoriaService::log('PERFIL_USUARIO_ATUALIZADO', ['efetivo_id' => $salvoId, 'novo_perfil' => $novoPerfil], null, null, true);
+                        }
                     }
                 }
-            }
 
-            AuditoriaService::log($id ? 'EFETIVO_ATUALIZADO' : 'EFETIVO_CADASTRADO', [
-                'efetivo_id' => $salvoId,
-                'nome'       => $_POST['nome'] ?? '',
-                'saram'      => $_POST['saram'] ?? '',
-                'categoria'  => $_POST['categoria'] ?? ''
-            ]);
+                AuditoriaService::log($id ? 'EFETIVO_ATUALIZADO' : 'EFETIVO_CADASTRADO', [
+                    'efetivo_id' => $salvoId,
+                    'nome'       => $_POST['nome'] ?? '',
+                    'saram'      => $_POST['saram'] ?? '',
+                    'categoria'  => $_POST['categoria'] ?? ''
+                ], null, null, true);
+
+                $pdo->commit();
+            } catch (Throwable $e) {
+                if ($pdo->inTransaction()) $pdo->rollBack();
+                error_log('[SALVAR_EFETIVO] '.$e->getMessage());
+                $mensagem=$e instanceof InvalidArgumentException ? $e->getMessage() : 'Não foi possível salvar o cadastro e o perfil. Nenhuma alteração no banco foi concluída. Solicite ao STI a verificação do log SALVAR_EFETIVO.';
+                flash_message('erro', $mensagem, 'danger');
+                if ($cadastroBloqueado) { Efetivo::liberarCadastro(); $cadastroBloqueado=false; }
+                header('Location: /index.php?r=admin/efetivo'); exit;
+            } finally { if ($cadastroBloqueado) Efetivo::liberarCadastro(); }
 
             flash_message('sucesso', 'Registro do militar/servidor salvo com sucesso!', 'success');
         }
@@ -606,6 +621,7 @@ class AdminController {
             $totalProcessados = 0;
             $totalInseridos = 0;
             $totalAtualizados = 0;
+            $rejeitadas = [];
             $pdo = Database::getConnection();
 
             for ($i = 1; $i < count($linhas); $i++) {
@@ -668,18 +684,23 @@ class AdminController {
                     }
                 }
 
+                try {
                 // Verifica se já existe por SARAM ou CPF
                 $existenteId = null;
                 if ($saram !== '') {
-                    $stmtCheck = $pdo->prepare('SELECT id FROM efetivo WHERE saram = :s LIMIT 1');
+                    $stmtCheck = $pdo->prepare('SELECT id FROM efetivo WHERE TRIM(saram) = :s');
                     $stmtCheck->execute([':s' => $saram]);
-                    $existenteId = $stmtCheck->fetchColumn();
+                    $encontrados=$stmtCheck->fetchAll(PDO::FETCH_COLUMN);
+                    if (count($encontrados)>1) throw new InvalidArgumentException('Identificador duplicado na base; confira os cadastros antes de importar.');
+                    $existenteId=$encontrados[0]??null;
                 }
                 if (!$existenteId && $cpf !== '') {
                     $cpfNumeros = preg_replace('/\D/', '', $cpf);
-                    $stmtCheck = $pdo->prepare('SELECT id FROM efetivo WHERE cpf_hash = :h LIMIT 1');
+                    $stmtCheck = $pdo->prepare('SELECT id FROM efetivo WHERE cpf_hash = :h');
                     $stmtCheck->execute([':h' => hash('sha256', $cpfNumeros)]);
-                    $existenteId = $stmtCheck->fetchColumn();
+                    $encontrados=$stmtCheck->fetchAll(PDO::FETCH_COLUMN);
+                    if (count($encontrados)>1) throw new InvalidArgumentException('Identificador duplicado na base; confira os cadastros antes de importar.');
+                    $existenteId=$encontrados[0]??null;
                 }
 
                 $dadosSalvar = [
@@ -706,6 +727,10 @@ class AdminController {
                 } else {
                     $totalInseridos++;
                 }
+                } catch (Throwable $e) {
+                    error_log('[IMPORTACAO_CADASTRO] '.$e->getMessage());
+                    $rejeitadas[]='Linha '.($i+1).': '.($e instanceof InvalidArgumentException ? $e->getMessage() : 'Falha ao salvar; solicite conferência ao STI.');
+                }
             }
 
             AuditoriaService::log('IMPORTACAO_CSV_EFETIVO', [
@@ -714,6 +739,7 @@ class AdminController {
                 'atualizados' => $totalAtualizados
             ]);
 
+            if ($rejeitadas) flash_message('erro', implode(' ', $rejeitadas), 'warning');
             flash_message('sucesso', "Importação concluída! {$totalProcessados} registros processados ({$totalInseridos} novos cadastrados, {$totalAtualizados} atualizados).", 'success');
         }
 
@@ -1035,6 +1061,11 @@ class AdminController {
                     }
                 }
             } elseif ($secao === 'rh_adicionar') {
+                require_once ROOT_PATH.'/database/perfil_rh.php';
+                if (correcaoPerfilRh($pdo)!==null) {
+                    flash_message('erro','O banco ainda não aceita RH. STI: após backup, execute php database/migrate_perfil_rh.php --apply.','danger');
+                    header('Location: /index.php?r=admin/chefias'); exit;
+                }
                 $efetivoId = (int)($_POST['rh_efetivo_id'] ?? 0);
                 if ($efetivoId > 0) {
                     $militar = Efetivo::getPorId($efetivoId);
@@ -1167,4 +1198,3 @@ class AdminController {
         exit;
     }
 }
-

@@ -562,11 +562,48 @@ class Efetivo {
     /**
      * Salva ou atualiza um militar/servidor civil e sua conta de acesso
      */
+    // Serializa cadastro manual e importação, inclusive em bases legadas ainda sem índice único.
+    public static function bloquearCadastro(): void {
+        $s=Database::getConnection()->prepare('SELECT GET_LOCK(?,10)');
+        $s->execute(['comara_cadastro_'.substr(hash('sha256',DB_NAME),0,32)]);
+        if ((int)$s->fetchColumn()!==1) throw new RuntimeException('Cadastro ocupado. Tente novamente.');
+    }
+    public static function liberarCadastro(): void {
+        $s=Database::getConnection()->prepare('SELECT RELEASE_LOCK(?)');
+        $s->execute(['comara_cadastro_'.substr(hash('sha256',DB_NAME),0,32)]);
+    }
     public static function salvarOuAtualizar(array $dados, ?string $fotoCustom = null): int {
+        $pdo=Database::getConnection(); $propria=!$pdo->inTransaction();
+        self::bloquearCadastro();
+        try {
+            if ($propria) $pdo->beginTransaction();
+            $id=self::gravarCadastro($dados,$fotoCustom);
+            if ($propria) $pdo->commit();
+            return $id;
+        } catch (Throwable $e) {
+            if ($propria && $pdo->inTransaction()) $pdo->rollBack();
+            if ($e instanceof PDOException && (int)($e->errorInfo[1]??0)===1062) throw new InvalidArgumentException('Matrícula/SARAM ou login já cadastrado. Localize o registro existente; nenhuma nova conta foi criada.',0,$e);
+            throw $e;
+        } finally { self::liberarCadastro(); }
+    }
+    private static function gravarCadastro(array $dados, ?string $fotoCustom): int {
+
         $pdo = Database::getConnection();
 
         $id = !empty($dados['id']) ? (int)$dados['id'] : null;
+        if (isset($dados['saram']) && !is_string($dados['saram'])) throw new InvalidArgumentException('Matrícula/SARAM inválido.');
         $saram = trim($dados['saram'] ?? '');
+        if (strlen($saram)>20) throw new InvalidArgumentException('Matrícula/SARAM deve ter até 20 caracteres.');
+        if ($id) {
+            $q=$pdo->prepare('SELECT id FROM efetivo WHERE id=?'); $q->execute([$id]);
+            if (!$q->fetchColumn()) throw new InvalidArgumentException('Cadastro não encontrado.');
+        }
+        if ($saram!=='') {
+            $q=$pdo->prepare('SELECT id FROM efetivo WHERE TRIM(saram)=? AND id<>? ORDER BY id');
+            $q->execute([$saram,$id??0]);
+            $duplicados=$q->fetchAll(PDO::FETCH_COLUMN);
+            if ($duplicados) throw new InvalidArgumentException('Matrícula/SARAM já cadastrado (ID '.implode(', ',$duplicados).'). Confira o registro existente, inclusive os inativos.');
+        }
         $cpf = preg_replace('/\D/', '', $dados['cpf'] ?? '');
         $cpfFormatado = strlen($cpf) === 11 
             ? vsprintf('%s%s%s.%s%s%s.%s%s%s-%s%s', str_split($cpf))
@@ -709,7 +746,6 @@ class Efetivo {
             $stmtU = $pdo->prepare('
                 INSERT INTO usuarios (login, senha_hash, efetivo_id, perfil, ativo)
                 VALUES (:l, :s, :ef, :p, :at)
-                ON DUPLICATE KEY UPDATE efetivo_id = VALUES(efetivo_id), ativo = VALUES(ativo)
             ');
             $stmtU->execute([
                 ':l'  => $login,
@@ -764,5 +800,3 @@ class Efetivo {
         return $stmt->rowCount();
     }
 }
-
-
