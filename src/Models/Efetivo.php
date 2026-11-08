@@ -427,7 +427,10 @@ class Efetivo {
         ?string $termo = null,
         ?string $divisao = null,
         ?string $categoria = null,
-        ?string $status = null
+        ?string $status = null,
+        ?string $posto = null,
+        ?string $setor = null,
+        ?string $chefeDireto = null
     ): array {
         $pdo = Database::getConnection();
         $where = [];
@@ -451,6 +454,29 @@ class Efetivo {
         if ($status !== null && $status !== '' && $status !== 'todos') {
             $where[] = 'e.ativo = :status';
             $params[':status'] = ($status === 'inativo') ? 0 : 1;
+        }
+
+        if ($posto !== null && $posto !== '' && $posto !== 'todos') {
+            $where[] = 'e.posto = :posto';
+            $params[':posto'] = $posto;
+        }
+
+        if ($setor !== null && $setor !== '' && $setor !== 'todos') {
+            $where[] = 'TRIM(e.setor) = :setor';
+            $params[':setor'] = $setor;
+        }
+
+        if ($chefeDireto === 'nao_vinculado') {
+            $where[] = 'NOT EXISTS (
+                SELECT 1 FROM efetivo chefe
+                WHERE chefe.id = e.chefe_direto_id AND chefe.ativo = 1
+            )';
+        } elseif ($chefeDireto !== null && ctype_digit($chefeDireto) && (int)$chefeDireto > 0) {
+            $where[] = 'e.chefe_direto_id = :chefe_direto AND EXISTS (
+                SELECT 1 FROM efetivo chefe
+                WHERE chefe.id = e.chefe_direto_id AND chefe.ativo = 1
+            )';
+            $params[':chefe_direto'] = (int)$chefeDireto;
         }
 
         $whereSql = !empty($where) ? ('WHERE ' . implode(' AND ', $where)) : '';
@@ -485,7 +511,10 @@ class Efetivo {
         ?string $termo = null,
         ?string $divisao = null,
         ?string $categoria = null,
-        ?string $status = null
+        ?string $status = null,
+        ?string $posto = null,
+        ?string $setor = null,
+        ?string $chefeDireto = null
     ): int {
         $pdo = Database::getConnection();
         $where = [];
@@ -511,6 +540,29 @@ class Efetivo {
             $params[':status'] = ($status === 'inativo') ? 0 : 1;
         }
 
+        if ($posto !== null && $posto !== '' && $posto !== 'todos') {
+            $where[] = 'e.posto = :posto';
+            $params[':posto'] = $posto;
+        }
+
+        if ($setor !== null && $setor !== '' && $setor !== 'todos') {
+            $where[] = 'TRIM(e.setor) = :setor';
+            $params[':setor'] = $setor;
+        }
+
+        if ($chefeDireto === 'nao_vinculado') {
+            $where[] = 'NOT EXISTS (
+                SELECT 1 FROM efetivo chefe
+                WHERE chefe.id = e.chefe_direto_id AND chefe.ativo = 1
+            )';
+        } elseif ($chefeDireto !== null && ctype_digit($chefeDireto) && (int)$chefeDireto > 0) {
+            $where[] = 'e.chefe_direto_id = :chefe_direto AND EXISTS (
+                SELECT 1 FROM efetivo chefe
+                WHERE chefe.id = e.chefe_direto_id AND chefe.ativo = 1
+            )';
+            $params[':chefe_direto'] = (int)$chefeDireto;
+        }
+
         $whereSql = !empty($where) ? ('WHERE ' . implode(' AND ', $where)) : '';
         $sql = "SELECT COUNT(*) FROM efetivo e {$whereSql}";
 
@@ -531,6 +583,37 @@ class Efetivo {
             ORDER BY divisao_sigla
         ');
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+
+    /**
+     * Setores cadastrados para o filtro independente da listagem.
+     */
+    public static function listarSetoresParaFiltro(): array {
+        $pdo = Database::getConnection();
+        $stmt = $pdo->query("
+            SELECT DISTINCT TRIM(setor) AS setor
+            FROM efetivo
+            WHERE setor IS NOT NULL AND TRIM(setor) <> ''
+            ORDER BY setor
+        ");
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    /**
+     * Chefes diretos ativos que possuem ao menos um vínculo de subordinado.
+     * Não se restringe a postos de oficiais.
+     */
+    public static function listarChefesDiretosParaFiltro(): array {
+        $pdo = Database::getConnection();
+        $stmt = $pdo->query("
+            SELECT DISTINCT c.id, c.posto, c.nome, c.nome_guerra, c.divisao_sigla
+            FROM efetivo c
+            INNER JOIN efetivo subordinado ON subordinado.chefe_direto_id = c.id
+            WHERE c.ativo = 1
+            ORDER BY c.posto, c.nome_guerra, c.nome
+        ");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**
