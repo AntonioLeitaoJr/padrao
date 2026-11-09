@@ -1,6 +1,26 @@
 <?php
 declare(strict_types=1);
 require_once ROOT_PATH . '/views/layouts/header.php';
+$paramsEfetivo = [
+    'r' => 'admin/efetivo',
+    'cat' => $categoria,
+    'div' => $divisao,
+    'posto' => $posto,
+    'setor' => $setor,
+    'chefe' => $chefe,
+    'status' => $status,
+    'q' => $termo
+];
+
+$montarPaginaEfetivo = static function (int $numero) use ($paramsEfetivo): string {
+    $params = $paramsEfetivo;
+    $params['p'] = $numero;
+    return '/index.php?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
+};
+
+$retornoFiltros = http_build_query(
+    array_merge($paramsEfetivo, ['p' => $pagina]), '', '&', PHP_QUERY_RFC3986
+);
 ?>
 
 <!-- Cabeçalho da Página -->
@@ -91,46 +111,81 @@ require_once ROOT_PATH . '/views/layouts/header.php';
 <!-- Filtros e Barra de Pesquisa -->
 <div class="card card-comara shadow-sm mb-4">
     <div class="card-body p-3">
-        <form method="GET" action="/index.php" class="row g-2 align-items-center">
+        <form method="GET" action="/index.php" class="d-flex flex-wrap gap-2 align-items-end">
             <input type="hidden" name="r" value="admin/efetivo">
 
-            <div class="col-md-3">
-                <label class="form-label small text-muted mb-1 fw-semibold">Categoria Oficial</label>
-                <select name="cat" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="todas" <?= ($categoria === 'todas') ? 'selected' : '' ?>>Todas as Categorias</option>
-                    <option value="graduado" <?= ($categoria === 'graduado') ? 'selected' : '' ?>>Graduado Padrão (SO/Sgt)</option>
-                    <option value="praca" <?= ($categoria === 'praca') ? 'selected' : '' ?>>Praça Padrão (Cb/Sd)</option>
-                    <option value="sppf" <?= ($categoria === 'sppf') ? 'selected' : '' ?>>Servidor Civil Permanente (SPPF)</option>
-                    <option value="sptf" <?= ($categoria === 'sptf') ? 'selected' : '' ?>>Servidor Civil Temporário (SPTF)</option>
-                    <option value="ineligivel" <?= ($categoria === 'ineligivel') ? 'selected' : '' ?>>Inelegíveis (Oficiais/Chefias)</option>
-                </select>
-            </div>
-
-            <div class="col-md-2">
-                <label class="form-label small text-muted mb-1 fw-semibold">Divisão / Órgão</label>
-                <select name="div" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="todas" <?= ($divisao === 'todas') ? 'selected' : '' ?>>Todas as Divisões</option>
-                    <?php foreach ($divisoes as $d): ?>
-                        <option value="<?= $d ?>" <?= ($divisao === $d) ? 'selected' : '' ?>><?= $d ?></option>
+            <div style="flex:1 1 120px;min-width:110px">
+                <label class="form-label small text-muted mb-1 fw-semibold">Posto / Grad</label>
+                <select name="posto" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="todos">Todos os Postos</option>
+                    <?php foreach (['Cel', 'Ten Cel', 'Maj', 'Cap', '1º Ten', '2º Ten', 'SO', '1S', '2S', '3S', 'Cb', 'S1', 'S2', 'CV'] as $p): ?>
+                        <option value="<?= sanitize_output($p) ?>" <?= $posto === $p ? 'selected' : '' ?>><?= sanitize_output($p) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
 
-            <div class="col-md-2">
-                <label class="form-label small text-muted mb-1 fw-semibold">Status de Cadastro</label>
-                <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="ativo" <?= ($status === 'ativo') ? 'selected' : '' ?>>Apenas Ativos</option>
-                    <option value="inativo" <?= ($status === 'inativo') ? 'selected' : '' ?>>Apenas Inativos</option>
-                    <option value="todos" <?= ($status === 'todos') ? 'selected' : '' ?>>Todos os Registros</option>
+            <div style="flex:1.2 1 155px;min-width:145px">
+                <label class="form-label small text-muted mb-1 fw-semibold">Categoria Oficial</label>
+                <select name="cat" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="todas" <?= $categoria === 'todas' ? 'selected' : '' ?>>Todas as Categorias</option>
+                    <option value="graduado" <?= $categoria === 'graduado' ? 'selected' : '' ?>>Graduado Padrão (SO/Sgt)</option>
+                    <option value="praca" <?= $categoria === 'praca' ? 'selected' : '' ?>>Praça Padrão (Cb/Sd)</option>
+                    <option value="sppf" <?= $categoria === 'sppf' ? 'selected' : '' ?>>Servidor Civil Permanente (SPPF)</option>
+                    <option value="sptf" <?= $categoria === 'sptf' ? 'selected' : '' ?>>Servidor Civil Temporário (SPTF)</option>
+                    <option value="ineligivel" <?= $categoria === 'ineligivel' ? 'selected' : '' ?>>Inelegíveis (Oficiais/Chefias)</option>
                 </select>
             </div>
 
-            <div class="col-md-3">
-                <label class="form-label small text-muted mb-1 fw-semibold">Busca por Nome ou SARAM</label>
-                <input type="text" name="q" class="form-control form-control-sm" placeholder="Nome, Guerra, SARAM ou CPF..." value="<?= sanitize_output($termo) ?>">
+            <div style="flex:1 1 130px;min-width:120px">
+                <label class="form-label small text-muted mb-1 fw-semibold">Divisão / Órgão</label>
+                <select name="div" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="todas" <?= $divisao === 'todas' ? 'selected' : '' ?>>Todas as Divisões</option>
+                    <?php foreach ($divisoes as $d): ?>
+                        <option value="<?= sanitize_output($d) ?>" <?= $divisao === $d ? 'selected' : '' ?>><?= sanitize_output($d) ?></option>
+                    <?php endforeach; ?>
+                </select>
             </div>
 
-            <div class="col-md-2 d-flex align-items-end pt-3">
+            <div style="flex:1 1 140px;min-width:130px">
+                <label class="form-label small text-muted mb-1 fw-semibold">Setor</label>
+                <select name="setor" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="todos">Todos os Setores</option>
+                    <?php foreach ($setores as $s): ?>
+                        <option value="<?= sanitize_output($s) ?>" <?= $setor === $s ? 'selected' : '' ?>><?= sanitize_output($s) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div style="flex:1.5 1 200px;min-width:175px">
+                <label class="form-label small text-muted mb-1 fw-semibold">Chefe Direto</label>
+                <select name="chefe" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="todos">Todos os Chefes</option>
+                    <option value="nao_vinculado" <?= $chefe === 'nao_vinculado' ? 'selected' : '' ?>>Não vinculado</option>
+                    <?php foreach ($chefesDiretos as $c): ?>
+                        <option value="<?= (int)$c['id'] ?>" <?= $chefe === (string)$c['id'] ? 'selected' : '' ?>>
+                            <?= sanitize_output($c['posto'] . ' ' . ($c['nome_guerra'] ?: $c['nome']) . ' (' . $c['divisao_sigla'] . ')') ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div style="flex:1 1 140px;min-width:130px">
+                <label class="form-label small text-muted mb-1 fw-semibold">Status de Cadastro</label>
+                <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="ativo" <?= $status === 'ativo' ? 'selected' : '' ?>>Apenas Ativos</option>
+                    <option value="inativo" <?= $status === 'inativo' ? 'selected' : '' ?>>Apenas Inativos</option>
+                    <option value="todos" <?= $status === 'todos' ? 'selected' : '' ?>>Todos os Registros</option>
+                </select>
+            </div>
+
+            <div style="flex:2 1 210px;min-width:180px">
+                <label class="form-label small text-muted mb-1 fw-semibold">Busca por Nome ou SARAM</label>
+                <input type="text" name="q" class="form-control form-control-sm"
+                       placeholder="Nome, Guerra, SARAM ou CPF..."
+                       value="<?= sanitize_output($termo) ?>">
+            </div>
+
+            <div style="flex:0 0 115px">
                 <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold">
                     <i class="bi bi-search me-1"></i> Filtrar
                 </button>
@@ -254,6 +309,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
 
                                     <form method="POST" action="/index.php?r=admin/toggle_ativo_efetivo" class="d-inline" onsubmit="return confirm('Deseja realmente alterar o status deste integrante?')">
                                         <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                                        <input type="hidden" name="retorno_filtros" value="<?= htmlspecialchars($retornoFiltros, ENT_QUOTES, 'UTF-8') ?>">
                                         <input type="hidden" name="id" value="<?= $item['id'] ?>">
                                         <button type="submit" class="btn btn-sm <?= ($item['ativo'] == 1) ? 'btn-outline-danger' : 'btn-outline-success' ?>"
                                                 title="<?= ($item['ativo'] == 1) ? 'Inativar Integrante' : 'Ativar Integrante' ?>">
@@ -277,7 +333,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
             </span>
             <ul class="pagination pagination-sm mb-0">
                 <li class="page-item <?= ($pagina <= 1) ? 'disabled' : '' ?>">
-                    <a class="page-link" href="/index.php?r=admin/efetivo&cat=<?= urlencode($categoria) ?>&div=<?= urlencode($divisao) ?>&status=<?= urlencode($status) ?>&q=<?= urlencode($termo) ?>&p=<?= $pagina - 1 ?>">&laquo; Anterior</a>
+                    <a class="page-link" href="<?= htmlspecialchars($montarPaginaEfetivo($pagina - 1), ENT_QUOTES, 'UTF-8') ?>">&laquo; Anterior</a>
                 </li>
                 <?php
                 $ini = max(1, $pagina - 2);
@@ -285,11 +341,11 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                 for ($p = $ini; $p <= $fim; $p++):
                 ?>
                     <li class="page-item <?= ($pagina === $p) ? 'active' : '' ?>">
-                        <a class="page-link" href="/index.php?r=admin/efetivo&cat=<?= urlencode($categoria) ?>&div=<?= urlencode($divisao) ?>&status=<?= urlencode($status) ?>&q=<?= urlencode($termo) ?>&p=<?= $p ?>"><?= $p ?></a>
+                        <a class="page-link" href="<?= htmlspecialchars($montarPaginaEfetivo($p), ENT_QUOTES, 'UTF-8') ?>"><?= $p ?></a>
                     </li>
                 <?php endfor; ?>
                 <li class="page-item <?= ($pagina >= $totalPaginas) ? 'disabled' : '' ?>">
-                    <a class="page-link" href="/index.php?r=admin/efetivo&cat=<?= urlencode($categoria) ?>&div=<?= urlencode($divisao) ?>&status=<?= urlencode($status) ?>&q=<?= urlencode($termo) ?>&p=<?= $pagina + 1 ?>">Próxima &raquo;</a>
+                    <a class="page-link" href="<?= htmlspecialchars($montarPaginaEfetivo($pagina + 1), ENT_QUOTES, 'UTF-8') ?>">Próxima &raquo;</a>
                 </li>
             </ul>
         </div>
@@ -302,6 +358,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
         <div class="modal-content">
             <form method="POST" action="/index.php?r=admin/salvar_efetivo" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                <input type="hidden" name="retorno_filtros" value="<?= htmlspecialchars($retornoFiltros, ENT_QUOTES, 'UTF-8') ?>">
                 <input type="hidden" name="id" id="campo_id" value="">
 
                 <div class="modal-header bg-primary text-white">

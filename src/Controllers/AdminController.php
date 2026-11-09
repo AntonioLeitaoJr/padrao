@@ -336,21 +336,49 @@ class AdminController {
         $categoria = $_GET['cat'] ?? 'todas';
         $divisao = $_GET['div'] ?? 'todas';
         $status = $_GET['status'] ?? 'ativo';
-        $termo = trim($_GET['q'] ?? '');
-        $pagina = max(1, (int)($_GET['p'] ?? 1));
-        $porPagina = 30;
-        $offset = ($pagina - 1) * $porPagina;
+        $termoBruto = $_GET['q'] ?? '';
+        $termo = is_string($termoBruto) ? trim($termoBruto) : '';
+
+        $postosPermitidos = [
+            'Cel', 'Ten Cel', 'Maj', 'Cap', '1º Ten', '2º Ten',
+            'SO', '1S', '2S', '3S', 'Cb', 'S1', 'S2', 'CV'
+        ];
+        $postoBruto = $_GET['posto'] ?? 'todos';
+        $posto = is_string($postoBruto) && in_array($postoBruto, $postosPermitidos, true)
+            ? $postoBruto : 'todos';
 
         $totais = Efetivo::obterTotaisPorCategoria();
         $divisoes = Efetivo::listarDivisoes();
         $potenciaisChefes = Efetivo::listarOficiaisEChefes();
+        $setores = Efetivo::listarSetoresParaFiltro();
+        $chefesDiretos = Efetivo::listarChefesDiretosParaFiltro();
+
+        $setorBruto = $_GET['setor'] ?? 'todos';
+        $setor = is_string($setorBruto) && in_array($setorBruto, $setores, true)
+            ? $setorBruto : 'todos';
+
+        $chefeBruto = $_GET['chefe'] ?? 'todos';
+        $chefesIds = array_map(static fn($c) => (string)$c['id'], $chefesDiretos);
+        $chefe = is_string($chefeBruto)
+            && ($chefeBruto === 'nao_vinculado' || in_array($chefeBruto, $chefesIds, true))
+            ? $chefeBruto : 'todos';
+
+        $pagina = max(1, (int)($_GET['p'] ?? 1));
+        $porPagina = 30;
 
         $totalRegistros = Efetivo::contarTotal(
             $termo ?: null,
             $divisao !== 'todas' ? $divisao : null,
             $categoria !== 'todas' ? $categoria : null,
-            $status !== 'todos' ? $status : null
+            $status !== 'todos' ? $status : null,
+            $posto !== 'todos' ? $posto : null,
+            $setor !== 'todos' ? $setor : null,
+            $chefe !== 'todos' ? $chefe : null
         );
+
+        $totalPaginas = max(1, (int)ceil($totalRegistros / $porPagina));
+        $pagina = min($pagina, $totalPaginas);
+        $offset = ($pagina - 1) * $porPagina;
 
         $efetivo = Efetivo::listarPaginado(
             $porPagina,
@@ -358,12 +386,36 @@ class AdminController {
             $termo ?: null,
             $divisao !== 'todas' ? $divisao : null,
             $categoria !== 'todas' ? $categoria : null,
-            $status !== 'todos' ? $status : null
+            $status !== 'todos' ? $status : null,
+            $posto !== 'todos' ? $posto : null,
+            $setor !== 'todos' ? $setor : null,
+            $chefe !== 'todos' ? $chefe : null
         );
 
-        $totalPaginas = max(1, (int)ceil($totalRegistros / $porPagina));
-
         require_once ROOT_PATH . '/views/admin/efetivo.php';
+    }
+
+    /**
+     * Preserva somente parâmetros conhecidos da listagem após POST.
+     * A rota é fixa: dados enviados não podem alterar o destino do redirect.
+     */
+    private function urlRetornoEfetivo(): string {
+        $bruto = $_POST['retorno_filtros'] ?? '';
+        $filtros = [];
+        parse_str(is_string($bruto) ? $bruto : '', $filtros);
+
+        $params = ['r' => 'admin/efetivo'];
+        foreach (['cat', 'div', 'posto', 'setor', 'chefe', 'status', 'q'] as $campo) {
+            if (isset($filtros[$campo]) && is_string($filtros[$campo])) {
+                $params[$campo] = substr($filtros[$campo], 0, 250);
+            }
+        }
+
+        if (isset($filtros['p']) && is_string($filtros['p']) && ctype_digit($filtros['p'])) {
+            $params['p'] = max(1, min(10000, (int)$filtros['p']));
+        }
+
+        return '/index.php?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
     }
 
     /**
@@ -372,11 +424,12 @@ class AdminController {
     public function salvarEfetivo(): void {
         AuthMiddleware::handle();
         RoleMiddleware::handle([PERFIL_ADMIN, PERFIL_RH]);
+        $urlRetornoEfetivo = $this->urlRetornoEfetivo();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
                 flash_message('erro', 'Token CSRF inválido.', 'danger');
-                header('Location: /index.php?r=admin/efetivo');
+                header('Location: ' . $urlRetornoEfetivo);
                 exit;
             }
 
@@ -458,13 +511,13 @@ class AdminController {
                 $mensagem=$e instanceof InvalidArgumentException ? $e->getMessage() : 'Não foi possível salvar o cadastro e o perfil. Nenhuma alteração no banco foi concluída. Solicite ao STI a verificação do log SALVAR_EFETIVO.';
                 flash_message('erro', $mensagem, 'danger');
                 if ($cadastroBloqueado) { Efetivo::liberarCadastro(); $cadastroBloqueado=false; }
-                header('Location: /index.php?r=admin/efetivo'); exit;
+                header('Location: ' . $urlRetornoEfetivo); exit;
             } finally { if ($cadastroBloqueado) Efetivo::liberarCadastro(); }
 
             flash_message('sucesso', 'Registro do militar/servidor salvo com sucesso!', 'success');
         }
 
-        header('Location: /index.php?r=admin/efetivo');
+        header('Location: ' . $urlRetornoEfetivo);
         exit;
     }
 
@@ -474,11 +527,12 @@ class AdminController {
     public function toggleAtivoEfetivo(): void {
         AuthMiddleware::handle();
         RoleMiddleware::handle([PERFIL_ADMIN, PERFIL_RH]);
+        $urlRetornoEfetivo = $this->urlRetornoEfetivo();
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
                 flash_message('erro', 'Token CSRF inválido.', 'danger');
-                header('Location: /index.php?r=admin/efetivo');
+                header('Location: ' . $urlRetornoEfetivo);
                 exit;
             }
 
@@ -490,7 +544,7 @@ class AdminController {
             }
         }
 
-        header('Location: /index.php?r=admin/efetivo');
+        header('Location: ' . $urlRetornoEfetivo);
         exit;
     }
 
