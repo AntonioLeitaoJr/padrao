@@ -427,7 +427,10 @@ class Efetivo {
         ?string $termo = null,
         ?string $divisao = null,
         ?string $categoria = null,
-        ?string $status = null
+        ?string $status = null,
+        ?string $posto = null,
+        ?string $setor = null,
+        ?string $chefeDireto = null
     ): array {
         $pdo = Database::getConnection();
         $where = [];
@@ -451,6 +454,29 @@ class Efetivo {
         if ($status !== null && $status !== '' && $status !== 'todos') {
             $where[] = 'e.ativo = :status';
             $params[':status'] = ($status === 'inativo') ? 0 : 1;
+        }
+
+        if ($posto !== null && $posto !== '' && $posto !== 'todos') {
+            $where[] = 'e.posto = :posto';
+            $params[':posto'] = $posto;
+        }
+
+        if ($setor !== null && $setor !== '' && $setor !== 'todos') {
+            $where[] = 'TRIM(e.setor) = :setor';
+            $params[':setor'] = $setor;
+        }
+
+        if ($chefeDireto === 'nao_vinculado') {
+            $where[] = 'NOT EXISTS (
+                SELECT 1 FROM efetivo chefe
+                WHERE chefe.id = e.chefe_direto_id AND chefe.ativo = 1
+            )';
+        } elseif ($chefeDireto !== null && ctype_digit($chefeDireto) && (int)$chefeDireto > 0) {
+            $where[] = 'e.chefe_direto_id = :chefe_direto AND EXISTS (
+                SELECT 1 FROM efetivo chefe
+                WHERE chefe.id = e.chefe_direto_id AND chefe.ativo = 1
+            )';
+            $params[':chefe_direto'] = (int)$chefeDireto;
         }
 
         $whereSql = !empty($where) ? ('WHERE ' . implode(' AND ', $where)) : '';
@@ -485,7 +511,10 @@ class Efetivo {
         ?string $termo = null,
         ?string $divisao = null,
         ?string $categoria = null,
-        ?string $status = null
+        ?string $status = null,
+        ?string $posto = null,
+        ?string $setor = null,
+        ?string $chefeDireto = null
     ): int {
         $pdo = Database::getConnection();
         $where = [];
@@ -511,6 +540,29 @@ class Efetivo {
             $params[':status'] = ($status === 'inativo') ? 0 : 1;
         }
 
+        if ($posto !== null && $posto !== '' && $posto !== 'todos') {
+            $where[] = 'e.posto = :posto';
+            $params[':posto'] = $posto;
+        }
+
+        if ($setor !== null && $setor !== '' && $setor !== 'todos') {
+            $where[] = 'TRIM(e.setor) = :setor';
+            $params[':setor'] = $setor;
+        }
+
+        if ($chefeDireto === 'nao_vinculado') {
+            $where[] = 'NOT EXISTS (
+                SELECT 1 FROM efetivo chefe
+                WHERE chefe.id = e.chefe_direto_id AND chefe.ativo = 1
+            )';
+        } elseif ($chefeDireto !== null && ctype_digit($chefeDireto) && (int)$chefeDireto > 0) {
+            $where[] = 'e.chefe_direto_id = :chefe_direto AND EXISTS (
+                SELECT 1 FROM efetivo chefe
+                WHERE chefe.id = e.chefe_direto_id AND chefe.ativo = 1
+            )';
+            $params[':chefe_direto'] = (int)$chefeDireto;
+        }
+
         $whereSql = !empty($where) ? ('WHERE ' . implode(' AND ', $where)) : '';
         $sql = "SELECT COUNT(*) FROM efetivo e {$whereSql}";
 
@@ -531,6 +583,37 @@ class Efetivo {
             ORDER BY divisao_sigla
         ');
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+
+    /**
+     * Setores cadastrados para o filtro independente da listagem.
+     */
+    public static function listarSetoresParaFiltro(): array {
+        $pdo = Database::getConnection();
+        $stmt = $pdo->query("
+            SELECT DISTINCT TRIM(setor) AS setor
+            FROM efetivo
+            WHERE setor IS NOT NULL AND TRIM(setor) <> ''
+            ORDER BY setor
+        ");
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    /**
+     * Chefes diretos ativos que possuem ao menos um vínculo de subordinado.
+     * Não se restringe a postos de oficiais.
+     */
+    public static function listarChefesDiretosParaFiltro(): array {
+        $pdo = Database::getConnection();
+        $stmt = $pdo->query("
+            SELECT DISTINCT c.id, c.posto, c.nome, c.nome_guerra, c.divisao_sigla
+            FROM efetivo c
+            INNER JOIN efetivo subordinado ON subordinado.chefe_direto_id = c.id
+            WHERE c.ativo = 1
+            ORDER BY c.posto, c.nome_guerra, c.nome
+        ");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**
@@ -562,11 +645,48 @@ class Efetivo {
     /**
      * Salva ou atualiza um militar/servidor civil e sua conta de acesso
      */
+    // Serializa cadastro manual e importação, inclusive em bases legadas ainda sem índice único.
+    public static function bloquearCadastro(): void {
+        $s=Database::getConnection()->prepare('SELECT GET_LOCK(?,10)');
+        $s->execute(['comara_cadastro_'.substr(hash('sha256',DB_NAME),0,32)]);
+        if ((int)$s->fetchColumn()!==1) throw new RuntimeException('Cadastro ocupado. Tente novamente.');
+    }
+    public static function liberarCadastro(): void {
+        $s=Database::getConnection()->prepare('SELECT RELEASE_LOCK(?)');
+        $s->execute(['comara_cadastro_'.substr(hash('sha256',DB_NAME),0,32)]);
+    }
     public static function salvarOuAtualizar(array $dados, ?string $fotoCustom = null): int {
+        $pdo=Database::getConnection(); $propria=!$pdo->inTransaction();
+        self::bloquearCadastro();
+        try {
+            if ($propria) $pdo->beginTransaction();
+            $id=self::gravarCadastro($dados,$fotoCustom);
+            if ($propria) $pdo->commit();
+            return $id;
+        } catch (Throwable $e) {
+            if ($propria && $pdo->inTransaction()) $pdo->rollBack();
+            if ($e instanceof PDOException && (int)($e->errorInfo[1]??0)===1062) throw new InvalidArgumentException('Matrícula/SARAM ou login já cadastrado. Localize o registro existente; nenhuma nova conta foi criada.',0,$e);
+            throw $e;
+        } finally { self::liberarCadastro(); }
+    }
+    private static function gravarCadastro(array $dados, ?string $fotoCustom): int {
+
         $pdo = Database::getConnection();
 
         $id = !empty($dados['id']) ? (int)$dados['id'] : null;
+        if (isset($dados['saram']) && !is_string($dados['saram'])) throw new InvalidArgumentException('Matrícula/SARAM inválido.');
         $saram = trim($dados['saram'] ?? '');
+        if (strlen($saram)>20) throw new InvalidArgumentException('Matrícula/SARAM deve ter até 20 caracteres.');
+        if ($id) {
+            $q=$pdo->prepare('SELECT id FROM efetivo WHERE id=?'); $q->execute([$id]);
+            if (!$q->fetchColumn()) throw new InvalidArgumentException('Cadastro não encontrado.');
+        }
+        if ($saram!=='') {
+            $q=$pdo->prepare('SELECT id FROM efetivo WHERE TRIM(saram)=? AND id<>? ORDER BY id');
+            $q->execute([$saram,$id??0]);
+            $duplicados=$q->fetchAll(PDO::FETCH_COLUMN);
+            if ($duplicados) throw new InvalidArgumentException('Matrícula/SARAM já cadastrado (ID '.implode(', ',$duplicados).'). Confira o registro existente, inclusive os inativos.');
+        }
         $cpf = preg_replace('/\D/', '', $dados['cpf'] ?? '');
         $cpfFormatado = strlen($cpf) === 11 
             ? vsprintf('%s%s%s.%s%s%s.%s%s%s-%s%s', str_split($cpf))
@@ -709,7 +829,6 @@ class Efetivo {
             $stmtU = $pdo->prepare('
                 INSERT INTO usuarios (login, senha_hash, efetivo_id, perfil, ativo)
                 VALUES (:l, :s, :ef, :p, :at)
-                ON DUPLICATE KEY UPDATE efetivo_id = VALUES(efetivo_id), ativo = VALUES(ativo)
             ');
             $stmtU->execute([
                 ':l'  => $login,
@@ -764,5 +883,3 @@ class Efetivo {
         return $stmt->rowCount();
     }
 }
-
-

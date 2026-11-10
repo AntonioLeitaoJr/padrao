@@ -338,3 +338,7 @@ Reaplique `php database/migrate_fases3_4.php` após backup e publicação da ver
 ## Ordenação presidencial da Fase 5
 
 Após backup e deploy desta atualização, reaplique `php database/migrate_fase5.php` para criar `fase5_decisoes`. A Presidência precisa salvar a ordenação das quatro categorias, podendo incluir e excluir integrantes, antes de homologar. Não reinicie o pleito para isso. Homologações já registradas não são recalculadas.
+
+## Cadastro: RH e matrícula/SARAM
+
+Para bancos legados que recusam RH e para impedir novas matrículas duplicadas, siga o [procedimento de diagnóstico e atualização](docs/CORRECAO_CADASTRO_RH_SARAM.md). Após backup e deploy, execute `php database/migrate_perfil_rh.php --check` e `php database/migrate_saram_unico.php --check`. Aplique cada ajuste com `--apply` quando indicado. Duplicados existentes são reportados para conferência, sem exclusão automática de dados eleitorais.

@@ -221,3 +221,7 @@ A seleção em **Atribuição de Chefias e Perfis > Membros da Direção Superio
 ### Migração da ordenação presidencial
 
 Após backup e deploy, reaplique `php database/migrate_fase5.php` para criar `fase5_decisoes`. Em pleitos não homologados, salve expressamente as quatro categorias; decisões antigas de minerva não predefinem posições. As avaliações individuais da Fase 4 ficam antes da ata. Homologações anteriores permanecem imutáveis. Consulte o [guia atualizado](docs/ATUALIZACAO_FASE5.md).
+
+## Cadastro: RH e matrícula/SARAM
+
+Para bancos legados que recusam RH e para impedir novas matrículas duplicadas, siga o [procedimento de diagnóstico e atualização](docs/CORRECAO_CADASTRO_RH_SARAM.md). Após backup e deploy, execute `php database/migrate_perfil_rh.php --check` e `php database/migrate_saram_unico.php --check`. Aplique cada ajuste com `--apply` quando indicado. Duplicados existentes são reportados para conferência, sem exclusão automática de dados eleitorais.

@@ -70,7 +70,8 @@ CREATE TABLE IF NOT EXISTS `efetivo` (
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX `idx_efetivo_categoria` (`categoria`),
-    INDEX `idx_efetivo_saram` (`saram`),
+    `saram_unico` VARCHAR(20) GENERATED ALWAYS AS (NULLIF(TRIM(saram), '')) STORED,
+    UNIQUE KEY `uq_efetivo_saram` (`saram_unico`),
     INDEX `idx_efetivo_cpf_hash` (`cpf_hash`),
     INDEX `idx_efetivo_chefe` (`chefe_direto_id`),
     INDEX `idx_efetivo_setor` (`setor`)
