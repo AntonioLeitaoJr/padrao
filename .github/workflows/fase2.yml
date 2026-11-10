@@ -56,3 +56,10 @@ jobs:
         run: |
           mysql -h127.0.0.1 -uroot -ptest -e 'CREATE DATABASE comara_cadastro_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
           php tests/teste_cadastro_integracao.php
+      - name: Login de civis e troca obrigatória de senha (banco descartável)
+        env:
+          DB_NAME: comara_auth_test
+          AUTH_TEST_DB: '1'
+        run: |
+          mysql -h127.0.0.1 -uroot -ptest -e 'CREATE DATABASE comara_auth_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
+          php tests/teste_auth_integracao.php

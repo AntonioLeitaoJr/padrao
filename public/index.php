@@ -20,6 +20,16 @@ require_once __DIR__ . '/../src/Controllers/FotoController.php';
 
 $rota = $_GET['r'] ?? (AuthManager::check() ? 'dashboard' : 'login');
 
+// Impede acesso a páginas, urnas e APIs enquanto a senha inicial não for alterada.
+// Login, saída e formulário de troca continuam disponíveis; proteção também vale
+// para sessões já abertas antes do deploy e após redefinição administrativa.
+if (AuthManager::check()
+    && !in_array($rota, ['login', 'auth/login', 'logout', 'auth/logout', 'alterar_senha'], true)
+    && AuthManager::requiresPasswordChange()) {
+    header('Location: /index.php?r=alterar_senha');
+    exit;
+}
+
 try {
 switch ($rota) {
     // Autenticação

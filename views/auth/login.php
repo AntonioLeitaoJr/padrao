@@ -18,11 +18,12 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                     <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
 
                     <div class="mb-3">
-                        <label for="login" class="form-label fw-semibold">SARAM ou CPF</label>
+                        <label for="login" class="form-label fw-semibold">SARAM (militar) ou matrícula / CPF (civil)</label>
                         <div class="input-group">
                             <span class="input-group-text bg-white"><i class="bi bi-person-fill text-muted"></i></span>
-                            <input type="text" class="form-control" id="login" name="login" required autofocus placeholder="Digite seu SARAM ou CPF">
+                            <input type="text" class="form-control" id="login" name="login" required autofocus placeholder="Digite seu SARAM, matrícula ou CPF">
                         </div>
+                        <div class="form-text">Para servidores civis, informe preferencialmente sua matrícula funcional. Caso não a saiba, utilize o CPF.</div>
                     </div>
 
                     <div class="mb-4">
@@ -55,7 +56,7 @@ require_once ROOT_PATH . '/views/layouts/header.php';
                                 &lt;/p&gt;
                                 &lt;div class='alert alert-warning py-2 px-2 small mb-0 border-0 bg-warning-subtle text-dark'&gt;
                                     &lt;i class='bi bi-exclamation-triangle-fill text-warning me-1'&gt;&lt;/i&gt;
-                                    &lt;strong&gt;Atenção ao Primeiro Acesso:&lt;/strong&gt; Aconselhamos que, no &lt;strong&gt;primeiro acesso&lt;/strong&gt; com a senha padrão institucional, &lt;strong&gt;sua senha seja alterada imediatamente&lt;/strong&gt; no menu de usuário para garantir o sigilo e a inviolabilidade do seu voto.
+                                    &lt;strong&gt;Atenção ao Primeiro Acesso:&lt;/strong&gt; No &lt;strong&gt;primeiro acesso&lt;/strong&gt; com a senha inicial institucional, será &lt;strong&gt;obrigatória a definição de uma senha pessoal&lt;/strong&gt; antes de entrar nas fases do pleito.
                                 &lt;/div&gt;
                             &lt;/div&gt;">
                         <i class="bi bi-question-circle-fill text-primary me-1"></i> Esqueceu a senha ou primeiro acesso?

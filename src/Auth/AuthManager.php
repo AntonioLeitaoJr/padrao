@@ -11,6 +11,32 @@ require_once __DIR__ . '/../Services/AuditoriaService.php';
  * Integração Active Directory (LDAP) + Base Local + RBAC
  */
 class AuthManager {
+    private const SENHA_INICIAL = 'padrao@2026';
+
+    /**
+     * Bloqueia uso das fases enquanto a conta local mantiver a senha inicial.
+     * Consulta o hash atual (inclusive após reset administrativo), sem migração de esquema.
+     * Senhas corporativas autenticadas exclusivamente pelo AD seguem a política do AD.
+     */
+    public static function requiresPasswordChange(): bool {
+        if (!self::check()) return false;
+        if (($_SESSION['user']['auth_origin'] ?? '') === 'ACTIVE_DIRECTORY') return false;
+        $pdo = Database::getConnection();
+        $stmt = $pdo->prepare('SELECT senha_hash FROM usuarios WHERE id = :id AND ativo = 1 LIMIT 1');
+        $stmt->execute([':id' => (int)$_SESSION['user']['id']]);
+        $hash = (string)$stmt->fetchColumn();
+        if ($hash === '') return false;
+
+        // Cache válido apenas enquanto o hash no banco permanecer igual.
+        $fingerprint = hash('sha256', $hash);
+        if (hash_equals((string)($_SESSION['senha_hash_conferido'] ?? ''), $fingerprint)) {
+            return (bool)($_SESSION['troca_senha_obrigatoria'] ?? false);
+        }
+        $obrigatoria = password_verify(self::SENHA_INICIAL, $hash);
+        $_SESSION['senha_hash_conferido'] = $fingerprint;
+        $_SESSION['troca_senha_obrigatoria'] = $obrigatoria;
+        return $obrigatoria;
+    }
 
     public static function check(): bool {
         return !empty($_SESSION['user']['id']);
@@ -212,8 +238,10 @@ class AuthManager {
         // Regenera ID da sessão contra fixation
         session_regenerate_id(true);
 
+        unset($_SESSION['senha_hash_conferido'], $_SESSION['troca_senha_obrigatoria']);
         $_SESSION['user'] = [
             'id'                => (int)$userRow['id'],
+            'auth_origin'       => $authResult['origem'] ?? 'LOCAL_DATABASE',
             'login'             => $userRow['login'],
             'perfil'            => $userRow['perfil'],
             'orgao_chefe_sigla' => $userRow['orgao_chefe_sigla'],
@@ -240,7 +268,7 @@ class AuthManager {
         if (self::check()) {
             AuditoriaService::log('LOGOUT', [], (int)$_SESSION['user']['id'], $_SESSION['user']['login']);
         }
-        unset($_SESSION['user']);
+        unset($_SESSION['user'], $_SESSION['senha_hash_conferido'], $_SESSION['troca_senha_obrigatoria']);
         session_destroy();
     }
 }

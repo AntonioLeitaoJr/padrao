@@ -8,7 +8,7 @@ class AuthController {
 
     public function login(): void {
         if (AuthManager::check()) {
-            header('Location: /index.php?r=dashboard');
+            header('Location: ' . (AuthManager::requiresPasswordChange() ? '/index.php?r=alterar_senha' : '/index.php?r=dashboard'));
             exit;
         }
 
@@ -26,7 +26,7 @@ class AuthController {
             $res = AuthManager::login($login, $senha);
             if ($res['sucesso']) {
                 flash_message('sucesso', 'Login realizado com sucesso. Bem-vindo(a)!', 'success');
-                header('Location: /index.php?r=dashboard');
+                header('Location: ' . (AuthManager::requiresPasswordChange() ? '/index.php?r=alterar_senha' : '/index.php?r=dashboard'));
                 exit;
             } else {
                 flash_message('erro', $res['mensagem'], 'danger');
@@ -52,11 +52,13 @@ class AuthController {
     public function alterarSenha(): void {
         AuthMiddleware::handle();
         $user = AuthManager::user();
+        $trocaObrigatoria = AuthManager::requiresPasswordChange();
+        $destino = $trocaObrigatoria ? '/index.php?r=alterar_senha' : '/index.php?r=dashboard';
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
                 flash_message('erro', 'Token de segurança CSRF inválido. Tente novamente.', 'danger');
-                header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/index.php?r=dashboard'));
+                header('Location: ' . $destino);
                 exit;
             }
 
@@ -65,9 +67,9 @@ class AuthController {
 
             // Opção de reset restrita unicamente a administradores
             if ($acao === 'reset_padrao') {
-                if (!AuthManager::hasRole(PERFIL_ADMIN)) {
+                if ($trocaObrigatoria || !AuthManager::hasRole(PERFIL_ADMIN)) {
                     flash_message('erro', 'Apenas o Administrador do Sistema pode resetar senhas para o padrão.', 'danger');
-                    header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/index.php?r=dashboard'));
+                    header('Location: ' . $destino);
                     exit;
                 }
 
@@ -81,7 +83,7 @@ class AuthController {
                 ]);
 
                 flash_message('sucesso', 'Sua senha foi redefinida com sucesso para o padrão inicial: padrao@2026', 'success');
-                header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/index.php?r=dashboard'));
+                header('Location: ' . $destino);
                 exit;
             }
 
@@ -98,19 +100,25 @@ class AuthController {
             // Valida senha atual se já tiver senha definida
             if ($hashAtual !== '' && !password_verify($senhaAtual, $hashAtual)) {
                 flash_message('erro', 'Senha atual incorreta. Digite sua senha atual para autorizar a alteração.', 'danger');
-                header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/index.php?r=dashboard'));
+                header('Location: ' . $destino);
                 exit;
             }
 
             if (strlen($novaSenha) < 6) {
                 flash_message('erro', 'A nova senha deve ter no mínimo 6 caracteres.', 'warning');
-                header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/index.php?r=dashboard'));
+                header('Location: ' . $destino);
+                exit;
+            }
+
+            if ($novaSenha === 'padrao@2026' || ($hashAtual !== '' && password_verify($novaSenha, $hashAtual))) {
+                flash_message('erro', 'Escolha uma senha pessoal diferente da senha inicial e da senha anterior.', 'warning');
+                header('Location: ' . $destino);
                 exit;
             }
 
             if ($novaSenha !== $confirmaSenha) {
                 flash_message('erro', 'A confirmação de senha não confere com a nova senha digitada.', 'warning');
-                header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/index.php?r=dashboard'));
+                header('Location: ' . $destino);
                 exit;
             }
 
@@ -123,11 +131,17 @@ class AuthController {
                 'login'      => $user['login']
             ]);
 
+            unset($_SESSION['senha_hash_conferido'], $_SESSION['troca_senha_obrigatoria']);
+            session_regenerate_id(true);
             flash_message('sucesso', 'Sua senha foi alterada com sucesso!', 'success');
-            header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/index.php?r=dashboard'));
+            header('Location: ' . $destino);
             exit;
         }
 
+        if ($trocaObrigatoria) {
+            require ROOT_PATH . '/views/auth/primeiro_acesso.php';
+            return;
+        }
         header('Location: /index.php?r=dashboard');
         exit;
     }

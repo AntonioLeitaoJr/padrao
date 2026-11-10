@@ -36,9 +36,9 @@ Administrador e RH registram em **Vencedores anteriores** um vencedor por catego
 ## 🚀 Funcionalidades Principais
 
 - **Autenticação Flexível e Segura**:
-  - Login transparente com **SARAM** ou **CPF** (com ou sem pontuação).
+  - Militares acessam pelo **SARAM**; civis (SPPF/SPTF) podem utilizar **matrícula funcional** (identificador preferencial divulgado) **ou CPF** com ou sem pontuação, na mesma conta. Identificadores ambíguos são recusados sem vinculação arbitrária.
   - Autenticação corporativa integrada ao **Active Directory / LDAP da INTRAER** com fallback local seguro para contingência.
-  - Troca de senha pelo próprio usuário autenticado (recomendada obrigatoriamente no primeiro acesso); redefinição e reset de senhas restritos com exclusividade ao **Administrador / Setor de TI (STI)** para garantia de segurança e inviolabilidade.
+  - Troca de senha **obrigatória antes do uso das fases** para contas locais que ainda tenham a senha inicial, inclusive após reset pela STI. Senhas alteradas anteriormente não são solicitadas novamente; acessos validados exclusivamente no AD seguem a política corporativa. A nova senha deve ter pelo menos seis caracteres e não pode repetir a inicial/anterior. Redefinição restrita ao **Administrador / STI**.
 - **Gestão Completa de Efetivo e Administradores**:
   - Base inicial oficial com **443 membros** já cadastrados com postos, quadros, especialidades e lotações.
   - O Administrador pode conceder ou revogar o perfil de **Administrador (`ADMIN`)** para qualquer membro do efetivo com 1 clique.
@@ -87,7 +87,7 @@ Se você utiliza Docker no Windows, Linux ou macOS:
 
 4. Acesse no navegador:
    - URL: `http://localhost:8080`
-   - Login inicial: `admin` ou seu SARAM/CPF
+   - Login inicial: `admin`, SARAM (militar) ou matrícula/CPF (civil)
    - Senha padrão: `padrao@2026`
 
 ---
@@ -122,9 +122,10 @@ Em uma instalação existente, faça backup e execute as migrações da Fase 2, 
 | Usuário / Login | Senha Inicial | Perfil | Descrição |
 | :--- | :--- | :--- | :--- |
 | `admin` | `padrao@2026` | `ADMIN` | Administrador Geral do Sistema |
-| SARAM ou CPF do militar | `padrao@2026` | `ELEITOR` / `CHEFE` | Usuários do efetivo cadastrado |
+| SARAM do militar | `padrao@2026` | `ELEITOR` / `CHEFE` | Militares do efetivo cadastrado |
+| Matrícula ou CPF do civil | `padrao@2026` | `ELEITOR` | SPPF/SPTF: dois identificadores, mesma conta |
 
-> **IMPORTANTE**: Após o primeiro acesso com o usuário `admin`, altere a senha na barra superior clicando no seu nome de usuário.
+> **IMPORTANTE**: Para contas locais ainda com a senha inicial, o sistema exige a troca antes de acessar as fases, inclusive para o `admin`. Quem já usa senha pessoal não precisa trocá-la novamente. No acesso corporativo pelo LDAP, prevalece a política de senhas do AD.
 
 ---
 
@@ -225,3 +226,9 @@ Após backup e deploy, reaplique `php database/migrate_fase5.php` para criar `fa
 ## Cadastro: RH e matrícula/SARAM
 
 Para bancos legados que recusam RH e para impedir novas matrículas duplicadas, siga o [procedimento de diagnóstico e atualização](docs/CORRECAO_CADASTRO_RH_SARAM.md). Após backup e deploy, execute `php database/migrate_perfil_rh.php --check` e `php database/migrate_saram_unico.php --check`. Aplique cada ajuste com `--apply` quando indicado. Duplicados existentes são reportados para conferência, sem exclusão automática de dados eleitorais.
+
+## Atualização de login e primeiro acesso (sem migração)
+
+A matrícula civil já é cadastrada em `efetivo.saram`: a autenticação apenas resolve matrícula ou CPF para a **mesma conta existente** (`usuarios.efetivo_id`). Não crie contas por CPF e não retire os zeros à esquerda da matrícula. Cadastros com CPF/matrícula que correspondam a mais de uma conta ativa exigem saneamento pelo RH/STI; o sistema recusa o login ambíguo sem escolher um registro arbitrário. Acesso corporativo LDAP continua disponível.
+
+A exigência de troca usa o hash BCrypt da senha inicial; não acrescenta coluna, não redefine senhas anteriores e não altera votos ou históricos. Após backup e publicação, teste ADMIN, militar SARAM, civis por matrícula/CPF, mudança de senha, reset e conta LDAP antes de abrir a votação. O novo fluxo de autenticação **não exige migração SQL**. A rotina de testes adicional usa exclusivamente banco descartável `_test` e `AUTH_TEST_DB=1`.
