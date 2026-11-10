@@ -371,3 +371,10 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
 
 **COMISSÃO DE AEROPORTOS DA REGIÃO AMAZÔNICA**  
 *“Construindo na Amazônia para o progresso do Brasil”*
+
+
+### ANEXO OPERACIONAL — IMPORTAÇÃO INTEGRAL DO EFETIVO (10/11/2026)
+
+A importação por CSV é restrita a **ADMIN/RH**, utiliza SARAM/matrícula e CPF para correspondência e proíbe duplicidades conflitantes. Um erro invalida o lote inteiro e provoca rollback, sem inclusão ou alteração parcial. O sistema respeita o status `ATIVO` do arquivo (inclusive registros inativos), preserva usuários já vinculados e suas atribuições, realiza backup antes da carga e registra auditoria obrigatória. A conferência final exibirá novos, atualizados, ativos e inativos, mostrando todos os registros após o carregamento.
+
+É vedada importação quando houver pleito homologado ou votação em andamento das Fases 3 a 5. A STI deve manter o CSV fora do repositório Git e da pasta pública do servidor, verificar a quantidade, preparar backup externo independente e utilizar a CLI com quantidade e SHA-256 confirmados quando necessário. A importação não recupera votos nem avaliações ausentes: para isso é indispensável backup do banco correspondente. Detalhes em `docs/IMPORTACAO_EFETIVO_INTEGRAL_20261110.md`.
