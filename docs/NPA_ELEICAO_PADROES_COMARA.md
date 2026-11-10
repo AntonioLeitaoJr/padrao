@@ -327,6 +327,11 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
 3. **Conferência após Atualização do Sistema:**
    - A STI deverá conferir backup e execução das migrações antes de liberar as etapas afetadas; a publicação dos arquivos, isoladamente, não comprova atualização do banco.
    - Mensagem de estrutura pendente deverá ser encaminhada à STI. Seleções inconsistentes deverão ser conferidas pela Administração, sem apagar votos ou decisões para liberar a tela.
+4. **Zeramento extraordinário da base operacional:**
+   - Restrito ao perfil ADMIN e liberado temporariamente pela STI, mediante `ALLOW_DATABASE_RESET=true` e janela de manutenção com demais acessos suspensos.
+   - Diferencia-se de “Reiniciar Pleito”: elimina registros operacionais do efetivo e votações não homologadas, mantendo contas ADMIN, divisões, estrutura SQL, backups e auditoria perene.
+   - Exige duas etapas, senha de ADMIN, frase de confirmação, verificação de alterações concorrentes e backup integral prévio. Falhas impedem a operação.
+   - **Pleitos homologados jamais poderão ser apagados por essa rotina**, mesmo com habilitação técnica. Ao concluir, a STI desabilitará a funcionalidade e verificará login, cadastro e novo cronograma.
    - Ausência de ciclo preparado na Fase 4 não constitui empate. A decisão presidencial no corte somente será exigida quando houver candidatos empatados e vagas pendentes, conforme o item 6.5.1.
    - Falhas técnicas tratadas nos formulários serão apresentadas com orientação de suporte; os detalhes deverão ser consultados pela STI no log interno. Os testes de escrita deverão ocorrer em ambiente descartável, separado da produção.
 

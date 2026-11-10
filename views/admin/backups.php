@@ -72,6 +72,80 @@ require_once ROOT_PATH . '/views/layouts/header.php';
     </div>
 </div>
 
+
+<!-- Zeramento operacional controlado: nunca apaga homologações ou a auditoria -->
+<div class="card border-danger mb-4">
+    <div class="card-header bg-danger-subtle text-danger fw-bold">
+        <i class="bi bi-exclamation-octagon me-2"></i> Administração avançada — zerar a base operacional
+    </div>
+    <div class="card-body">
+        <p class="small mb-2">Apaga cadastros do efetivo, contas não administrativas, chefias vinculadas, avaliações,
+           votos, seleções e decisões não homologadas. Preserva a estrutura SQL, as divisões regimentais,
+           os backups, as contas ADMIN e o histórico de auditoria. Mantém um pleito de referência na Fase 1,
+           sem cronograma, para permitir nova configuração.</p>
+        <div class="alert alert-warning py-2 small">
+            <strong>Operação extraordinária.</strong> Não deve ser executada durante votação ou com usuários no sistema.
+            A STI precisa suspender acessos e integrações, e realizar procedimento de manutenção.
+            O sistema gera backup integral automaticamente antes da limpeza e bloqueia a operação
+            se houver qualquer pleito homologado.
+        </div>
+
+        <?php if (!$resetHabilitado): ?>
+            <p class="mb-0 text-muted small"><i class="bi bi-lock-fill me-1"></i>
+            Função desativada. A STI pode liberá-la temporariamente usando
+            <code>ALLOW_DATABASE_RESET=true</code> no ambiente do servidor.</p>
+        <?php elseif ($erroResumoReset): ?>
+            <div class="alert alert-danger"><?= sanitize_output($erroResumoReset) ?></div>
+        <?php elseif ($resumoReset && $resumoReset['homologados'] > 0): ?>
+            <div class="alert alert-danger mb-0"><strong>Bloqueado:</strong>
+            há pleito homologado. A interface administrativa não permite apagar resultados oficiais.</div>
+        <?php elseif ($resumoReset && $resumoReset['admins_ativos'] < 1): ?>
+            <div class="alert alert-danger mb-0">Nenhuma conta ADMIN ativa com senha local para recuperação.</div>
+        <?php elseif (!empty($preparoReset)): ?>
+            <div class="alert alert-danger">
+                <strong>Última confirmação:</strong> esta ação elimina registros operacionais.
+                A confirmação vale por cinco minutos e apenas para o administrador atual.
+            </div>
+            <div class="row g-2 small mb-3">
+                <div class="col-sm-4"><strong>Efetivo:</strong> <?= (int)($resumoReset['contagens']['efetivo'] ?? 0) ?></div>
+                <div class="col-sm-4"><strong>Contas:</strong> <?= (int)($resumoReset['contagens']['usuarios'] ?? 0) ?></div>
+                <div class="col-sm-4"><strong>Votos:</strong> <?= (int)($resumoReset['contagens']['urna_votos'] ?? 0) ?></div>
+            </div>
+            <form method="POST" action="/index.php?r=admin/zerar_banco"
+                  onsubmit="return confirm('CONFIRMA o zeramento da base operacional? O sistema excluirá os cadastros e votos não homologados.');">
+                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                <input type="hidden" name="acao" value="confirmar">
+                <input type="hidden" name="token_reset" value="<?= sanitize_output($preparoReset['token']) ?>">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="resetSenhaAdmin">Sua senha atual de ADMIN</label>
+                    <input class="form-control" id="resetSenhaAdmin" type="password" name="senha_admin"
+                           autocomplete="current-password" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="resetFrase">Digite exatamente: <code>ZERAR BASE COMARA</code></label>
+                    <input class="form-control" id="resetFrase" type="text" name="confirmacao"
+                           autocomplete="off" required>
+                </div>
+                <label class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" name="ciente" value="1" required>
+                    <span class="form-check-label">Confirmo a operação extraordinária e que o servidor está em manutenção.</span>
+                </label>
+                <button type="submit" class="btn btn-danger fw-bold">
+                    <i class="bi bi-trash3 me-1"></i> Confirmar zeramento operacional
+                </button>
+            </form>
+        <?php else: ?>
+            <p class="small">O primeiro passo apenas prepara uma confirmação temporária.
+            Não apaga nenhum registro.</p>
+            <form method="POST" action="/index.php?r=admin/zerar_banco">
+                <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                <input type="hidden" name="acao" value="preparar">
+                <button type="submit" class="btn btn-outline-danger fw-bold">Preparar zeramento da base</button>
+            </form>
+        <?php endif; ?>
+    </div>
+</div>
+
 <!-- Guia de Agendamento Automático no aaPanel (Debian 13) -->
 <div class="card card-comara shadow-sm">
     <div class="card-comara-header bg-light">

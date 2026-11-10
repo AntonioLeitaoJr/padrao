@@ -111,7 +111,7 @@ class BackupService {
      */
     public static function listarBackups(): array {
         $todos = [];
-        foreach (['diario' => 'daily', 'semanal' => 'weekly'] as $tipo => $sub) {
+        foreach (['diario' => 'daily', 'semanal' => 'weekly', 'zeramento' => 'reset'] as $tipo => $sub) {
             $dir = ROOT_PATH . "/backups/{$sub}";
             if (is_dir($dir)) {
                 $files = glob("{$dir}/*.*");
