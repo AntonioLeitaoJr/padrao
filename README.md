@@ -232,3 +232,14 @@ Para bancos legados que recusam RH e para impedir novas matrículas duplicadas, 
 A matrícula civil já é cadastrada em `efetivo.saram`: a autenticação apenas resolve matrícula ou CPF para a **mesma conta existente** (`usuarios.efetivo_id`). Não crie contas por CPF e não retire os zeros à esquerda da matrícula. Cadastros com CPF/matrícula que correspondam a mais de uma conta ativa exigem saneamento pelo RH/STI; o sistema recusa o login ambíguo sem escolher um registro arbitrário. Acesso corporativo LDAP continua disponível.
 
 A exigência de troca usa o hash BCrypt da senha inicial; não acrescenta coluna, não redefine senhas anteriores e não altera votos ou históricos. Após backup e publicação, teste ADMIN, militar SARAM, civis por matrícula/CPF, mudança de senha, reset e conta LDAP antes de abrir a votação. O novo fluxo de autenticação **não exige migração SQL**. A rotina de testes adicional usa exclusivamente banco descartável `_test` e `AUTH_TEST_DB=1`.
+
+
+## Administração avançada — zerar base operacional
+
+O perfil `ADMIN` dispõe de uma rotina de zeramento **extraordinária**, acessível em **Gestão do Pleito → Backups Incrementais → Zerar a base operacional**. Não confundir com **Reiniciar Pleito** (mantém cadastros do efetivo).
+
+A limpeza completa remove efetivo, usuários não ADMIN, vínculos de chefia, fichas, TACF, votos, seleções, decisões e dados de pleitos **não homologados**. Mantém as contas ADMIN com as respectivas senhas, a estrutura SQL, o cadastro das divisões e assessorias, todos os backups e os registros perenes de auditoria. O pleito de referência permanece em planejamento, na Fase 1, sem datas. A ação não apaga resultados oficiais homologados.
+
+**Dupla habilitação obrigatória:** a STI ativa temporariamente `ALLOW_DATABASE_RESET=true` no servidor, mediante janela de manutenção sem operadores, eleitores ou rotinas externas; o ADMIN, na interface, primeiro prepara a operação e depois confirma em até cinco minutos com sua senha pessoal, a frase literal `ZERAR BASE COMARA` e ciência expressa. A prévia de contagens é vinculada à confirmação; alterações concorrentes impedem o zeramento. O programa gera obrigatoriamente um backup SQL gzip com SHA-256 em `backups/reset/` (permissões restritas) antes de alterar dados, registra auditoria obrigatória e utiliza transação para permitir rollback. Falhas de backup ou auditoria bloqueiam a operação. Em seguida, a sessão é encerrada e o ADMIN precisa fazer login novamente. É imprescindível verificar restauração do backup em ambiente isolado.
+
+O zeramento fica desativado por padrão; **não** há permissão para apagar pleito homologado pela interface. Caso haja resultados homologados ou tabelas adicionais desconhecidas, a rotina bloqueia e exige procedimento institucional específico. Após operação autorizada, a STI deve remover `ALLOW_DATABASE_RESET` do ambiente. **Não executar durante a votação.** Não há migração SQL adicional para instalar a funcionalidade.

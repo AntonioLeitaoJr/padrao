@@ -7,6 +7,7 @@ require_once __DIR__ . '/../Middleware/RoleMiddleware.php';
 require_once __DIR__ . '/../Models/Pleito.php';
 require_once __DIR__ . '/../Models/Efetivo.php';
 require_once __DIR__ . '/../Services/BackupService.php';
+require_once __DIR__ . '/../Services/ZeramentoService.php';
 require_once __DIR__ . '/../Services/AuditoriaService.php';
 
 class AdminController {
@@ -322,6 +323,22 @@ class AdminController {
         }
 
         $listaBackups = BackupService::listarBackups();
+        $resetHabilitado = ZeramentoService::habilitado();
+        $resumoReset = null;
+        $erroResumoReset = null;
+        if ($resetHabilitado) {
+            try { $resumoReset = ZeramentoService::resumo(); }
+            catch (Throwable $e) {
+                error_log('[ZERAMENTO RESUMO] '.$e->getMessage());
+                $erroResumoReset = 'A estrutura do banco exige revisão da STI antes do zeramento.';
+            }
+        }
+        $preparoReset = $_SESSION['zeramento_preparo'] ?? null;
+        if ($preparoReset && ((int)($preparoReset['expira'] ?? 0) < time()
+            || (int)($preparoReset['usuario_id'] ?? 0) !== (int)$user['id'])) {
+            unset($_SESSION['zeramento_preparo']);
+            $preparoReset = null;
+        }
 
         require_once ROOT_PATH . '/views/admin/backups.php';
     }

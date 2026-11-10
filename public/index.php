@@ -16,6 +16,7 @@ require_once __DIR__ . '/../src/Controllers/Fase4Controller.php';
 require_once __DIR__ . '/../src/Controllers/Fase5Controller.php';
 require_once __DIR__ . '/../src/Controllers/RelatorioController.php';
 require_once __DIR__ . '/../src/Controllers/AdminController.php';
+require_once __DIR__ . '/../src/Controllers/ZeramentoController.php';
 require_once __DIR__ . '/../src/Controllers/FotoController.php';
 
 $rota = $_GET['r'] ?? (AuthManager::check() ? 'dashboard' : 'login');
@@ -179,6 +180,9 @@ switch ($rota) {
         break;
     case 'admin/backups':
         (new AdminController())->backups();
+        break;
+    case 'admin/zerar_banco':
+        (new ZeramentoController())->executar();
         break;
 
     // Servidor de Fotos (SIGPES / Manual / SVG)
