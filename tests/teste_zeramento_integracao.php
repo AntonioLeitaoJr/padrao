@@ -30,14 +30,16 @@ $pleitoId=(int)$pdo->lastInsertId();
 $pdo->exec("INSERT INTO pleitos(ano,titulo,status,fase_atual) VALUES(2025,'Ciclo anterior','cancelado',1)");
 $pdo->exec("INSERT INTO efetivo(saram,cpf,cpf_hash,nome,nome_guerra,posto,categoria,tipo_vinculo) VALUES('00012','123.456.789-09','hashteste','Teste Civil','CIVIL','CV','sppf','CIVIL_PERMANENTE')");
 $efId=(int)$pdo->lastInsertId();
+$pdo->exec("INSERT INTO efetivo(saram,nome,nome_guerra,posto,categoria,tipo_vinculo) VALUES('00999','Admin vinculado','ADMIN','Cel','ineligivel','MILITAR_CARREIRA')");
+$efAdminId=(int)$pdo->lastInsertId();
 $pdo->prepare("INSERT INTO usuarios(login,senha_hash,efetivo_id,perfil,ativo) VALUES('00012',?,?, 'ELEITOR',1)")
     ->execute([password_hash('padrao@2026',PASSWORD_BCRYPT),$efId]);
 $pdo->exec("INSERT INTO urna_votos(pleito_id,categoria,candidato_id,horario_arredondado) VALUES(".$pleitoId.",'sppf',".$efId.",NOW())");
 $pdo->exec("INSERT INTO logs_auditoria(login,ip,acao,hash_registro) VALUES('admin','127.0.0.1','TESTE_ANTERIOR','abc123')");
 $pdo->exec("UPDATE divisoes_assessorias SET chefe_usuario_id=".$adminId." WHERE sigla='DA'");
-$pdo->exec("UPDATE usuarios SET efetivo_id=".$efId." WHERE id=".$adminId);
+$pdo->exec("UPDATE usuarios SET efetivo_id=".$efAdminId." WHERE id=".$adminId);
 $resumo=ZeramentoService::resumo();
-assertReset($resumo['contagens']['efetivo']===1 && $resumo['contagens']['usuarios']===2,'prévia inclui efetivo e contas');
+assertReset($resumo['contagens']['efetivo']===2 && $resumo['contagens']['usuarios']===2,'prévia inclui efetivo e contas');
 assertReset($resumo['contagens']['urna_votos']===1 && $resumo['homologados']===0,'prévia identifica voto e ausência de homologação');
 
 assertReset(!ZeramentoService::habilitado(),'zeramento vem desativado por padrão');
@@ -61,7 +63,7 @@ assertReset((int)$pdo->query('SELECT COUNT(*) FROM urna_votos')->fetchColumn()==
 $pdo->exec("CREATE TRIGGER bloqueio_reset_auditoria BEFORE INSERT ON logs_auditoria FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='falha injetada'");
 shouldRejectReset(fn()=>ZeramentoService::executar($adminId,$resumo['fingerprint']),'falha de auditoria provoca rollback');
 assertReset((int)$pdo->query('SELECT COUNT(*) FROM urna_votos')->fetchColumn()===1
-    && (int)$pdo->query('SELECT COUNT(*) FROM efetivo')->fetchColumn()===1,'rollback preserva votos e cadastros');
+    && (int)$pdo->query('SELECT COUNT(*) FROM efetivo')->fetchColumn()===2,'rollback preserva votos e cadastros');
 $pdo->exec('DROP TRIGGER bloqueio_reset_auditoria');
 
 $backup=ZeramentoService::executar($adminId,$resumo['fingerprint']);
