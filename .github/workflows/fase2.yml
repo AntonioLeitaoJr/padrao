@@ -35,6 +35,7 @@ jobs:
           find src views config public database tests -name '*.php' -print0 | xargs -0 -n1 php -l
           node --check public/assets/js/main.js
           node --check public/assets/js/fase4.js
+          node --check public/assets/js/fase5.js
       - name: Regras de classificação e desempate
         run: php tests/teste_fase2_regras_unitarias.php
       - name: Persistência, permissões e passagem à urna

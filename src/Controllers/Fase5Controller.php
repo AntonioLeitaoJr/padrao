@@ -33,49 +33,36 @@ class Fase5Controller {
         require_once ROOT_PATH . '/views/fase5/index.php';
     }
 
+    public function ordenar(): void {
+        AuthMiddleware::handle(); RoleMiddleware::handle([PERFIL_PRESIDENTE,PERFIL_ADMIN]);
+        $pleito=Pleito::getAtivo();
+        if ($_SERVER['REQUEST_METHOD']==='POST') {
+            $validos=is_string($_POST['csrf_token']??null) && verify_csrf_token($_POST['csrf_token'])
+                && $pleito && is_scalar($_POST['pleito_id']??null) && (string)$_POST['pleito_id']===(string)$pleito['id']
+                && ($_POST['confirmar']??null)==='1' && is_string($_POST['versao']??null)
+                && is_string($_POST['categoria']??null) && is_string($_POST['justificativa']??null)
+                && is_array($_POST['escolhas']??null);
+            if (!$validos) { flash_message('erro','Recarregue e confira o formulário e a confirmação da decisão.','danger'); }
+            else {
+                $itens=[];
+                foreach ($_POST['escolhas'] as $item) {
+                    if (is_array($item) && ($item['candidato_id']??null)==='' && ($item['posicao']??null)==='') continue;
+                    $itens[]=$item;
+                }
+                $res=Homologacao::salvarOrdenacao((int)$pleito['id'],$_POST['categoria'],$itens,$_POST['justificativa'],(int)AuthManager::user()['id'],$_POST['versao']);
+                flash_message($res['sucesso']?'sucesso':'erro',$res['mensagem'],$res['sucesso']?'success':'danger');
+            }
+        }
+        header('Location: /index.php?r=fase5'); exit;
+    }
+
     /**
      * Registro do Voto de Minerva pelo Presidente
      */
     public function votoMinerva(): void {
-        AuthMiddleware::handle();
-        RoleMiddleware::handle([PERFIL_PRESIDENTE, PERFIL_ADMIN]);
-
-        $user = AuthManager::user();
-        $pleito = Pleito::getAtivo();
-
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            if (!$pleito || (int)($_POST['pleito_id'] ?? 0)!==(int)$pleito['id'] || !is_string($_POST['versao'] ?? null) || ($_POST['confirmar'] ?? '')!=='1') {
-                flash_message('erro', 'Recarregue o pleito e confirme expressamente a operação.', 'warning');
-                header('Location: /index.php?r=fase5'); exit;
-            }
-            if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
-                flash_message('erro', 'Token CSRF inválido.', 'danger');
-                header('Location: /index.php?r=fase5');
-                exit;
-            }
-
-            $categoria = $_POST['categoria'] ?? '';
-            $candidatoId = (int)($_POST['candidato_id'] ?? 0);
-            $justificativa = trim($_POST['justificativa'] ?? '');
-
-            $res = Homologacao::registrarVotoMinerva(
-                (int)$pleito['id'],
-                $categoria,
-                $candidatoId,
-                $justificativa,
-                (int)$user['id'],
-                $_POST['versao']
-            );
-
-            if ($res['sucesso']) {
-                flash_message('sucesso', $res['mensagem'], 'success');
-            } else {
-                flash_message('erro', $res['mensagem'], 'danger');
-            }
-        }
-
-        header('Location: /index.php?r=fase5');
-        exit;
+        AuthMiddleware::handle(); RoleMiddleware::handle([PERFIL_PRESIDENTE,PERFIL_ADMIN]);
+        flash_message('erro','Recarregue e utilize a ordenação presidencial da Fase 5.','warning');
+        header('Location: /index.php?r=fase5'); exit;
     }
 
     /**
@@ -93,13 +80,13 @@ class Fase5Controller {
                 flash_message('erro', 'Recarregue o pleito e confirme expressamente a operação.', 'warning');
                 header('Location: /index.php?r=fase5'); exit;
             }
-            if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+            if (!is_string($_POST['csrf_token']??null) || !verify_csrf_token($_POST['csrf_token'])) {
                 flash_message('erro', 'Token CSRF inválido.', 'danger');
                 header('Location: /index.php?r=fase5');
                 exit;
             }
 
-            $ata = trim($_POST['ata_homologacao'] ?? '');
+            $ata = is_string($_POST['ata_homologacao']??null) ? trim($_POST['ata_homologacao']) : '';
             if (mb_strlen($ata) < 20) {
                 flash_message('erro', 'A ata de homologação oficial deve conter a fundamentação do ato (mínimo 20 caracteres).', 'danger');
                 header('Location: /index.php?r=fase5');
@@ -119,4 +106,3 @@ class Fase5Controller {
         exit;
     }
 }
-

@@ -87,7 +87,7 @@ require __DIR__.'/../database/migrate_fases3_4.php';
 check(count(EstadoMaior::avaliacao(1,1)['graduado'])===3,'migração repetida preserva avaliações');
 check(Pleito::avancarFase(1,$admin)['sucesso'],'abre Fase 5 após confirmações completas');
 rejeita(fn()=>EstadoMaior::confirmar(1,$major,$segunda),'não grava após Fase 4');
-$r=Homologacao::apurarResultados(1)['categorias'];
+$r=EstadoMaior::resultados(1);
 check($r['graduado']['ranking'][0]['pontos_fase4']===8 && $r['graduado']['requer_voto_de_minerva'],'soma 5+3 e identifica empate final');
 check($r['sppf']['vencedor']['pontos_fase4']===10,'candidato único recebe 5 por avaliação expressa');
 check(count($r['praca']['ranking'])===2 && !$r['praca']['excepcional'],'não amplia categoria com dois finalistas');
@@ -96,10 +96,20 @@ $fora=$pdo->query("SELECT candidato_id FROM indicados_consolidados WHERE categor
 check(!Homologacao::registrarVotoMinerva(1,'graduado',(int)$fora,'Escolha indevida',$pres)['sucesso'],'não admite terceiro ou não finalista no desempate de primeiro lugar');
 check(!Homologacao::registrarVotoMinerva(1,'sptf',(int)$r['praca']['ranking'][0]['candidato_id'],'Categoria errada',$pres)['sucesso'],'exceção rejeita integrante de outra categoria');
 check(!Homologacao::homologarResultados(1,$pres,'Ata suficientemente longa para testar.')['sucesso'],'não homologa sem quatro vencedores');
-$grad=(int)$r['graduado']['candidatos_empatados'][0]['candidato_id'];
-check(Homologacao::registrarVotoMinerva(1,'graduado',$grad,'Fundamentação da escolha entre empatados.',$pres)['sucesso'],'minerva restrita aos empatados');
-$sptf=(int)$r['sptf']['candidatos_empatados'][0]['candidato_id'];
-check(Homologacao::registrarVotoMinerva(1,'sptf',$sptf,'Escolha excepcional por ausência de representantes.',$pres)['sucesso'],'escolha excepcional fundamentada');
+require __DIR__.'/../database/migrate_fase5.php';
+function decidirCategoriaTeste(int $p,string $cat,?array $ids=null,string $just='Decisão fundamentada de teste.'): array {
+    global $pres;
+    $r=Homologacao::apurarResultados($p)['categorias'][$cat];
+    $refs=$r['referencia_fase4'];
+    if ($ids===null) $ids=array_map('intval',array_column($refs,'candidato_id'));
+    if (!$ids) $ids=[(int)Homologacao::opcoesCategoria($p,$cat)[0]['candidato_id']];
+    $itens=[];
+    foreach ($refs as $c) { $id=(int)$c['candidato_id']; $pos=array_search($id,$ids,true); $itens[]=['candidato_id'=>$id,'posicao'=>$pos===false?'excluir':$pos+1]; }
+    foreach ($ids as $i=>$id) if (!in_array($id,array_map('intval',array_column($refs,'candidato_id')),true)) $itens[]=['candidato_id'=>$id,'posicao'=>$i+1];
+    return Homologacao::salvarOrdenacao($p,$cat,$itens,$just,$pres,Homologacao::versaoDecisao($r['decisao_presidencial']));
+}
+foreach (EstadoMaior::CATEGORIAS as $cat) check(decidirCategoriaTeste(1,$cat)['sucesso'],'decisão expressa em '.$cat);
+$sptf=(int)Homologacao::apurarResultados(1)['categorias']['sptf']['vencedor']['candidato_id'];
 check(Homologacao::homologarResultados(1,$pres,'Homologo os quatro vencedores definidos no teste.')['sucesso'],'homologa quatro vencedores');
 check(!Homologacao::registrarVotoMinerva(1,'sptf',$sptf,'Tentativa após homologação.',$pres)['sucesso'],'homologação bloqueia alterações');
 check(Homologacao::apurarResultados(1)['homologado'],'recupera resultado homologado');

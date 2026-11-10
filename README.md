@@ -19,7 +19,7 @@ O processo é organizado em cinco fases:
 - **Fase 2 — Seleção pelas chefias:** cada uma das cinco divisões (DPC, DA, DL, DE e DS) e a representação conjunta de ACI, AGOV, AINT, AJUR, APOG, SCS e SIJ escolhe **um candidato por categoria disponível** entre os 20% mais bem pontuados de sua unidade.
 - **Fase 3 — Votação geral:** o efetivo vota nos selecionados da Fase 2, com até seis candidatos por categoria, conforme a disponibilidade de cada unidade.
 - **Fase 4 — Ordenação individual pelo Estado-Maior:** Coronéis, Tenentes-Coronéis e Majores ordenam até três finalistas por categoria, com justificativas e pesos 5–3–1.
-- **Fase 5 — Homologação e voto de minerva do Presidente**, quando necessário.
+- **Fase 5 — Ordenação presidencial, inclusão, exclusão e homologação**, com decisão expressa em cada categoria.
 
 ### Regras da Fase 2
 
@@ -27,7 +27,7 @@ O corte de 20% é arredondado para cima e inclui pelo menos dois candidatos quan
 
 O representante das sete assessorias e seções é o chefe militar mais antigo entre elas que não acumule chefia de divisão. Se necessário, a busca continua pelos seguintes na antiguidade. A escolha depende do cadastro de chefias, não apenas da lotação.
 
-O clique no nome exibe foto, nome de guerra, setor e posto/graduação; para civis, **CIVIL SPPF** ou **CIVIL SPTF**. A seleção permanece nos controles existentes. O painel geral apresenta quatro critérios; a funcionalidade de minerva da Fase 5 permanece.
+O clique no nome exibe foto, nome de guerra, setor e posto/graduação; para civis, **CIVIL SPPF** ou **CIVIL SPTF**. A seleção permanece nos controles existentes. O painel geral apresenta quatro critérios; a ordenação final da Fase 5 cabe à Presidência.
 
 Administrador e RH registram em **Vencedores anteriores** um vencedor por categoria e ano dos dois anos anteriores ao pleito ativo (2024 e 2025 para 2026). São vencedores finais, não todos os indicados. Consulte as regras completas, os dados necessários e a migração em [Atualização da Fase 2](docs/ATUALIZACAO_FASE2.md).
 
@@ -181,7 +181,7 @@ Ao encerrar a Fase 3, o sistema fixa votos e dados de classificação. Avançam 
 
 Na Fase 4, os Coronéis, Tenentes-Coronéis e Majores com efetivo e conta ativos selecionados pelo ADMIN na composição do pleito ordenam individualmente os finalistas e justificam cada posição em até 150 caracteres. Pesos: primeiro 5, segundo 3, terceiro 1. Com dois candidatos usam-se 5 e 3; com um, 5, sempre mediante confirmação expressa. Nenhuma avaliação confirmada pode ser editada. Somente depois das confirmações de todos os membros marcados a Administração pode avançar à Fase 5.
 
-Resultado: soma dos pontos → quatro critérios existentes → votos da Fase 3 → voto de minerva entre os empatados finais. Somente a categoria que ficou sem finalistas disponibiliza à Presidência seu próprio efetivo ativo, registrado no encerramento da urna. Essa exceção não amplia as listas das demais categorias. A homologação exige quatro vencedores.
+Referência da Fase 4: soma dos pontos → quatro critérios existentes → votos da Fase 3. Na Fase 5 a Presidência define expressamente a classificação em cada grupo, pode excluir finalistas e incluir qualquer integrante ativo da mesma categoria, mesmo sem participação anterior. A homologação exige quatro vencedores.
 
 A migração de produção da Fase 2 continua sem confirmação. Após backup e apenas quando a implantação for autorizada, executar nesta ordem:
 
@@ -197,7 +197,7 @@ As issues do fork estão desabilitadas (GitHub HTTP 410). Os requisitos e crité
 
 ## Fase 5 — decisões e homologação
 
-A Presidência pode revisar minerva e escolha excepcional até a homologação, com justificativa e auditoria de cada alteração. A homologação exige confirmação expressa, ata e quatro vencedores; grava resultado e auditoria em uma única transação. Formulários desatualizados, duplicidade e alterações posteriores são bloqueados. O botão Reiniciar não apaga eleição homologada.
+A Presidência define 1º, 2º e 3º lugares sem posições iniciais predefinidas. Pode ordenar, incluir e excluir pessoas do grupo até a homologação, com justificativa e auditoria de cada alteração. A homologação exige confirmação expressa, ata e quatro vencedores; grava resultado e auditoria em uma única transação. Formulários desatualizados, duplicidade e alterações posteriores são bloqueados. O botão Reiniciar não apaga eleição homologada.
 
 Presidente e ADMIN consultam ordenações e justificativas individuais identificadas da Fase 4. DIRECAO_SUPERIOR mantém consulta da apuração consolidada, sem poderes presidenciais. O efetivo acessa vencedores apenas após homologação. Consulta histórica usa a ata original, sem reinterpretar resultados antigos.
 
@@ -212,11 +212,15 @@ Publicar arquivos não executa migrações. Siga o [procedimento pós-deploy](do
 A suíte `tests/teste_deploy_fases3_4.php` inclui as verificações acumuladas das Fases 3–5 e as regressões de deploy; exige banco vazio, descartável e terminado em `_test`. Issues continuam desabilitadas no fork; achados e aceite são registrados no PR e nos guias.
 
 
-Na Fase 5, cada finalista apresenta a **classificação popular da Fase 3 (posição e votos)** e a **ordenação final da Fase 4 (posição e pontos)** em colunas separadas e nas opções de minerva. A posição popular considera apenas os votos de todos os candidatos da categoria, inclusive os que não chegaram à Fase 4; empates compartilham posição. A posição da Fase 4 aplica pontos 5–3–1, quatro critérios e votos anteriores. A minerva não reescreve essas posições. Categorias excepcionais não recebem classificação fictícia; homologações anteriores sem posições arquivadas indicam dado não registrado.
+Na Fase 5, cada finalista apresenta a **classificação popular da Fase 3 (posição e votos)** e a **ordenação final da Fase 4 (posição e pontos)** em colunas separadas como referência para a decisão presidencial. A posição popular considera apenas os votos de todos os candidatos da categoria, inclusive os que não chegaram à Fase 4; empates compartilham posição. A posição da Fase 4 aplica pontos 5–3–1, quatro critérios e votos anteriores. A ordenação presidencial não reescreve essas posições. Incluídos sem participação anterior não recebem classificação fictícia; homologações anteriores sem posições arquivadas indicam dado não registrado.
 
 ## Participantes da Fase 4
 
 A seleção em **Atribuição de Chefias e Perfis > Membros da Direção Superior** determina quem ordena e quem é exigido no avanço. É independente dos perfis de chefe/ADMIN/PRESIDENTE, ajustável até a Fase 4 e bloqueada a partir da Fase 5. Desmarcados deixam de somar pontos e de bloquear o avanço; avaliações são preservadas. Após atualizar, reaplique `migrate_fases3_4.php` e salve a composição desejada. Consulte [procedimento e testes](docs/COMPOSICAO_FASE4.md).
+
+### Migração da ordenação presidencial
+
+Após backup e deploy, reaplique `php database/migrate_fase5.php` para criar `fase5_decisoes`. Em pleitos não homologados, salve expressamente as quatro categorias; decisões antigas de minerva não predefinem posições. As avaliações individuais da Fase 4 ficam antes da ata. Homologações anteriores permanecem imutáveis. Consulte o [guia atualizado](docs/ATUALIZACAO_FASE5.md).
 
 ## Cadastro: RH e matrícula/SARAM
 

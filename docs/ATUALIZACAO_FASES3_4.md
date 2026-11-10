@@ -4,7 +4,7 @@
 
 Branch `ajustes-fases3-4`, PR #2 no fork AntonioLeitaoJr/padrao. A base contém o PR #1 da Fase 2 e as atualizações posteriores dos documentos do repositório original. Sem merge ou deploy autorizado.
 
-Em 30/10/2026 foram confirmadas as regras: todos os Oficiais Superiores habilitados ordenam individualmente; pesos 5–3–1 (5–3 com dois e 5 com um); confirmação definitiva; corte empatado resolvido pela Presidência com bloqueio da Fase 4; consolidação por pontos, quatro critérios, votos anteriores e minerva; escolha excepcional restrita à categoria sem finalistas. Essa confirmação de requisitos não constitui aprovação institucional ou publicação da NPA em Boletim.
+Registro histórico de 30/10/2026 (a intervenção da Fase 5 foi ampliada posteriormente; ver guia atual): todos os Oficiais Superiores habilitados ordenam individualmente; pesos 5–3–1 (5–3 com dois e 5 com um); confirmação definitiva; corte empatado resolvido pela Presidência com bloqueio da Fase 4; consolidação por pontos, quatro critérios, votos anteriores e minerva; escolha excepcional restrita à categoria sem finalistas. Essa confirmação de requisitos não constitui aprovação institucional ou publicação da NPA em Boletim.
 
 As issues estão desabilitadas no fork; as duas tentativas retornaram HTTP 410. Nenhuma issue foi publicada. Os requisitos e critérios de aceite estão registrados neste documento e vinculados pelo PR.
 
@@ -30,11 +30,7 @@ Se o empate abranger mais de uma vaga (por exemplo quatro candidatos empatados n
 
 ## Consolidação e Presidência
 
-Somam-se 5, 3 e 1 por posição. Empate: preferência a quem não venceu nos dois anos anteriores; antiguidade na COMARA; tempo de serviço; TACF; votos da Fase 3. Persistindo, minerva somente entre os empatados finais.
-
-Categoria que chegou sem finalistas possui uma lista excepcional própria, registrada no encerramento da urna, contendo apenas seu efetivo ativo. Somente essa categoria pode ser decidida a partir dessa lista, com justificativa e auditoria específicas. Não há consulta genérica que amplie categorias com finalistas. A validação também ocorre no servidor, impedindo manipulação do formulário. Se nem o efetivo tiver integrante nessa categoria, a homologação fica bloqueada em vez de fabricar vencedor.
-
-Homologação exige quatro vencedores e bloqueia decisões posteriores. Votos populares continuam disponíveis como informação de desempate, enquanto pontos da Fase 4 são o resultado principal.
+A referência da Fase 4 soma 5, 3 e 1 por posição e desempata pelos quatro critérios, seguidos dos votos da Fase 3. A revisão de novembro de 2026 da Fase 5 substitui a restrição histórica de minerva: a Presidência ordena expressamente todas as categorias, pode excluir finalistas e incluir integrantes ativos do mesmo grupo, mesmo sem participação anterior. As referências das Fases 3/4 permanecem preservadas. A homologação exige quatro vencedores e bloqueia revisões. Consulte [a regra atual da Fase 5](ATUALIZACAO_FASE5.md).
 
 ## Banco e implantação
 
@@ -61,8 +57,8 @@ Rollback de código após o novo encerramento exige planejamento: a versão anti
 - Corte de até três, decisão só entre empatados e urna encerrada enquanto aguarda.
 - Oficiais Superiores habilitados, ordenação completa, posições únicas e justificativas 150/151 com acentos.
 - Persistência, recuperação, confirmação imutável, ausência de gravação parcial e avanço só após todas as confirmações.
-- Soma 5–3–1, quatro critérios antes dos votos da Fase 3 e minerva restrita.
-- Categoria vazia excepcional sem ampliar demais listas; quatro vencedores para homologação.
+- Soma 5–3–1 e quatro critérios antes dos votos da Fase 3; referência preservada na ordenação presidencial.
+- Fase 5 com ordenação, inclusão e exclusão em qualquer categoria; quatro vencedores para homologação.
 - Migração repetida e preservação de dados em banco descartável; ausência de estrutura com orientação.
 
 ```sh
@@ -89,6 +85,6 @@ Consulte [regras, permissões, testes e limitações da Fase 5](ATUALIZACAO_FASE
 
 ## Revisão pós-deploy de 04/11/2026
 
-As referências de branches/PRs no início descrevem a entrega original. A correção `2f654b1` já integra a `main`; o PR complementar revisa erros dos formulários e documentação. A suíte de deploy inclui a suíte da Fase 5 e as anteriores, com regressões de ciclo ausente, mensagens flash, migrações e falhas SQL. Consulte [diagnóstico, implantação e critérios de aceite](CORRECAO_DEPLOY_FASES3_4.md). As regras eleitorais deste guia permanecem.
+As referências de branches/PRs no início descrevem a entrega original. A correção `2f654b1` já integra a `main`; o PR complementar revisa erros dos formulários e documentação. A suíte de deploy inclui a suíte da Fase 5 e as anteriores, com regressões de ciclo ausente, mensagens flash, migrações e falhas SQL. Consulte [diagnóstico, implantação e critérios de aceite](CORRECAO_DEPLOY_FASES3_4.md). As regras das Fases 3/4 permanecem; a Fase 5 segue seu guia atualizado.
 
 A orientação de habilitação foi atualizada em 05/11/2026: [composição por pleito, migração e testes](COMPOSICAO_FASE4.md). O workflow agora executa `tests/teste_composicao_fase4.php`, que inclui as suítes anteriores.
