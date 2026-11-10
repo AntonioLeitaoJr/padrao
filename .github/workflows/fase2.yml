@@ -63,6 +63,13 @@ jobs:
         run: |
           mysql -h127.0.0.1 -uroot -ptest -e 'CREATE DATABASE comara_auth_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
           php tests/teste_auth_integracao.php
+      - name: Importação CSV integral em MySQL descartável
+        env:
+          DB_NAME: comara_csv_test
+          CSV_TEST_DB: '1'
+        run: |
+          mysql -h127.0.0.1 -uroot -ptest -e 'CREATE DATABASE comara_csv_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
+          php tests/teste_importacao_csv_integracao.php
       - name: Zeramento operacional em MySQL descartável
         env:
           DB_NAME: comara_reset_test

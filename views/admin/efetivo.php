@@ -557,8 +557,10 @@ $retornoFiltros = http_build_query(
                         <h6 class="fw-bold mb-1"><i class="bi bi-info-circle-fill me-1"></i> Instruções de Carga em Lote</h6>
                         <ul class="mb-0 small">
                             <li>O arquivo deve estar no formato <strong>.CSV</strong> (separado por ponto-e-vírgula <code>;</code> ou vírgula <code>,</code>).</li>
-                            <li>Colunas obrigatórias no cabeçalho: <code>SARAM;CPF;NOME;NOME_GUERRA;POSTO;QUADRO;ESPECIALIDADE;SETOR;DIVISAO;CATEGORIA;VINCULO;TELEFONE</code>.</li>
-                            <li>Registros já existentes serão automaticamente atualizados pelo SARAM ou CPF. Novos registros serão inseridos e receberão senha de acesso padrão <code>padrao@2026</code>.</li>
+                            <li>Colunas obrigatórias: <code>SARAM;CPF;NOME;NOME_GUERRA;POSTO;QUADRO;ESPECIALIDADE;SETOR;DIVISAO;CATEGORIA;VINCULO;TELEFONE</code>. A coluna <code>ATIVO</code> é aceita: <code>0</code> (inativo) ou <code>1</code> (ativo).</li>
+                            <li>A carga é <strong>integral</strong>: uma linha inválida ou conflito de matrícula/CPF cancela toda a operação. Nenhuma atualização parcial será mantida.</li>
+                            <li>O sistema gera um backup antes da importação, preserva contas e perfis existentes, e cria usuários somente para novos integrantes. Após importar, o filtro mostrará também os <strong>inativos</strong>.</li>
+                            <li>Importações ficam bloqueadas se houver pleito homologado ou votação em andamento nas Fases 3–5.</li>
                         </ul>
                     </div>
 

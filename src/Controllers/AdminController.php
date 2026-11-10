@@ -642,179 +642,54 @@ class AdminController {
     }
 
     /**
-     * Importação em lote de militares e servidores via arquivo CSV
+     * Carga CSV completa e atômica: erros cancelam a transação inteira.
+     * O resultado considera também os registros inativos.
      */
     public function importarCsv(): void {
         AuthMiddleware::handle();
         RoleMiddleware::handle([PERFIL_ADMIN, PERFIL_RH]);
 
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
-                flash_message('erro', 'Token CSRF inválido.', 'danger');
-                header('Location: /index.php?r=admin/efetivo');
-                exit;
-            }
-
-            if (empty($_FILES['arquivo_csv']['tmp_name']) || $_FILES['arquivo_csv']['error'] !== UPLOAD_ERR_OK) {
-                flash_message('erro', 'Arquivo CSV inválido ou não enviado.', 'danger');
-                header('Location: /index.php?r=admin/efetivo');
-                exit;
-            }
-
-            $arquivo = $_FILES['arquivo_csv']['tmp_name'];
-            $conteudo = file_get_contents($arquivo);
-            if ($conteudo === false) {
-                flash_message('erro', 'Não foi possível ler o arquivo enviado.', 'danger');
-                header('Location: /index.php?r=admin/efetivo');
-                exit;
-            }
-
-            // Remove BOM UTF-8
-            $conteudo = preg_replace('/^\xEF\xBB\xBF/', '', $conteudo);
-            $linhas = preg_split('/\r\n|\r|\n/', trim($conteudo));
-
-            if (count($linhas) < 2) {
-                flash_message('erro', 'O arquivo CSV enviado não contém linhas de dados válidas.', 'danger');
-                header('Location: /index.php?r=admin/efetivo');
-                exit;
-            }
-
-            // Detecta delimitador (; ou ,)
-            $delimitador = str_contains($linhas[0], ';') ? ';' : ',';
-            $cabecalhos = array_map('trim', explode($delimitador, mb_strtoupper($linhas[0])));
-
-            $mapa = [];
-            foreach ($cabecalhos as $idx => $nomeCol) {
-                $nomeCol = trim(str_replace(['"', "'"], '', $nomeCol));
-                $mapa[$nomeCol] = $idx;
-            }
-
-            $totalProcessados = 0;
-            $totalInseridos = 0;
-            $totalAtualizados = 0;
-            $rejeitadas = [];
-            $pdo = Database::getConnection();
-
-            for ($i = 1; $i < count($linhas); $i++) {
-                $linha = trim($linhas[$i]);
-                if ($linha === '') continue;
-
-                $cols = str_getcsv($linha, $delimitador);
-                if (count($cols) < 3) continue;
-
-                $getVal = function($campo) use ($cols, $mapa) {
-                    $idx = $mapa[$campo] ?? null;
-                    return ($idx !== null && isset($cols[$idx])) ? trim(str_replace(['"', "'"], '', $cols[$idx])) : '';
-                };
-
-                $saram      = $getVal('SARAM');
-                $cpf        = $getVal('CPF');
-                $nome       = mb_strtoupper($getVal('NOME'));
-                $nomeGuerra = mb_strtoupper($getVal('NOME_GUERRA'));
-                $posto      = $getVal('POSTO');
-                $quadro     = mb_strtoupper($getVal('QUADRO'));
-                $esp        = mb_strtoupper($getVal('ESPECIALIDADE'));
-                $setor      = mb_strtoupper($getVal('SETOR'));
-                $divisao    = mb_strtoupper($getVal('DIVISAO'));
-                $cat        = strtolower($getVal('CATEGORIA'));
-                $vinculo    = mb_strtoupper($getVal('VINCULO'));
-                $tel        = $getVal('TELEFONE');
-
-                if ($nome === '') continue;
-
-                // Deriva nome de guerra se não informado
-                if ($nomeGuerra === '') {
-                    $partes = explode(' ', $nome);
-                    $nomeGuerra = end($partes);
-                }
-
-                // Normalização automática de posto e categoria
-                if ($posto === '$2' || $posto === 'S 2') $posto = 'S2';
-                if ($posto === '' && $quadro === 'QSS') $posto = 'SO';
-
-                if ($cat === '' || !in_array($cat, [CAT_GRADUADO, CAT_PRACA, CAT_SPPF, CAT_SPTF, CAT_INELIGIVEL], true)) {
-                    if (in_array($posto, ['Cel', 'Ten Cel', 'Maj', 'Cap', '1º Ten', '2º Ten'], true)) {
-                        $cat = CAT_INELIGIVEL;
-                        $vinculo = 'MILITAR_CARREIRA';
-                    } elseif (in_array($posto, ['SO', '1S', '2S', '3S'], true)) {
-                        $cat = CAT_GRADUADO;
-                        $vinculo = 'MILITAR_CARREIRA';
-                    } elseif (in_array($posto, ['Cb', 'CB', 'S1', 'S2'], true)) {
-                        $cat = CAT_PRACA;
-                        $vinculo = 'MILITAR_CARREIRA';
-                    } elseif ($posto === 'CV' || $posto === 'CIVIL') {
-                        if (str_starts_with($saram, '85')) {
-                            $cat = CAT_SPTF;
-                            $vinculo = 'CIVIL_TEMPORARIO';
-                        } else {
-                            $cat = CAT_SPPF;
-                            $vinculo = 'CIVIL_PERMANENTE';
-                        }
-                    } else {
-                        $cat = CAT_INELIGIVEL;
-                    }
-                }
-
-                try {
-                    // Verifica se já existe por SARAM ou CPF
-                    $existenteId = null;
-                    if ($saram !== '') {
-                        $stmtCheck = $pdo->prepare('SELECT id FROM efetivo WHERE TRIM(saram) = :s');
-                        $stmtCheck->execute([':s' => $saram]);
-                        $encontrados=$stmtCheck->fetchAll(PDO::FETCH_COLUMN);
-                        if (count($encontrados)>1) throw new InvalidArgumentException('Identificador duplicado na base; confira os cadastros antes de importar.');
-                        $existenteId=$encontrados[0]??null;
-                    }
-                    if (!$existenteId && $cpf !== '') {
-                        $cpfNumeros = preg_replace('/\D/', '', $cpf);
-                        $stmtCheck = $pdo->prepare('SELECT id FROM efetivo WHERE cpf_hash = :h');
-                        $stmtCheck->execute([':h' => hash('sha256', $cpfNumeros)]);
-                        $encontrados=$stmtCheck->fetchAll(PDO::FETCH_COLUMN);
-                        if (count($encontrados)>1) throw new InvalidArgumentException('Identificador duplicado na base; confira os cadastros antes de importar.');
-                        $existenteId=$encontrados[0]??null;
-                    }
-
-                    $dadosSalvar = [
-                        'id'             => $existenteId ?: null,
-                        'saram'          => $saram,
-                        'cpf'            => $cpf,
-                        'nome'           => $nome,
-                        'nome_guerra'    => $nomeGuerra,
-                        'posto'          => $posto,
-                        'quadro'         => $quadro,
-                        'especialidade'  => $esp,
-                        'setor'          => $setor,
-                        'divisao_sigla'  => $divisao,
-                        'categoria'      => $cat,
-                        'tipo_vinculo'   => $vinculo ?: 'MILITAR_CARREIRA',
-                        'telefone'       => $tel,
-                        'ativo'          => 1
-                    ];
-
-                    Efetivo::salvarOuAtualizar($dadosSalvar);
-                    $totalProcessados++;
-                    if ($existenteId) {
-                        $totalAtualizados++;
-                    } else {
-                        $totalInseridos++;
-                    }
-                } catch (Throwable $e) {
-                    error_log('[IMPORTACAO_CADASTRO] '.$e->getMessage());
-                    $rejeitadas[]='Linha '.($i+1).': '.($e instanceof InvalidArgumentException ? $e->getMessage() : 'Falha ao salvar; solicite conferência ao STI.');
-                }
-            }
-
-            AuditoriaService::log('IMPORTACAO_CSV_EFETIVO', [
-                'processados' => $totalProcessados,
-                'novos'       => $totalInseridos,
-                'atualizados' => $totalAtualizados
-            ]);
-
-            if ($rejeitadas) flash_message('erro', implode(' ', $rejeitadas), 'warning');
-            flash_message('sucesso', "Importação concluída! {$totalProcessados} registros processados ({$totalInseridos} novos cadastrados, {$totalAtualizados} atualizados).", 'success');
+        $retorno='/index.php?r=admin/efetivo&status=todos';
+        if (($_SERVER['REQUEST_METHOD']??'GET')!=='POST') {
+            header('Location: '.$retorno);
+            exit;
         }
-
-        header('Location: /index.php?r=admin/efetivo');
+        try {
+            if (!verify_csrf_token($_POST['csrf_token']??'')) {
+                throw new InvalidArgumentException('Token CSRF inválido.');
+            }
+            if (!isset($_FILES['arquivo_csv'])
+                || ($_FILES['arquivo_csv']['error']??UPLOAD_ERR_NO_FILE)!==UPLOAD_ERR_OK
+                || empty($_FILES['arquivo_csv']['tmp_name'])
+                || !is_uploaded_file((string)$_FILES['arquivo_csv']['tmp_name'])) {
+                throw new InvalidArgumentException('Arquivo CSV inválido ou não enviado.');
+            }
+            if (function_exists('set_time_limit')) @set_time_limit(300);
+            require_once __DIR__.'/../Services/ImportacaoEfetivoService.php';
+            $user=AuthManager::user();
+            $r=ImportacaoEfetivoService::importar(
+                (string)$_FILES['arquivo_csv']['tmp_name'],
+                (int)$user['id']
+            );
+            flash_message('sucesso',
+                "Importação integral confirmada: {$r['total']} registros, "
+                ."{$r['inseridos']} novos, {$r['atualizados']} atualizados, "
+                ."{$r['ativos']} ativos e {$r['inativos']} inativos. "
+                ."Backup anterior: {$r['backup']}. "
+                ."Filtro de exibição alterado para Todos.",
+                'success'
+            );
+        } catch (Throwable $e) {
+            error_log('[IMPORTACAO_CSV] '.$e->getMessage());
+            $mensagem=$e instanceof InvalidArgumentException || $e instanceof RuntimeException
+                ? $e->getMessage()
+                : 'Falha técnica durante a importação. Nenhum registro do CSV foi confirmado; consulte a STI.';
+            flash_message('erro',
+                'Importação integral CANCELADA: '.$mensagem.' Nenhum registro parcial foi mantido.',
+                'danger'
+            );
+        }
+        header('Location: '.$retorno);
         exit;
     }
 
