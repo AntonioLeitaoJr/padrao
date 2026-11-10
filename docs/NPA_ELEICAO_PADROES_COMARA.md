@@ -72,18 +72,18 @@ O processo seletivo desenvolve-se obrigatoriamente através de cinco fases suces
 #### Procedimentos no Primeiro Acesso e Segurança:
 1. **Acesso ao Sistema:**
    - Acesse o endereço eletrônico institucional: `http://votacao.comara.intraer` (ou endereço homologado pelo STI).
-   - No campo **"SARAM ou CPF"**, digite o número do seu SARAM ou do seu CPF (com ou sem pontuação).
+   - No campo de identificação, o militar informa o **SARAM**; o servidor civil informa preferencialmente a **matrícula funcional** ou, caso não a saiba, o **CPF** (com ou sem pontuação). Matrícula e CPF identificam a mesma conta do servidor civil.
    - Digite a senha inicial fornecida pela administração: `padrao@2026`.
    - Clique no botão **"Entrar"**.
 
 2. **Alteração Obrigatória de Senha no Primeiro Acesso:**
    - Por diretriz expressa de segurança e inviolabilidade do voto, **todo eleitor deve alterar a senha no primeiro login**.
-   - No canto superior direito da tela, clique no seu **Nome / Posto**.
-   - Selecione a opção **"Alterar Senha"**.
-   - No modal:
+   - Quando a conta local ainda utiliza a senha inicial (inclusive após redefinição), o sistema redireciona automaticamente para a tela de **troca obrigatória**, bloqueando o uso das fases até a conclusão.
+   - No formulário:
      - Digite sua **Senha Atual** (`padrao@2026`).
-     - Digite a sua **Nova Senha Pessoal** (mínimo de 6 caracteres, combinando letras, números e símbolos).
-     - Confirme a nova senha e clique em **"Salvar Nova Senha"**.
+     - Digite a sua **Nova Senha Pessoal** (mínimo de 6 caracteres), diferente da senha inicial e da anterior.
+     - Confirme a nova senha e clique em **"Definir senha e continuar"**.
+   - Quem já alterou a senha não será obrigado a repetir a troca. Contas autenticadas exclusivamente pelo Active Directory seguem a política de senha corporativa.
    - *Atenção:* A nova senha é de uso pessoal e intransferível. O segredo da senha garante o sigilo do seu voto.
 
 3. **Caso Tenha Esquecido a Senha:**
@@ -317,9 +317,9 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
 #### Procedimentos Operacionais:
 1. **Atendimento de Suporte e Reset de Senha:**
    - O STI é o **único canal autorizado** a receber demandas de militares ou servidores que tenham esquecido suas credenciais ou bloqueado o acesso.
-   - O militar deve comparecer ao STI ou entrar em contato pelo ramal institucional com confirmação de identidade (SARAM/CPF).
+   - O militar ou servidor civil deve comparecer ao STI ou entrar em contato pelo ramal institucional com confirmação de identidade (SARAM, matrícula ou CPF, conforme o cadastro).
    - O operador de TI com perfil de Administrador localiza o registro no menu **Efetivo** e aciona o botão **"Resetar Senha"**.
-   - A senha do militar é restaurada para `padrao@2026`, devendo o militar ser orientado a **alterá-la imediatamente após o primeiro login**.
+   - A senha do usuário é restaurada para `padrao@2026`; o sistema **impede o acesso às fases até a troca obrigatória por uma senha pessoal**.
 2. **Disponibilidade da Infraestrutura:**
    - Garantir a operacionalidade do servidor Apache/Nginx, motor PHP 8.3 e base de dados MySQL 8.0 no painel aaPanel / Debian 13.
    - Verificar a correta permissão de escrita nas pastas `cache`, `backups` e `public/uploads/fotos`.

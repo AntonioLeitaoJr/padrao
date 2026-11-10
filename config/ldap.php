@@ -102,7 +102,10 @@ class LdapAuth {
         try {
             $pdo = Database::getConnection();
             $usernameTrim = trim($username);
-            $cpfLimpo = preg_replace('/\D/', '', $usernameTrim);
+            // A matrícula civil utiliza o mesmo campo efetivo.saram, sem criar outra conta.
+            // Para CPF, aceitamos somente dígitos e sua pontuação habitual.
+            $cpfLimpo = preg_match('/^[0-9.\-]+$/D', $usernameTrim)
+                ? preg_replace('/\D/', '', $usernameTrim) : '';
             $cpfFmt = strlen($cpfLimpo) === 11 
                 ? vsprintf('%s%s%s.%s%s%s.%s%s%s-%s%s', str_split($cpfLimpo))
                 : '';
@@ -115,13 +118,14 @@ class LdapAuth {
                 LEFT JOIN efetivo e ON e.id = u.efetivo_id
                 WHERE (
                     u.login = :login
-                    OR e.saram = :login
+                    OR TRIM(e.saram) = :login
                     ' . ($cpfLimpo ? 'OR u.login = :cpf_limpo' : '') . '
                     ' . ($cpfFmt ? 'OR e.cpf = :cpf_fmt OR e.cpf = :cpf_limpo' : '') . '
                     ' . ($cpfHash ? 'OR e.cpf_hash = :cpf_hash' : '') . '
                 ) AND u.ativo = 1
-                LIMIT 1
+                LIMIT 2
             ';
+            // Mais de uma conta com o mesmo identificador impede login ambíguo.
 
             $params = [':login' => $usernameTrim];
             if ($cpfLimpo) {
@@ -136,9 +140,14 @@ class LdapAuth {
 
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
-            $user = $stmt->fetch();
+            $usuarios = $stmt->fetchAll();
+            if (count($usuarios) !== 1) {
+                if (count($usuarios) > 1) error_log('[LOCAL AUTH] Identificador associado a mais de uma conta ativa.');
+                return false;
+            }
+            $user = $usuarios[0];
 
-            if ($user && !empty($user['senha_hash']) && password_verify($password, $user['senha_hash'])) {
+            if (!empty($user['senha_hash']) && password_verify($password, $user['senha_hash'])) {
                 return [
                     'id'            => (int)$user['id'],
                     'login'         => $user['login'],

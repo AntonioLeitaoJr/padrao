@@ -41,7 +41,8 @@ $rotaAtual = $_GET['r'] ?? 'dashboard';
     </div>
 </header>
 
-<!-- Barra de Navegação -->
+<!-- Barra de Navegação (oculta durante a troca obrigatória de senha) -->
+<?php if (empty($trocaObrigatoria)): ?>
 <nav class="comara-nav">
     <div class="container-fluid px-4">
         <div class="d-flex flex-wrap align-items-center justify-content-between py-1">
@@ -150,8 +151,9 @@ $rotaAtual = $_GET['r'] ?? 'dashboard';
         </div>
     </div>
 </nav>
+<?php endif; ?>
 
-<?php if (AuthManager::check()): ?>
+<?php if (AuthManager::check() && empty($trocaObrigatoria)): ?>
 <!-- Modal de Alteração e Reset de Senha (Disponível para qualquer usuário autenticado) -->
 <div class="modal fade" id="modalAlterarSenha" tabindex="-1" aria-labelledby="modalAlterarSenhaLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
