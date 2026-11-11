@@ -252,3 +252,12 @@ A importação pelo ADMIN/RH em **Gestão do Pleito → Gestão do Efetivo & Can
 O CSV fornecido em 10/11/2026 é um export de 06/11/2026 com **484 linhas (473 ativas, 11 inativas)**, validado sem SARAM/CPF repetidos. **Por conter dados pessoais, não está versionado ou publicado neste repositório.** Para aplicar exatamente esse arquivo, use o upload autenticado na interface após o deploy ou a ferramenta CLI protegida `database/importar_efetivo_privado.php`, passando um caminho local restrito no servidor. A ferramenta CLI tem modo prévia como padrão, exige `--aplicar --esperado=484 --sha256=<hash calculado na prévia>` para gravar e consulta o banco configurado no servidor. Jamais execute em bases de teste conectadas à produção, nem durante a votação Fase 3–5, nem após homologação. Não substitui votos, fichas ou backups históricos; restaura **somente a relação do efetivo**.
 
 Documentação de operação e limitações: `docs/IMPORTACAO_EFETIVO_INTEGRAL_20261110.md`. Suite em banco descartável: `tests/teste_importacao_csv_integracao.php`.
+
+
+## CSS e bibliotecas locais para uso sem Internet (INTRAER)
+
+O sistema distribui localmente os recursos de interface: Bootstrap CSS 5.3.3, Bootstrap Icons 1.11.3 com fontes WOFF e WOFF2, CSS COMARA e Bootstrap JS Bundle 5.3.3. Não há necessidade de CDN para estilos, ícones ou menus. Os caminhos utilizados são absolutos em relação ao domínio, com prefixo `/assets/`.
+
+As referências são centralizadas em `views/layouts/header.php` e `views/layouts/footer.php`. Em Nginx, configure o DocumentRoot para `public` ou o mapeamento correto de `/assets/` para `public/assets/`; em Apache com DocumentRoot na raiz do repositório, o `.htaccess` inclui esse encaminhamento.
+
+Confira o inventário e a auditoria das 23 views em [Assets locais para a INTRAER](docs/ASSETS_INTRAER_OFFLINE.md). O teste automático `php tests/teste_assets_intranet.php` verifica referências locais e fontes incluídas.

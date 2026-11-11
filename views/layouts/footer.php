@@ -110,8 +110,8 @@ declare(strict_types=1);
     </div>
 </div>
 
-<!-- Bootstrap 5 Bundle JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Bootstrap 5 Bundle JS local (necessario para modais, menus e popovers na intranet) -->
+<script src="/assets/vendor/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
 <!-- Scripts Customizados COMARA -->
 <script src="/assets/js/main.js"></script>
 </body>

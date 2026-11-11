@@ -36,6 +36,22 @@ jobs:
           node --check public/assets/js/main.js
           node --check public/assets/js/fase4.js
           node --check public/assets/js/fase5.js
+      - name: Assets offline (CSS, fontes e JavaScript)
+        run: |
+          php tests/teste_assets_intranet.php
+          php -S 127.0.0.1:8876 -t public >/tmp/comara-assets-http.log 2>&1 &
+          servidor=$!
+          trap 'kill "$servidor" || true' EXIT
+          sleep 1
+          for recurso in \
+            assets/vendor/bootstrap/5.3.3/css/bootstrap.min.css \
+            assets/vendor/bootstrap-icons/1.11.3/bootstrap-icons.min.css \
+            assets/vendor/bootstrap-icons/1.11.3/fonts/bootstrap-icons.woff2 \
+            assets/vendor/bootstrap-icons/1.11.3/fonts/bootstrap-icons.woff \
+            assets/css/style.css \
+            assets/vendor/bootstrap/5.3.3/js/bootstrap.bundle.min.js; do
+            curl --fail --silent --show-error --location "http://127.0.0.1:8876/$recurso" --output /dev/null
+          done
       - name: Regras de classificação e desempate
         run: php tests/teste_fase2_regras_unitarias.php
       - name: Persistência, permissões e passagem à urna
