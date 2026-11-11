@@ -14,6 +14,11 @@
     RewriteCond %{REQUEST_URI} ^/public/ [NC]
     RewriteRule ^ - [L]
 
+    # Quando o DocumentRoot aponta para a raiz do repo, entregue os assets
+    # diretamente do diretorio public/assets (sem passar pelo front controller).
+    # Com DocumentRoot=public, este arquivo raiz nao e utilizado.
+    RewriteRule ^assets/(.+)$ public/assets/$1 [L,NC]
+
     # Encaminha para public/index.php preservando query strings
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d

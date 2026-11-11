@@ -10,12 +10,11 @@ $rotaAtual = $_GET['r'] ?? 'dashboard';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= APP_NAME ?> — COMARA</title>
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <!-- Estilos Customizados COMARA -->
-    <link rel="stylesheet" href="/assets/css/style.css">
+    <!-- Todos os estilos sao entregues pela propria INTRAER (sem dependencias CDN). -->
+    <!-- Ordem obrigatoria: Bootstrap, Bootstrap Icons, estilos COMARA. -->
+    <link rel="stylesheet" href="/assets/vendor/bootstrap/5.3.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/vendor/bootstrap-icons/1.11.3/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/assets/css/style.css?v=20261111">
 </head>
 <body>
 

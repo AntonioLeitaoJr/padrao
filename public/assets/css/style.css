@@ -1,4 +1,7 @@
-/* Estilos Oficiais do Sistema de Eleição dos Padrões COMARA */
+/* Estilos Oficiais do Sistema de Eleição dos Padrões COMARA.
+ * Carregado APÓS Bootstrap 5.3.3 e Bootstrap Icons 1.11.3, ambos locais.
+ * Não requer @import, fontes externas ou conexão com a Internet.
+ */
 :root {
     --comara-blue: #0b3b60;
     --comara-dark: #072640;
