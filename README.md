@@ -29,7 +29,7 @@ O representante das sete assessorias e seções é o chefe militar mais antigo e
 
 O clique no nome exibe foto, nome de guerra, setor e posto/graduação; para civis, **CIVIL SPPF** ou **CIVIL SPTF**. A seleção permanece nos controles existentes. O painel geral apresenta quatro critérios; a ordenação final da Fase 5 cabe à Presidência.
 
-Administrador e RH registram em **Vencedores anteriores** um vencedor por categoria e ano dos dois anos anteriores ao pleito ativo (2024 e 2025 para 2026). São vencedores finais, não todos os indicados. Consulte as regras completas, os dados necessários e a migração em [Atualização da Fase 2](docs/ATUALIZACAO_FASE2.md).
+Administrador e RH registram em **Vencedores anteriores** um vencedor por categoria e ano dos dois anos anteriores ao pleito ativo (2024 e 2025 para 2026). São vencedores finais, não todos os indicados. É possível selecionar um integrante ativo/inativo ou informar o nome de vencedor não cadastrado, sem criar integrante fictício; o registro nominal não é associado automaticamente a candidato ativo para desempate. Consulte as regras completas, os dados necessários e a migração em [Atualização da Fase 2](docs/ATUALIZACAO_FASE2.md).
 
 ---
 

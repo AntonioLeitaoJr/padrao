@@ -287,7 +287,7 @@ O servidor valida chefia, unidade, categoria e classificação. Após a Fase 2, 
    - Mantém a base com os **443 integrantes da COMARA**.
    - Cadastra novos militares/servidores por formulário individual ou importação em lote de planilha CSV oficial.
    - Atualiza a data de apresentação/admissão na COMARA e a data de início do serviço militar ou civil, usadas nos desempates.
-   - Em **Vencedores anteriores** (`admin/vencedores`), Administrador e RH registram um vencedor por grupo em cada um dos dois anos anteriores ao pleito, durante as Fases 1 e 2. Para 2026, são oito registros: quatro de 2024 e quatro de 2025. Homologações existentes são consultadas; correções manuais prevalecem.
+   - Em **Vencedores anteriores** (`admin/vencedores`), Administrador e RH registram um vencedor por grupo em cada um dos dois anos anteriores ao pleito, durante as Fases 1 e 2. Para 2026, são oito registros: quatro de 2024 e quatro de 2025. Homologações existentes são consultadas; correções manuais prevalecem. Caso o vencedor não conste do efetivo, pode-se registrar seu nome manualmente, sem criá-lo como integrante atual. Esse histórico nominal não equivale a candidatura e não é associado a candidatos ativos por simples semelhança de nome; quando existir vínculo cadastral, deve ser escolhida a pessoa na lista.
    - Faz upload manual de fotos nos casos de inconsistência de fotografias na base do SIGPES.
    - **Botão "Resetar Senha":** Permite redefinir a senha de qualquer integrante para `padrao@2026` mediante solicitação formal por perda ou bloqueio de acesso.
 

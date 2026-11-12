@@ -7,4 +7,5 @@ if (!$pdo->query("SHOW COLUMNS FROM efetivo LIKE 'data_inicio_servico'")->fetch(
     $pdo->exec('ALTER TABLE efetivo ADD COLUMN data_inicio_servico DATE NULL');
 }
 $pdo->exec(file_get_contents(__DIR__ . '/fase2_historico.sql'));
+$pdo->exec(file_get_contents(__DIR__ . '/fase2_historico_manuais.sql'));
 echo "Migração da Fase 2 concluída. Preencha o histórico e as datas de serviço.\n";

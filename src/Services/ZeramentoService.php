@@ -14,7 +14,7 @@ final class ZeramentoService {
         'homologacao_pleito', 'eleitores_ciclo', 'urna_votos',
         'indicados_consolidados', 'selecao_fase2', 'fichas_indicacao',
         'avaliacoes_tacf', 'delegacoes_fase1', 'historico_fases_pleito',
-        'historico_vencedores'
+        'historico_vencedores', 'historico_vencedores_manuais'
     ];
     private const PRESERVADAS = ['usuarios', 'efetivo', 'pleitos', 'divisoes_assessorias', 'logs_auditoria'];
 

@@ -38,7 +38,9 @@ $pdo->exec("INSERT INTO urna_votos(pleito_id,categoria,candidato_id,horario_arre
 $pdo->exec("INSERT INTO logs_auditoria(login,ip,acao,hash_registro) VALUES('admin','127.0.0.1','TESTE_ANTERIOR','abc123')");
 $pdo->exec("UPDATE divisoes_assessorias SET chefe_usuario_id=".$adminId." WHERE sigla='DA'");
 $pdo->exec("UPDATE usuarios SET efetivo_id=".$efAdminId." WHERE id=".$adminId);
+$pdo->prepare('INSERT INTO historico_vencedores_manuais(ano,categoria,nome_vencedor,atualizado_por) VALUES (2024,\'praca\',\'VENCEDOR HISTORICO\',?)')->execute([$adminId]);
 $resumo=ZeramentoService::resumo();
+assertReset($resumo['contagens']['historico_vencedores_manuais']===1,'prévia considera histórico nominal');
 assertReset($resumo['contagens']['efetivo']===2 && $resumo['contagens']['usuarios']===2,'prévia inclui efetivo e contas');
 assertReset($resumo['contagens']['urna_votos']===1 && $resumo['homologados']===0,'prévia identifica voto e ausência de homologação');
 
@@ -74,10 +76,11 @@ if (!$g) throw new RuntimeException('Arquivo de backup não abre.');
 $sql='';
 while (!gzeof($g)) $sql.=gzread($g,16384);
 gzclose($g);
-assertReset(str_contains($sql,'CREATE TABLE') && str_contains($sql,'Teste Civil'),'backup contém estrutura e cadastros anteriores');
+assertReset(str_contains($sql,'CREATE TABLE') && str_contains($sql,'Teste Civil') && str_contains($sql,'VENCEDOR HISTORICO'),'backup contém estrutura e cadastros anteriores');
 assertReset(str_contains($sql,'saram_unico') && !preg_match('/INSERT INTO .efetivo. \([^)]*saram_unico/i',$sql),'backup preserva DDL gerado sem tentar inserir coluna GENERATED');
 assertReset((int)$pdo->query('SELECT COUNT(*) FROM urna_votos')->fetchColumn()===0,'urnas zeradas');
 assertReset((int)$pdo->query('SELECT COUNT(*) FROM efetivo')->fetchColumn()===0,'efetivo zerado');
+assertReset((int)$pdo->query('SELECT COUNT(*) FROM historico_vencedores_manuais')->fetchColumn()===0,'histórico nominal zerado apenas pelo procedimento autorizado');
 assertReset((int)$pdo->query("SELECT COUNT(*) FROM usuarios WHERE perfil<>'ADMIN'")->fetchColumn()===0,'contas não administrativas zeradas');
 assertReset((int)$pdo->query("SELECT COUNT(*) FROM usuarios WHERE perfil='ADMIN' AND ativo=1")->fetchColumn()===1,'administrador preservado');
 $u=$pdo->query('SELECT senha_hash,efetivo_id FROM usuarios WHERE id='.$adminId)->fetch();

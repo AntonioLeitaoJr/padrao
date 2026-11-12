@@ -60,6 +60,31 @@ $hist=[2024=>$idsHist,2025=>$idsHist]; $hist[2024]['graduado']=$cands[0];
 HistoricoVencedores::salvar(2026,$hist,$admin);
 $enriq=HistoricoVencedores::enriquecer($lista,1);
 check($enriq[0]['vitorias_ultimos_dois_anos'] === 1 && $enriq[1]['vitorias_ultimos_dois_anos'] === 0,'histórico 2024/25 por vencedor');
+// Vencedor histórico sem vínculo com o cadastro atual (sem criar novo efetivo).
+$totalEfetivoAntes=(int)$pdo->query('SELECT COUNT(*) FROM efetivo')->fetchColumn();
+$nominal=$hist;
+$nominal[2024]['praca']='__manual__';
+$nomesNominais=[2024=>['praca'=>'MARIA DAS DORES, VENCEDORA HISTÓRICA']];
+HistoricoVencedores::salvar(2026,$nominal,$admin,$nomesNominais);
+$histSalvo=HistoricoVencedores::listar(2026);
+check($histSalvo[2024]['praca']['nome_manual']==='MARIA DAS DORES, VENCEDORA HISTÓRICA'
+    && $histSalvo[2024]['praca']['candidato_id']===null,'vencedor manual preservado por nome no histórico');
+check((int)$pdo->query('SELECT COUNT(*) FROM efetivo')->fetchColumn()===$totalEfetivoAntes,
+    'registro nominal não cria integrante fictício no efetivo');
+check((int)$pdo->query("SELECT COUNT(*) FROM historico_vencedores WHERE ano=2024 AND categoria='praca'")->fetchColumn()===0,
+    'registro nominal remove vínculo antigo conflitante');
+check(HistoricoVencedores::enriquecer($lista,1)[0]['vitorias_ultimos_dois_anos']===1,
+    'histórico nominal não afeta desempate de candidato sem ID relacionado');
+try {
+    HistoricoVencedores::salvar(2026,$nominal,$admin,[2024=>['praca'=>'']]);
+    throw new RuntimeException('Aceitou nome vazio');
+} catch (InvalidArgumentException $e) {}
+check(HistoricoVencedores::listar(2026)[2024]['praca']['nome_manual']==='MARIA DAS DORES, VENCEDORA HISTÓRICA',
+    'nome manual inválido não altera histórico');
+HistoricoVencedores::salvar(2026,$hist,$admin);
+check(!isset(HistoricoVencedores::listar(2026)[2024]['praca']['nome_manual'])
+    && (int)$pdo->query('SELECT COUNT(*) FROM historico_vencedores_manuais')->fetchColumn()===0,
+    'trocar por vínculo elimina cadastro nominal anterior');
 $pdo->exec('UPDATE historico_vencedores SET ano=2023 WHERE ano=2024');
 check(HistoricoVencedores::enriquecer($lista,1)[0]['vitorias_ultimos_dois_anos'] === 0,'vitória em 2023 não conta para 2026');
 $antes=(int)$pdo->query('SELECT COUNT(*) FROM historico_vencedores')->fetchColumn();
