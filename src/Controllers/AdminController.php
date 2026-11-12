@@ -22,7 +22,10 @@ class AdminController {
             try {
                 if (!verify_csrf_token($_POST['csrf_token'] ?? '')) throw new InvalidArgumentException('Token CSRF inválido.');
                 if (!in_array((int)$pleito['fase_atual'], [FASE_1, FASE_2], true)) throw new InvalidArgumentException('O histórico só pode ser editado antes da votação da Fase 3.');
-                HistoricoVencedores::salvar($anoPleito, $_POST['vencedores'] ?? [], (int)AuthManager::user()['id'], $_POST['nomes_manuais'] ?? []);
+                if (!is_array($_POST['vencedores'] ?? null) || !is_array($_POST['nomes_manuais'] ?? [])) {
+                    throw new InvalidArgumentException('Dados de vencedores anteriores inválidos.');
+                }
+                HistoricoVencedores::salvar($anoPleito, $_POST['vencedores'], (int)AuthManager::user()['id'], $_POST['nomes_manuais'] ?? []);
                 flash_message('sucesso', 'Vencedores anteriores registrados. Confira novamente as seleções da Fase 2.', 'success');
             } catch (InvalidArgumentException $e) { flash_message('erro', $e->getMessage(), 'danger'); }
             header('Location: /index.php?r=admin/vencedores'); exit;
