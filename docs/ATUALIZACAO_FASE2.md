@@ -12,7 +12,7 @@ php database/migrate_fase2.php
 
 Em uma instalação nova, execute também essa migração após a carga inicial: o instalador pode importar um dump antigo. Em banco existente, não reexecute a carga inicial.
 
-A migração é idempotente: cria o histórico por ano/grupo e adiciona `data_inicio_servico`. Não transforma os antigos contadores de indicações em vitórias, nem copia tempo de OM para tempo de serviço. Nenhum vencedor é presumido.
+A migração é idempotente: cria o histórico por ano/grupo, a tabela adicional `historico_vencedores_manuais` e adiciona `data_inicio_servico`. Não transforma os antigos contadores de indicações em vitórias, nem copia tempo de OM para tempo de serviço. Nenhum vencedor é presumido.
 
 No menu Gestão do Efetivo ou na Fase 2 (administrador), abra **Vencedores anteriores**. Registre um vencedor por grupo para cada um dos dois anos anteriores ao pleito ativo. Em 2026, os anos são 2024 e 2025. Administrador e RH podem manter esse cadastro antes da Fase 3. Homologações anteriores existentes são consultadas automaticamente; o cadastro manual prevalece em caso de correção.
 
