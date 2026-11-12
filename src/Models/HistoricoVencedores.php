@@ -89,8 +89,8 @@ class HistoricoVencedores {
                     }
                     // Se já estiver na base, vincular pelo ID é indispensável ao desempate.
                     $existe = $pdo->prepare('SELECT id FROM efetivo WHERE categoria = :cat
-                        AND (TRIM(nome) = :nome OR TRIM(nome_guerra) = :nome) LIMIT 1');
-                    $existe->execute([':cat' => $cat, ':nome' => $nome]);
+                        AND (TRIM(nome) = :nome_completo OR TRIM(nome_guerra) = :nome_guerra) LIMIT 1');
+                    $existe->execute([':cat' => $cat, ':nome_completo' => $nome, ':nome_guerra' => $nome]);
                     if ($existe->fetch()) {
                         throw new InvalidArgumentException("O vencedor de {$ano} já consta no efetivo. Selecione-o na lista para preservar o critério de desempate.");
                     }
