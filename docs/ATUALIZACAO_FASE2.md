@@ -16,6 +16,8 @@ A migração é idempotente: cria o histórico por ano/grupo e adiciona `data_in
 
 No menu Gestão do Efetivo ou na Fase 2 (administrador), abra **Vencedores anteriores**. Registre um vencedor por grupo para cada um dos dois anos anteriores ao pleito ativo. Em 2026, os anos são 2024 e 2025. Administrador e RH podem manter esse cadastro antes da Fase 3. Homologações anteriores existentes são consultadas automaticamente; o cadastro manual prevalece em caso de correção.
 
+Para vencedor que não aparece na lista, mesmo incluindo os integrantes inativos, selecione **Vencedor não encontrado — informar manualmente** e digite seu nome. O registro nominal fica em `historico_vencedores_manuais`, com ano, grupo, responsável e data, sem criar cadastro fictício no efetivo e sem alterar votos. Como não possui ID de candidato, um registro somente nominal **não atribui vitória anterior a integrante ativo por semelhança de nome**. Se a pessoa já estiver cadastrada ou voltar a integrar o efetivo, vincule-a selecionando seu cadastro na lista, para que o critério de desempate seja aplicado corretamente. A substituição entre as duas opções é transacional e mantém apenas uma origem por ano/grupo.
+
 Em Gestão do Efetivo, preencha apresentação/admissão na COMARA e início do serviço militar ou civil. Datas desconhecidas permanecem vazias; não são inventadas. Para a representação unificada, mantenha as chefias de ACI, AGOV, AINT, AJUR, APOG, SCS e SIJ no cadastro de chefias; lotação do militar não substitui a designação de chefe. O chefe de qualquer divisão é excluído da disputa pela representação. Preserva-se a ordenação de antiguidade do cadastro (posto, apresentação na COMARA e identificador em igualdade cadastral).
 
 ## Regras
