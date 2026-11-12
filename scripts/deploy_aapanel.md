@@ -20,7 +20,7 @@ docker exec -it votacao_comara_app php /var/www/html/database/migrate_fases3_4.p
 docker exec -it votacao_comara_app php /var/www/html/database/migrate_fase5.php
 ```
 
-As três migrações podem ser repetidas. A primeira cria `historico_vencedores` e adiciona `efetivo.data_inicio_servico` quando necessário; a segunda cria as estruturas de corte, avaliadores, confirmações e ordenações das Fases 3–4, preservando os registros existentes; a terceira cria `fase5_resultados` para arquivar novas homologações. Não reexecute instaladores ou cargas iniciais em banco em uso. Para instalações novas, execute a migração após a carga inicial, pois o instalador pode usar um dump anterior a esta alteração.
+As três migrações podem ser repetidas. A primeira cria `historico_vencedores` e `historico_vencedores_manuais`, e adiciona `efetivo.data_inicio_servico` quando necessário; a segunda cria as estruturas de corte, avaliadores, confirmações e ordenações das Fases 3–4, preservando os registros existentes; a terceira cria `fase5_resultados` para arquivar novas homologações. Não reexecute instaladores ou cargas iniciais em banco em uso. Para instalações novas, execute a migração após a carga inicial, pois o instalador pode usar um dump anterior a esta alteração.
 
 Antes de abrir a seleção, Administrador/RH deve cadastrar os vencedores dos dois anos anteriores ao pleito (2024 e 2025 em 2026), conferir as datas de apresentação/admissão e início do serviço e manter as chefias das divisões e das sete assessorias/seções. Não converta antigas indicações em vitórias nem tempo na OM em tempo total de serviço.
 
